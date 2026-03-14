@@ -1,0 +1,214 @@
+Quick reference — what to build in each phase:
+
+[TABLE 1]
+THRIFT STORE Feature Suggestions  v1.1  Admin  |  Seller  |  Customer  |  Platform  Each feature is assigned a build phase (1 = build first, 5 = build last / optional).
+
+[TABLE 2]
+14 🛠 Admin Features	13 🏪 Seller Features	12 🛒 Customer Features	7 🌐 Platform Features
+
+[TABLE 3]
+Phase 1 Core / Launch	Phase 2 Early Add-ons	Phase 3 Growth Features	Phase 4 Advanced	Phase 5 Future / Optional
+
+[TABLE 4]
+Total: 46 suggested features across 5 phases  |  All optional additions on top of v1.0
+
+[TABLE 5]
+🛠  Admin — Suggested Features
+
+[TABLE 6]
+Seller Monitoring
+
+[TABLE 7]
+Feature	Description	Phase
+Rejection Reason Field	When Admin rejects a payment (registration or subscription), they must enter a reason. Reason is shown to the seller in their notification.	Phase 1
+Temporary Suspension	Add a Suspended status — different from Rejected. Suspends seller access without permanent removal. Admin can lift suspension anytime.	Phase 2
+Last Active Date	Display when a seller last logged in or took any action. Helps Admin identify inactive or ghost sellers.	Phase 2
+Broadcast Announcement	Admin can send a notification or message to all sellers at once (e.g. fee changes, platform rules, holiday notices).	Phase 3
+
+[TABLE 8]
+Customer Monitoring
+
+[TABLE 9]
+Feature	Description	Phase
+View Customer Order History	Admin can view any customer's full order history for dispute resolution — without seeing individual seller sales data.	Phase 2
+Flag Suspicious Customers	Admin can flag a customer account (e.g. repeated cancellations, abuse). Flagged accounts are highlighted in the customer list.	Phase 3
+
+[TABLE 10]
+Dashboard Enhancements
+
+[TABLE 11]
+Feature	Description	Phase
+Top 5 Best-Selling Products	Platform-wide widget showing the 5 products with the highest total quantity sold across all sellers.	Phase 2
+Top 5 Most Active Sellers	Widget showing sellers with the highest number of completed orders platform-wide.	Phase 2
+New Seller Registrations Graph	Line or bar chart showing new seller sign-ups per month for the current year.	Phase 3
+New Customer Sign-Ups Graph	Line or bar chart showing new customer registrations per month for the current year.	Phase 3
+
+[TABLE 12]
+Payment Management
+
+[TABLE 13]
+Feature	Description	Phase
+Export Payment History	Admin can export the full payment history (registration + subscription) to CSV or PDF for accounting and auditing.	Phase 3
+
+[TABLE 14]
+Reports
+
+[TABLE 15]
+Feature	Description	Phase
+Cancellation Rate Report	Shows percentage of orders cancelled vs completed, filterable by time period. Helps identify platform-wide fulfilment problems.	Phase 3
+Peak Days / Peak Hours Report	Shows which days of the week and hours of the day receive the most orders platform-wide. Useful for planning.	Phase 4
+Export All Reports	Every report page has a Download CSV or Download PDF button for offline record-keeping.	Phase 3
+
+[TABLE 16]
+🏪  Seller — Suggested Features
+
+[TABLE 17]
+Product Management
+
+[TABLE 18]
+Feature	Description	Phase
+Mark as Sold Out	Seller can mark a product as Sold Out without deleting it. Product stays listed but shows 'Out of Stock' and cannot be added to cart.	Phase 1
+Bulk Stock Update	Seller can select multiple products and update stock quantities at once instead of editing them one by one.	Phase 2
+Product Categories / Tags	Seller assigns a category to each product (Clothing, Accessories, Shoes, Electronics, Books). Customers can filter by category.	Phase 2
+Featured Products	Seller can mark up to 3 products as Featured. They appear at the top of the store page and in a highlighted section on the homepage.	Phase 3
+
+[TABLE 19]
+Store Management
+
+[TABLE 20]
+Feature	Description	Phase
+Store Banner Image	Seller can upload a banner image displayed at the top of their public store profile page.	Phase 2
+Open / Closed Toggle	Seller can temporarily close their store. When closed, products are hidden from customers but not deleted. Useful for vacations or restocking.	Phase 2
+Store Description Formatting	Allow basic rich text in store description (bold, bullet points, line breaks) so sellers can present their store professionally.	Phase 3
+
+[TABLE 21]
+Order Management
+
+[TABLE 22]
+Feature	Description	Phase
+Shipping Note	Seller can attach a short note to an order when marking it as Shipped (e.g. handling instructions, delay notice). Visible to customer.	Phase 2
+Print Order / Packing Slip	Seller can generate and print a simple order slip — includes customer name, address, items, quantities, and tracking number.	Phase 3
+
+[TABLE 23]
+Analytics
+
+[TABLE 24]
+Feature	Description	Phase
+Best Day of Week for Orders	Chart showing which days of the week the seller gets the most orders. Helps with restocking and preparation schedules.	Phase 3
+Product Return / Cancel Rate	Shows which products have the highest cancellation or return rate. Helps seller identify and fix problem listings.	Phase 3
+Average Order Value Over Time	Line chart showing the seller's average order value per week or month for trend analysis.	Phase 4
+
+[TABLE 25]
+Customer Interaction
+
+[TABLE 26]
+Feature	Description	Phase
+Reply to Reviews	Seller can publicly respond to a customer review. The response is displayed directly below the review on the product page.	Phase 2
+
+[TABLE 27]
+🛒  Customer — Suggested Features
+
+[TABLE 28]
+Shopping Experience
+
+[TABLE 29]
+Feature	Description	Phase
+Advanced Search & Filters	Search products with filters: price range, category, seller, on-sale items only. Helps customers find items much faster.	Phase 2
+Wishlist / Save for Later	Customer can save products to a personal wishlist accessible from their profile. Does not add to cart.	Phase 2
+Product Sorting	Sort product listings by: Newest, Price Low to High, Price High to Low, Most Reviewed, On Sale.	Phase 2
+Recently Viewed Products	Shows the last 10 products the customer viewed on the homepage or their profile.	Phase 3
+
+[TABLE 30]
+Order Features
+
+[TABLE 31]
+Feature	Description	Phase
+Return / Issue Request	After an order is Delivered, customer can submit a return request or report an issue. Auto-sends a message to the seller.	Phase 3
+Re-Order Button	On past completed orders, a Re-Order button adds the same items back to cart instantly.	Phase 3
+Rate the Seller / Store	Separate from product rating — customer rates their overall experience with the seller's store (communication, speed, packaging).	Phase 3
+
+[TABLE 32]
+Profile Management
+
+[TABLE 33]
+Feature	Description	Phase
+Change Password	Customer can update their password from their profile settings page.	Phase 1
+Multiple Saved Addresses	Customer can save multiple delivery addresses and select one at checkout instead of always editing their single address.	Phase 2
+View Written Reviews	Customer can see all reviews they have written from their profile, with the option to edit or delete them.	Phase 2
+
+[TABLE 34]
+Notifications
+
+[TABLE 35]
+Feature	Description	Phase
+Order Status Notifications	Customer receives a notification each time their order status changes: Processing to Shipped to Delivered.	Phase 1
+Wishlist Low Stock Alert	If a wishlisted product drops below 10 units, customer gets a notification to buy before it runs out.	Phase 3
+
+[TABLE 36]
+🌐  Platform-Wide — Suggested Features
+
+[TABLE 37]
+Feature	Description	Phase
+Contact Page	Replaces the basic guest form. Dedicated Contact page with name, email, subject, and message fields. Submissions go directly to Admin inbox.	Phase 1
+FAQ Page	A public FAQ page managed by Admin from System Settings. Reduces repetitive support messages from sellers and customers.	Phase 2
+About Us Page	A public About Us page editable by Admin via System Settings. Shows platform story, mission, and contact information.	Phase 2
+Dark Mode Toggle	System-wide dark mode that users can toggle. Preference is saved per user account and applies to all pages.	Phase 3
+Platform Sale Banner	Admin can set a site-wide banner message at the top of every page (e.g. 'Weekend Sale!'). Can be toggled on/off anytime.	Phase 3
+Promo / Discount Codes	Admin or Seller creates discount codes (percentage or fixed) with expiry dates and usage limits. Customer enters code at checkout.	Phase 4
+Mobile App-Ready API Structure	Structure all backend logic as Laravel API routes so a mobile app (Flutter or React Native) can connect later without rewriting.	Phase 5
+
+[TABLE 38]
+📋  Phase Build Summary
+
+[TABLE 39]
+Phase 1 — Core / Launch
+
+[TABLE 40]
+Rejection Reason Field (Admin)	Mark as Sold Out (Seller)
+Change Password (Customer)	Order Status Notifications (Customer)
+Contact Page (Platform)	
+
+[TABLE 41]
+Phase 2 — Early Add-ons
+
+[TABLE 42]
+Temporary Suspension (Admin)	Last Active Date (Admin)
+View Customer Order History (Admin)	Top 5 Best-Selling Products (Admin)
+Top 5 Most Active Sellers (Admin)	Bulk Stock Update (Seller)
+Product Categories / Tags (Seller)	Store Banner Image (Seller)
+Open / Closed Toggle (Seller)	Shipping Note (Seller)
+Reply to Reviews (Seller)	Advanced Search & Filters (Customer)
+Wishlist / Save for Later (Customer)	Product Sorting (Customer)
+Multiple Saved Addresses (Customer)	View Written Reviews (Customer)
+FAQ Page (Platform)	About Us Page (Platform)
+
+[TABLE 43]
+Phase 3 — Growth Features
+
+[TABLE 44]
+Broadcast Announcement (Admin)	Flag Suspicious Customers (Admin)
+New Seller Registrations Graph (Admin)	New Customer Sign-Ups Graph (Admin)
+Export Payment History (Admin)	Cancellation Rate Report (Admin)
+Export All Reports (Admin)	Featured Products (Seller)
+Store Description Formatting (Seller)	Print Order / Packing Slip (Seller)
+Best Day of Week for Orders (Seller)	Product Return / Cancel Rate (Seller)
+Recently Viewed Products (Customer)	Return / Issue Request (Customer)
+Re-Order Button (Customer)	Rate the Seller / Store (Customer)
+Wishlist Low Stock Alert (Customer)	Dark Mode Toggle (Platform)
+Platform Sale Banner (Platform)	
+
+[TABLE 45]
+Phase 4 — Advanced Features
+
+[TABLE 46]
+Peak Days / Peak Hours Report (Admin)	Average Order Value Over Time (Seller)
+Promo / Discount Codes (Platform)	
+
+[TABLE 47]
+Phase 5 — Future / Optional
+
+[TABLE 48]
+Mobile App-Ready API Structure (Platform)	
+
+[TABLE 49]
+Feature Suggestions v1.1  46 features across 5 build phases. Build Phase 1 first. Phase 5 is future / optional.  Thrift Store Platform  ·  v1.1 Feature Suggestions

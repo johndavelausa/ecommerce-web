@@ -1,0 +1,90 @@
+
+
+
+
+
+
+
+These are technical items missing from the v1.0 Build Order. They should be added to the corresponding phase during development.
+
+
+Notifications in the build order are sent synchronously, meaning they run during the HTTP request. This will slow down page responses when multiple notifications fire at once (e.g. a seller gets 3 notifications after one order). Queues fix this by running notifications in the background.
+
+
+
+
+The current build only sends database notifications, which only appear inside the app. Sellers who are not logged in will miss important alerts. The following events must also send an email.
+
+
+Setup required in .env:
+MAIL_MAILER=smtp
+MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+MAIL_FROM_ADDRESS, MAIL_FROM_NAME
+
+
+
+The build order mentions deleting sellers and customers but does not define which models use SoftDeletes. Without soft deletes, permanently removed records break historical data (e.g. a deleted seller's orders become orphaned with no seller reference).
+
+
+Add to each model that uses it:
+use Illuminate\Database\Eloquent\SoftDeletes;
+Add deleted_at column in migration: $table->softDeletes();
+
+
+The build order installs Intervention Image but never says where to use it. Without optimization, sellers can upload a 10MB photo that loads slowly for every customer browsing the store.
+
+
+
+
+The migrations in the build order create tables and foreign keys but do not mention indexes. Without indexes, queries that filter by status, seller_id, or customer_id will do full table scans as the database grows — noticeably slowing reports and dashboards.
+
+
+
+
+The build order has no mention of rate limiting. Without it, the contact form can be spammed by bots and the login page is open to brute force attacks.
+
+
+
+
+
+
+These are undefined business rules that were not covered in v1.0 or v1.1. Every item here will directly affect how you write code. They need to be decided before building the related features.
+
+
+
+What should happen when a seller does not pay their monthly subscription fee on time?
+
+
+Add these columns to the sellers migration:
+subscription_due_date (date, nullable)
+subscription_status (enum: active, grace_period, lapsed) default: active
+
+
+The build order allows Admin to suspend or delete sellers but never defines what happens to orders that are currently Processing or Shipped when this happens.
+
+
+
+
+The v1.1 document only added 'Change Password' for customers. But customers currently have no way to update their name, contact number, or delivery address after registering. This is a core feature that was missed.
+
+
+
+
+Currently only the Admin can view payment records. Sellers have no way to see their own registration and subscription payment history or check whether a payment is still pending or has been approved. This is a missing feature that sellers will expect.
+
+
+
+The build order covers adding to cart but never defines what happens if a product in a customer's cart is deleted, marked sold out, or runs out of stock before the customer checks out.
+
+
+
+
+
+
+All items in v1.2 grouped by type and phase:
+
+
+
+
+
+

@@ -1,0 +1,385 @@
+1. Project Overview
+This document serves as the complete and authoritative specification for the Thrift Store E-Commerce Platform built using Laravel. It covers all functional requirements, user roles, business logic, UI/UX rules, and technical constraints. No additional features are needed beyond what is documented here.
+2. User Roles & Access Levels
+The platform has four distinct user roles with clearly defined permissions and access levels:
+3.1 Admin Dashboard
+The Admin dashboard provides a high-level overview of platform activity. The following metrics must be displayed:
+⚠ Note: The Admin must NOT be able to view individual seller total sales or wallet balances to ensure privacy and confidentiality.
+⚠ Note: Remove 'Total Revenue' from the top-level summary card. Replace with 'Total Profit' and 'Total Revenue' as separate cards. The wallet function must be completely removed from the platform.
+3.2 Seller Management
+Admin can view all registered sellers and their current status.
+Admin can approve or reject seller registrations based on payment verification.
+Admin can ONLY remove/delete sellers whose status is Rejected (e.g., failure to pay registration fee or voluntary withdrawal).
+Admin can update seller payment status for:
+Registration Fee: Pending, Approved, Rejected
+Monthly Subscription Fee: Pending, Approved, Rejected
+Complete payment history must be maintained for both registration and subscription fees.
+Approved payments contribute to Total Profit on the Admin dashboard (even if paid in cash).
+3.3 Customer Management
+Admin can view all registered customer accounts.
+Admin can remove/delete customer accounts.
+Admin cannot directly chat with customers.
+3.4 Messaging
+Admin can send and reply to messages from Sellers (two-way communication).
+Admin can view messages sent by Guests (unregistered users) from the contact form.
+Admin CANNOT initiate or directly message customers.
+Remove the 'Seller Messages' button from Admin > Messages view; integrate into unified inbox.
+Unread message count is visible on the dashboard (accessible only to Admin).
+3.5 Reports
+3.5.1 Sales & Revenue Reports
+Total profit (registration fees + subscription fees) — broken down by month and year
+Monthly and yearly revenue summary
+Total sales of all sellers — filterable by: Daily, Weekly, Monthly, Yearly
+Payment method breakdown: Cash, GCash / Online Wallet
+Refunds, cancellations, and failed transactions log
+3.5.2 User & Seller Activity Reports
+Number of active users and new sign-ups (by time period)
+Seller performance metrics: total sales, product uploads
+Flagged or suspicious account activity
+3.5.3 Financial Reports
+Commissions or fees earned from sellers
+Total payments processed
+Pending subscription or registration payments
+3.6 System Settings
+Admin can change the system/platform logo.
+Admin can update the background design/theme of the platform.
+4.1 Seller Registration
+Sellers must pay a one-time registration fee of ₱200 via GCash before gaining access to the platform.
+The GCash QR code and/or GCash number must be clearly displayed on the registration page for the seller to scan or use for payment. The seller registration form must include all of the following fields:
+⚠ Note: Both the GCash reference number and the uploaded screenshot are visible to the Admin for verification. The seller account remains Pending until Admin approves the payment.
+4.2 Monthly Subscription Fee
+There is a recurring monthly subscription fee of ₱500.
+Payment is made via GCash using the same process as the registration fee (reference number + screenshot).
+This fee does NOT go into a wallet system — it is a direct platform fee paid to the admin.
+Sellers are notified when their subscription due date is approaching.
+Admin approves or rejects subscription payments; approved payments reflect in Admin Total Profit.
+4.3 Store & Profile Management
+Sellers can update their store profile at any time.
+Sellers can edit all personal and store-related information (name, contact, store description, etc.).
+4.4 Product Management
+4.4.1 Adding Products
+Sellers can add new products to their store.
+Each product allows exactly one image upload.
+Products must include: product name, description, price, sale price (optional), and stock quantity.
+4.4.2 Stock Inheritance Logic (Critical)
+When adding a product, the system must apply the following logic to prevent duplicate entries:
+4.4.3 Updating Products
+Sellers can update product details including name, description, price, sale price, and stock quantity.
+All updates must be logged in the product history.
+4.4.4 Deleting Products
+Sellers can delete products from their store.
+Deletion must be recorded in the product history log.
+4.5 Inventory Management
+Sellers can view current stock levels per product.
+A clear breakdown of regular price vs. sale price is displayed per product.
+The system logs all changes to stock levels (increases, decreases, corrections).
+Sellers receive a notification when any product's stock falls below 10 items.
+4.6 Product History Tracking
+The system must record and display:
+History of products added (date, product name, initial stock)
+History of products updated (date, field changed, old value, new value)
+History of stock level changes (date, reason, quantity before/after)
+History of products deleted
+4.7 Order Management
+Sellers manage orders through the following status workflow:
+Sellers are notified when a customer marks an order as received/completed (e.g., 'Leonard has received the product.').
+Sellers can view customer details for order fulfillment.
+Sellers have access to full order history for record-keeping.
+4.8 Seller Dashboard
+The Seller dashboard displays the following metrics and insights:
+4.9 Seller Reports
+4.9.1 Sales & Revenue
+Total sales per product — filterable by: Daily, Weekly, Monthly
+Revenue and profit per product
+Discounts applied and their effect on total sales
+4.9.2 Order Reports
+Track orders by status: Pending, Shipped, Delivered, Returned, Cancelled
+Customer details for order fulfillment
+Full order history for record-keeping
+4.9.3 Inventory Reports
+Current stock levels per product
+Low stock and out-of-stock alerts
+Price and sale price breakdown per product
+4.9.4 Customer Feedback
+Product ratings and reviews from buyers
+Customer inquiries or complaints per product
+4.9.5 Product Update History
+Log of all product additions, updates, and deletions
+Analytics on best-performing and worst-performing products over time
+4.10 Seller Notifications
+4.11 Messaging
+Sellers can chat with the Admin (two-way communication).
+Sellers can chat with Customers who have placed orders (two-way communication).
+5.1 Customer Registration
+Customers register for free with the following required fields:
+5.2 Shopping Features
+Customers can browse all available products.
+Customers can add products to their cart.
+Customers can purchase products.
+Multiple products from the same or different sellers can be in one cart.
+5.3 Checkout Process
+Customer name and delivery address are automatically pre-filled from their profile.
+Payment method is Cash on Delivery (COD) only — no online payment processing.
+No automatic payment processing. All payments are handled manually.
+Customer reviews order summary before confirming.
+Upon confirmation, a unique order is created with a randomly assigned tracking number.
+5.4 Order Management
+5.4.1 Order Status Tracking
+Customers can monitor the status of their orders through the following stages:
+5.4.2 Marking Order as Received
+Once the customer physically receives the product, they must update the order status to 'Order Received' or 'Completed'.
+The order remains in 'Out for Delivery' status until the customer takes this action.
+This action triggers a notification to the seller.
+5.4.3 Order Cancellation
+Customers can cancel their order within 30 minutes of placing it.
+After 30 minutes, cancellation is no longer allowed.
+5.5 Order History
+Customers can view their complete order history.
+Order history includes: order date, product details, quantity, total price, order status, and tracking number.
+5.6 Product Ratings & Reviews
+Customers can leave ratings and written reviews on purchased products.
+Reviews are visible to other customers and the seller.
+5.7 Messaging
+Customers can message the Seller of a product for inquiries.
+Customers CANNOT directly message the Admin.
+6.1 Guest Capabilities
+Guests can browse all publicly listed products.
+Guests can send messages via the contact/inquiry form without an account.
+Guest messages are visible to the Admin in the messages section.
+Guests cannot add items to cart, purchase, or access any seller/admin functionality.
+7.1 GCash Payment (Seller Fees Only)
+GCash is used exclusively for seller-to-platform fee payments. The process is manual and requires Admin verification.
+⚠ Note: There is NO automatic payment processing. All fee approvals are manual by the Admin. This applies to both Registration Fees and Monthly Subscription Fees.
+7.2 Cash on Delivery (Customer Orders)
+All customer purchases are handled via Cash on Delivery (COD).
+No online payment gateway is integrated for customer purchases.
+Payment collection happens physically when the order is delivered.
+The wallet function is completely removed from the platform.
+7.3 Payment History & Duplication Prevention
+Complete payment history is maintained for both registration fees and subscription fees.
+When displaying approved payment history, only approved transactions are shown.
+The system must prevent duplicate payment records — if the same reference number is already recorded, the system must not allow it to be entered again.
+8.1 No Redundancy Rule
+If identical data already exists in the system, the system must not create a duplicate entry.
+This applies to: products, orders, payments, user accounts, and messages.
+Duplicate detection must be based on meaningful identifiers (e.g., GCash reference number, product name + price + seller).
+8.2 No Automatic Payment Processing
+The system must not auto-approve, auto-charge, or auto-process any payments.
+All payments must be submitted manually by the user and approved/rejected manually by the Admin.
+8.3 Order Tracking Number
+When an order is marked as Shipped, a random tracking number is automatically generated and assigned.
+This tracking number is visible to both the customer and the seller.
+8.4 Delivery Confirmation Flow
+An order cannot move to 'Delivered' status unless the customer explicitly marks it as received.
+Until then, the order remains in 'Out for Delivery' / 'Shipped' status.
+This ensures accurate delivery tracking and prevents premature status changes.
+9.1 Footer
+All pages must include a footer with the following links (simple buttons or text links are acceptable):
+Privacy Policy
+Terms of Service
+Cookie Settings
+9.2 Responsive Design
+The platform must be accessible and functional on both desktop and mobile browsers.
+Forms, tables, and product grids must adapt to screen size.
+9.3 System Branding
+The Admin can change the platform logo via System Settings.
+The Admin can update the background design/visual theme.
+Changes take effect platform-wide immediately after saving.
+10.1 Role-Based Access Control (RBAC)
+Laravel middleware must enforce role-based routing for Admin, Seller, Customer, and Guest.
+Each dashboard and route must be protected by role-specific guards.
+10.2 Key Laravel Artisan Suggestions
+php artisan make:model with migrations for: User, Seller, Product, Order, OrderItem, Payment, Message, Review, Notification, ProductHistory
+Seeders for Admin user and system settings defaults.
+Policies for authorization (e.g., Seller can only edit their own products).
+11.1 Admin Features
+11.2 Seller Features
+11.3 Customer Features
+11.4 General Platform Features
+
+[TABLE 1]
+THRIFT STORE E-Commerce Platform  Complete System Requirements & Feature Specification  Built with Laravel  |  Version 1.0
+
+[TABLE 2]
+Property | Detail
+Platform | E-Commerce Website (Thrift Store)
+Framework | Laravel (PHP)
+Payment Method | GCash (Manual Verification) + Cash on Delivery
+User Roles | Admin, Seller, Customer, Guest
+Currency | Philippine Peso (PHP / ₱)
+Deployment | Web-based (Desktop & Mobile Responsive)
+
+[TABLE 3]
+Role | Description
+Admin | Platform owner/operator. Manages sellers, payments, system settings, and views reports.
+Seller | Registered vendor who pays fees and sells products through their store.
+Customer | Registered buyer who browses, adds to cart, and purchases products via COD.
+Guest | Unregistered visitor. Can browse products and send messages via contact form.
+
+[TABLE 4]
+3. Admin Module
+
+[TABLE 5]
+Metric | Description
+Total Profit | Sum of all approved registration fees + subscription fees
+Total Revenue | Overall platform revenue (displayed separately from profit)
+Monthly Revenue | Breakdown of revenue per month (shown in analytics section)
+Total Registered Sellers | Count of all approved seller accounts
+Total Registered Customers | Count of all registered customer accounts
+Total Collected Registration Fees | Clickable — shows transaction history (approved only)
+Total Collected Subscription Fees | Clickable — shows transaction history (approved only)
+Unread Messages | Count of unread messages with a direct link (admin access only)
+
+[TABLE 6]
+4. Seller Module
+
+[TABLE 7]
+Field | Notes
+Full Name | Required
+Store Name | Required — must be unique
+Email / Gmail | Required — used for login
+Password | Required — with confirmation
+Contact Number | Required — Philippine format
+GCash Number Used for Payment | Required — number used to send the fee
+GCash Reference Number | Required — provided by GCash after payment
+Upload Payment Screenshot | Required — image of GCash payment confirmation
+
+[TABLE 8]
+Scenario | System Behavior
+Same Product + Same Price | Do NOT create a new entry. Inherit the existing product and add the new quantity to the current stock. (e.g., Stock 20 + 10 = 30)
+Same Product + Different Price | Create a NEW separate product entry. Display as a different listing after confirmation.
+
+[TABLE 9]
+Status | Description
+Processing | Order has been placed and is being prepared by the seller.
+Shipped / Out for Delivery | Order has been dispatched. A random tracking number is assigned automatically.
+Delivered | Updated ONLY after the customer confirms receipt. Order remains 'Out for Delivery' until then.
+
+[TABLE 10]
+Metric | Description
+Total Sales | Based on completed/purchased products
+Total Number of Products | All active product listings
+Total Orders | Count of all orders across all statuses
+Low Stock Alerts | Products with fewer than 10 units remaining
+Subscription Due Date | Upcoming renewal reminder
+
+[TABLE 11]
+Trigger | Notification Message
+Stock below 10 units | Low stock alert: '[Product Name]' has fewer than 10 items remaining.
+Subscription due date approaching | Your monthly subscription fee of ₱500 is due on [Date]. Please submit payment via GCash.
+Customer confirms order received | [Customer Name] has received the product '[Product Name]'.
+
+[TABLE 12]
+5. Customer Module
+
+[TABLE 13]
+Field | Notes
+Full Name | Required
+Username | Required — must be unique
+Email Address | Required — used for login
+Password | Required — with confirmation
+Contact Number | Required
+Delivery Address | Required — auto-filled at checkout
+Other necessary details | As needed during development
+
+[TABLE 14]
+Status | Set By
+Processing | Automatically set after order is placed
+Shipped / Out for Delivery | Set by Seller
+Delivered / Order Received | Set by Customer upon physical receipt
+
+[TABLE 15]
+6. Guest (Unregistered User)
+
+[TABLE 16]
+7. Payment System
+
+[TABLE 17]
+Step | Description
+1. Display Payment Info | Show GCash QR code and GCash number on the payment page.
+2. Seller Makes Payment | Seller sends payment via GCash and obtains a reference number.
+3. Seller Submits Proof | Seller enters GCash reference number and uploads a screenshot in the form.
+4. Admin Reviews | Admin sees reference number and screenshot, then sets status to Approved or Rejected.
+5. Fee Reflects in Profit | Once approved, the payment is counted in Total Profit on the Admin dashboard.
+
+[TABLE 18]
+8. Data Integrity & Business Rules
+
+[TABLE 19]
+9. Frontend, UI/UX & General Features
+
+[TABLE 20]
+10. Technical Stack & Implementation Notes
+
+[TABLE 21]
+Layer | Technology
+Backend Framework | Laravel (PHP)
+Frontend | Blade Templates + Tailwind CSS / Bootstrap
+Database | MySQL
+Authentication | Laravel Breeze / Fortify (Role-based)
+File Storage | Laravel Storage (local or cloud for screenshots/images)
+Notifications | Laravel Notifications (database + optional email)
+Messaging | Database-driven chat (no external service required)
+Tracking Numbers | PHP random string generator (e.g., Str::random or uniqid)
+Payment Processing | Manual (no gateway integration required)
+
+[TABLE 22]
+11. Complete Feature Checklist
+
+[TABLE 23]
+Feature | Status
+Dashboard with profit, revenue, fees, user counts | Required
+Unread messages counter (admin only) | Required
+Seller registration approval / rejection | Required
+Seller payment status management (reg + subscription) | Required
+Payment history (registration + subscription) | Required
+Customer account management (remove) | Required
+Seller removal (rejected only) | Required
+Messaging with sellers and guest messages | Required
+Full reports (sales, users, financial) | Required
+System settings (logo, background) | Required
+No access to seller sales / wallet data | Required
+
+[TABLE 24]
+Feature | Status
+Registration with GCash payment proof | Required
+Monthly subscription fee payment (GCash) | Required
+Store/profile management | Required
+Product CRUD with image upload (1 per product) | Required
+Stock inheritance logic (same product + same price) | Required
+Inventory view with stock levels | Required
+Price vs sale price breakdown | Required
+Product history tracking (add/update/delete/stock) | Required
+Order management (Processing > Shipped > Delivered) | Required
+Random tracking number on ship | Required
+Notifications (low stock, subscription, order received) | Required
+Seller dashboard (sales, products, orders) | Required
+Sales and inventory reports | Required
+Messaging (admin + customers) | Required
+
+[TABLE 25]
+Feature | Status
+Registration and login | Required
+Product browsing and search | Required
+Cart and checkout (COD only) | Required
+Auto-fill name and address at checkout | Required
+Order tracking (Processing, Shipped, Delivered) | Required
+Mark order as received / completed | Required
+Order cancellation within 30 minutes | Required
+Order history with full details | Required
+Product ratings and reviews | Required
+Messaging with sellers | Required
+
+[TABLE 26]
+Feature | Status
+Footer: Privacy Policy, Terms of Service, Cookie Settings | Required
+Guest browsing + contact form | Required
+No wallet system | Required
+No automatic payment processing | Required
+No duplicate entries for payments, products, or users | Required
+GCash QR code and number displayed for seller fees | Required
+Responsive design (desktop + mobile) | Required
+Role-based access control (RBAC) | Required
+
+[TABLE 27]
+Document Complete  All features and requirements for the Thrift Store E-Commerce Platform are documented above. No additional features are needed beyond what is specified in this document.  Built with Laravel | Thrift Store Platform v1.0
