@@ -13,14 +13,14 @@ mkdir -p storage/logs
 # 2. Fast Permissions (Only target what matters)
 echo "Setting permissions (Optimized)..."
 # We only need to ensure these two folders are writable for the app to work
-chown -R www-data:www-data /home/site/wwwroot/thriftstore/storage
-chown -R www-data:www-data /home/site/wwwroot/thriftstore/bootstrap/cache
-chmod -R 775 /home/site/wwwroot/thriftstore/storage
-chmod -R 775 /home/site/wwwroot/thriftstore/bootstrap/cache
+chown -R www-data:www-data /home/site/wwwroot/storage
+chown -R www-data:www-data /home/site/wwwroot/bootstrap/cache
+chmod -R 775 /home/site/wwwroot/storage
+chmod -R 775 /home/site/wwwroot/bootstrap/cache
 
 # 3. Finalize Laravel (Do this BEFORE Nginx restart)
 echo "Pre-warming Laravel..."
-cd /home/site/wwwroot/thriftstore
+cd /home/site/wwwroot
 php artisan storage:link --force || true
 php artisan optimize:clear || true
 php artisan config:cache || true
@@ -33,7 +33,7 @@ cat <<EOF > /etc/nginx/sites-available/default
 server {
     listen 8080;
     listen [::]:8080;
-    root /home/site/wwwroot/thriftstore/public;
+    root /home/site/wwwroot/public;
     index index.php index.html index.htm;
     server_name _;
 
@@ -41,7 +41,7 @@ server {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
-    location ~ \.php$ {
+    location ~ \.php\$ {
         include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
