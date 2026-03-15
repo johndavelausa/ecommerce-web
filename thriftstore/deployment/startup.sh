@@ -10,14 +10,24 @@ echo "Creating missing storage directories..."
 mkdir -p storage/framework/{sessions,views,cache/data}
 mkdir -p storage/logs
 
-# 2. Fix permissions for the entire project
-echo "Setting permissions for the whole project..."
-chown -R www-data:www-data /home/site/wwwroot/thriftstore
-chmod -R 755 /home/site/wwwroot/thriftstore
-chmod -R 775 /home/site/wwwroot/thriftstore/storage 
+# 2. Fast Permissions (Only target what matters)
+echo "Setting permissions (Optimized)..."
+# We only need to ensure these two folders are writable for the app to work
+chown -R www-data:www-data /home/site/wwwroot/thriftstore/storage
+chown -R www-data:www-data /home/site/wwwroot/thriftstore/bootstrap/cache
+chmod -R 775 /home/site/wwwroot/thriftstore/storage
 chmod -R 775 /home/site/wwwroot/thriftstore/bootstrap/cache
 
-# 3. Apply the WORKING Nginx configuration
+# 3. Finalize Laravel (Do this BEFORE Nginx restart)
+echo "Pre-warming Laravel..."
+cd /home/site/wwwroot/thriftstore
+php artisan storage:link --force || true
+php artisan optimize:clear || true
+php artisan config:cache || true
+php artisan route:cache || true
+php artisan view:cache || true
+
+# 4. Apply Nginx configuration
 echo "Updating Nginx configuration..."
 cat <<EOF > /etc/nginx/sites-available/default
 server {
@@ -41,17 +51,11 @@ server {
 }
 EOF
 
-# 4. Restart Nginx
-echo "Restarting Nginx..."
+# 5. Restart services in one go
+echo "Restarting services for updated config..."
 service nginx restart
+# Force PHP-FPM to refresh its worker pool to pick up new code changes
+killall php-fpm || true
+php-fpm -D
 
-# 5. Finalize Laravel
-echo "Finalizing Laravel setup..."
-cd /home/site/wwwroot/thriftstore
-php artisan storage:link --force || true
-php artisan optimize:clear || true
-php artisan config:cache || true
-php artisan route:cache || true
-php artisan view:cache || true
-
-echo "Deployment Script Finished."
+echo "Deployment Script Finished Successfully."
