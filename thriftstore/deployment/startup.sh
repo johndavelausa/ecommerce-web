@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Navigate to the ACTUAL app root
-cd /home/site/wwwroot/thriftstore
+# Navigate to the app root
+cd /home/site/wwwroot
 
 echo "Starting Deployment Script..."
 
@@ -15,15 +15,29 @@ echo "Setting permissions..."
 chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null
 
-# 3. Update Nginx to point to the thriftstore/public subfolder
+# 3. Apply the WORKING Nginx configuration
+# This matches the manual fix we just confirmed in SSH
 echo "Updating Nginx configuration..."
-sed -i "s|root /home/site/wwwroot/public;|root /home/site/wwwroot/thriftstore/public;|g" /etc/nginx/sites-available/default
-sed -i "s|root /home/site/wwwroot;|root /home/site/wwwroot/thriftstore/public;|g" /etc/nginx/sites-available/default
+cat <<EOF > /etc/nginx/sites-available/default
+server {
+    listen 8080;
+    listen [::]:8080;
+    root /home/site/wwwroot/public;
+    index index.php index.html index.htm;
+    server_name _;
 
-# Add try_files for Laravel routing
-if ! grep -q "try_files" /etc/nginx/sites-available/default; then
-    sed -i '/index index.php/a \ \ \ \ \ \ \ \ try_files $uri $uri/ /index.php?$query_string;' /etc/nginx/sites-available/default
-fi
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+}
+EOF
 
 # 4. Restart Nginx
 echo "Restarting Nginx..."
