@@ -131,11 +131,64 @@ new class extends Component
 
     public function openResolveDisputeModal(int $disputeId): void
     {
+        $dispute = OrderDispute::query()->find($disputeId);
+        if (! $dispute) {
+            return;
+        }
+
         $this->resolveDisputeId = $disputeId;
-        $this->resolveDisputeStatus = OrderDispute::STATUS_UNDER_ADMIN_REVIEW;
+        $options = $this->availableResolveDisputeStatuses($dispute);
+        $this->resolveDisputeStatus = $options[0] ?? '';
         $this->resolveDisputeNote = '';
         $this->showResolveDisputeModal = true;
         $this->resetErrorBag();
+    }
+
+    protected function availableResolveDisputeStatuses(OrderDispute $dispute): array
+    {
+        $currentStatus = (string) $dispute->status;
+        $options = [];
+
+        foreach (OrderDispute::STATUSES as $status) {
+            if ($status === $currentStatus) {
+                continue;
+            }
+
+            if (! $dispute->canTransitionTo($status, 'admin')) {
+                continue;
+            }
+
+            // Parcel-not-received cases typically do not require a physical return flow.
+            if (
+                $dispute->reason_code === 'parcel_not_received'
+                && in_array($status, [
+                    OrderDispute::STATUS_RETURN_REQUESTED,
+                    OrderDispute::STATUS_RETURN_IN_TRANSIT,
+                    OrderDispute::STATUS_RETURN_RECEIVED,
+                ], true)
+            ) {
+                continue;
+            }
+
+            $options[] = $status;
+        }
+
+        return $options;
+    }
+
+    #[Computed]
+    public function resolveDisputeStatusOptions(): array
+    {
+        if (! $this->resolveDisputeId) {
+            return [];
+        }
+
+        $dispute = OrderDispute::query()->find($this->resolveDisputeId);
+        if (! $dispute) {
+            return [];
+        }
+
+        return $this->availableResolveDisputeStatuses($dispute);
     }
 
     public function closeResolveDisputeModal(): void
@@ -149,18 +202,24 @@ new class extends Component
 
     public function confirmResolveDispute(): void
     {
-        $allowedStatuses = implode(',', OrderDispute::STATUSES);
-
-        $this->validate([
-            'resolveDisputeStatus' => ['required', 'string', 'in:'.$allowedStatuses],
-            'resolveDisputeNote' => ['required', 'string', 'max:2000'],
-        ]);
-
         $dispute = OrderDispute::query()->find($this->resolveDisputeId);
         if (! $dispute) {
             $this->closeResolveDisputeModal();
             return;
         }
+
+        $allowedStatuses = $this->availableResolveDisputeStatuses($dispute);
+        if ($allowedStatuses === []) {
+            $this->addError('resolveDisputeStatus', 'No valid next stage is available for this dispute.');
+            return;
+        }
+
+        $allowedStatusesList = implode(',', $allowedStatuses);
+
+        $this->validate([
+            'resolveDisputeStatus' => ['required', 'string', 'in:'.$allowedStatusesList],
+            'resolveDisputeNote' => ['required', 'string', 'max:2000'],
+        ]);
 
         if (! $dispute->canTransitionTo($this->resolveDisputeStatus, 'admin')) {
             $this->addError('resolveDisputeStatus', 'Invalid dispute transition for current stage.');
@@ -601,23 +660,43 @@ new class extends Component
             <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
                 <div class="px-6 py-4 border-b">
                     <h3 class="text-lg font-semibold text-gray-900">Resolve dispute</h3>
-                    <p class="text-sm text-gray-500 mt-1">Set final resolution status and add a required admin note.</p>
+                    <p class="text-sm text-gray-500 mt-1">Choose the next valid action for this dispute and add a required admin note.</p>
                 </div>
                 <div class="px-6 py-4 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Resolution status</label>
-                        <select wire:model.defer="resolveDisputeStatus"
-                                class="mt-1 w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            <option value="under_admin_review">Under admin review</option>
-                            <option value="return_requested">Return requested</option>
-                            <option value="return_in_transit">Return in transit</option>
-                            <option value="return_received">Return received</option>
-                            <option value="refund_pending">Refund pending</option>
-                            <option value="refund_completed">Refund completed</option>
-                            <option value="resolved_approved">Resolved approved</option>
-                            <option value="resolved_rejected">Resolved rejected</option>
-                            <option value="closed">Closed</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700">Next action</label>
+                        @if(!empty($this->resolveDisputeStatusOptions))
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach($this->resolveDisputeStatusOptions as $statusOption)
+                                    @php
+                                        $actionLabel = match ($statusOption) {
+                                            \App\Models\OrderDispute::STATUS_UNDER_ADMIN_REVIEW => 'Move to admin review',
+                                            \App\Models\OrderDispute::STATUS_RETURN_REQUESTED => 'Request item return',
+                                            \App\Models\OrderDispute::STATUS_RETURN_IN_TRANSIT => 'Mark return in transit',
+                                            \App\Models\OrderDispute::STATUS_RETURN_RECEIVED => 'Confirm return received',
+                                            \App\Models\OrderDispute::STATUS_REFUND_PENDING => 'Approve refund',
+                                            \App\Models\OrderDispute::STATUS_REFUND_COMPLETED => 'Mark refund completed',
+                                            \App\Models\OrderDispute::STATUS_RESOLVED_APPROVED => 'Resolve in buyer favor',
+                                            \App\Models\OrderDispute::STATUS_RESOLVED_REJECTED => 'Reject buyer claim',
+                                            \App\Models\OrderDispute::STATUS_CLOSED => 'Close dispute',
+                                            default => \App\Models\OrderDispute::statusLabel($statusOption),
+                                        };
+                                    @endphp
+                                    <button type="button"
+                                            wire:click="$set('resolveDisputeStatus', '{{ $statusOption }}')"
+                                            class="px-2.5 py-1.5 text-xs rounded-md border font-medium {{ $resolveDisputeStatus === $statusOption ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                                        {{ $actionLabel }}
+                                    </button>
+                                @endforeach
+                            </div>
+                            @if($resolveDisputeStatus !== '')
+                                <div class="mt-2 text-xs text-gray-600">
+                                    Selected stage: <span class="font-medium">{{ \App\Models\OrderDispute::statusLabel($resolveDisputeStatus) }}</span>
+                                </div>
+                            @endif
+                        @else
+                            <div class="mt-2 text-xs text-gray-500">No valid next stage available for this dispute.</div>
+                        @endif
                         @error('resolveDisputeStatus') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
                     </div>
                     <div>
@@ -632,8 +711,9 @@ new class extends Component
                     <button type="button" wire:click="closeResolveDisputeModal"
                             class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
                     <button type="button" wire:click="confirmResolveDispute"
+                            @disabled(empty($this->resolveDisputeStatusOptions) || $resolveDisputeStatus === '')
                             class="px-4 py-2 bg-amber-600 text-white rounded-md text-sm font-medium hover:bg-amber-700">
-                        Save resolution
+                        Confirm action
                     </button>
                 </div>
             </div>

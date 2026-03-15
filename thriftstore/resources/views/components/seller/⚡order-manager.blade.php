@@ -49,7 +49,13 @@ new class extends Component
         }
 
         $q = Order::query()
-            ->with(['customer', 'items.product'])
+            ->with([
+                'customer',
+                'items.product',
+                'disputes' => function ($dq) {
+                    $dq->latest('created_at');
+                },
+            ])
             ->where('seller_id', $seller->id)
             ->orderByDesc('created_at');
 
@@ -407,6 +413,12 @@ new class extends Component
                         </td>
                         <td class="px-4 py-3">
                             @php
+                                $activeDispute = $order->disputes->first(function ($d) {
+                                    return \App\Models\OrderDispute::isActiveStatus((string) $d->status);
+                                });
+                                $latestDispute = $activeDispute ?: $order->disputes->first();
+                            @endphp
+                            @php
                                 $statusColor = match($order->status) {
                                     'awaiting_payment' => 'bg-orange-100 text-orange-800',
                                     'paid' => 'bg-cyan-100 text-cyan-800',
@@ -424,6 +436,13 @@ new class extends Component
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">
                                 {{ ucwords(str_replace('_', ' ', $order->status)) }}
                             </span>
+                            @if($latestDispute)
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium {{ $activeDispute ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700' }}">
+                                        Dispute: {{ \App\Models\OrderDispute::statusLabel((string) $latestDispute->status) }}
+                                    </span>
+                                </div>
+                            @endif
                             @if($order->status === 'cancelled')
                                 <div class="mt-1 text-xs text-gray-600">
                                     By: {{ ucfirst((string) ($order->cancelled_by_type ?? 'system')) }}
@@ -457,6 +476,11 @@ new class extends Component
                             ₱{{ number_format($order->total_amount, 2) }}
                         </td>
                         <td class="px-4 py-3 text-sm space-x-2">
+                            @php
+                                $activeDispute = $order->disputes->first(function ($d) {
+                                    return \App\Models\OrderDispute::isActiveStatus((string) $d->status);
+                                });
+                            @endphp
                             <button type="button" wire:click="viewOrder({{ $order->id }})"
                                     class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">
                                 View
@@ -507,6 +531,15 @@ new class extends Component
                                         class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
                                     Mark out for delivery
                                 </button>
+                            @endif
+
+                            @if($activeDispute && in_array($activeDispute->status, [\App\Models\OrderDispute::STATUS_OPEN, \App\Models\OrderDispute::STATUS_SELLER_REVIEW], true))
+                                <button type="button" wire:click="openSellerDisputeModal({{ $activeDispute->id }})"
+                                        class="text-xs text-amber-700 hover:text-amber-900 font-medium">
+                                    {{ $activeDispute->seller_response_note ? 'Update dispute response' : 'Respond to dispute' }}
+                                </button>
+                            @elseif($activeDispute)
+                                <span class="text-[11px] text-gray-500">Dispute in admin review</span>
                             @endif
                         </td>
                     </tr>
