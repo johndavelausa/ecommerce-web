@@ -10,10 +10,12 @@ echo "Creating missing storage directories..."
 mkdir -p storage/framework/{sessions,views,cache/data}
 mkdir -p storage/logs
 
-# 2. Fix permissions
-echo "Setting permissions..."
-chmod -R 775 storage bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null
+# 2. Fix permissions for the entire project
+echo "Setting permissions for the whole project..."
+chown -R www-data:www-data /home/site/wwwroot/thriftstore
+chmod -R 755 /home/site/wwwroot/thriftstore
+chmod -R 775 /home/site/wwwroot/thriftstore/storage 
+chmod -R 775 /home/site/wwwroot/thriftstore/bootstrap/cache
 
 # 3. Apply the WORKING Nginx configuration
 echo "Updating Nginx configuration..."
@@ -34,6 +36,7 @@ server {
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_read_timeout 300;
     }
 }
 EOF
@@ -46,6 +49,7 @@ service nginx restart
 echo "Finalizing Laravel setup..."
 cd /home/site/wwwroot/thriftstore
 php artisan storage:link --force || true
+php artisan optimize:clear || true
 php artisan view:cache || true
 php artisan config:cache || true
 php artisan route:cache || true
