@@ -198,8 +198,10 @@
                 @endif
 
                 @if($user)
-                    @php($unreadCount = $user->unreadNotifications()->count())
-                    @php($latestNotifications = $user->unreadNotifications()->latest()->limit(5)->get())
+                    @php
+                        $unreadCount = $user->unreadNotifications()->count();
+                        $latestNotifications = $user->unreadNotifications()->latest()->limit(5)->get();
+                    @endphp
                     <div x-data="{ openNotif: false }" class="relative">
                         <button @click="openNotif = ! openNotif"
                                 class="relative inline-flex items-center justify-center p-2 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none">
@@ -229,7 +231,9 @@
                             </div>
                             <div class="max-h-64 overflow-y-auto text-xs">
                                 @forelse($latestNotifications as $note)
-                                    @php($data = $note->data)
+                                    @php
+                                        $data = $note->data;
+                                    @endphp
                                     <div class="px-3 py-2 border-b last:border-b-0">
                                         <div class="font-medium text-gray-800">
                                             @if(($data['type'] ?? null) === 'new_order')

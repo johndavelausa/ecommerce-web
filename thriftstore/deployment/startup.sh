@@ -50,8 +50,6 @@ echo "Finalizing Laravel setup..."
 cd /home/site/wwwroot/thriftstore
 php artisan storage:link --force || true
 php artisan optimize:clear || true
-php artisan view:cache || true
 php artisan config:cache || true
-php artisan route:cache || true
 
 echo "Deployment Script Finished."
