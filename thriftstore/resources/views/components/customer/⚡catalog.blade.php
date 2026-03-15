@@ -285,6 +285,9 @@ new class extends Component
             ]);
         }
 
+        $count = Wishlist::where('customer_id', $customer->id)->count();
+        $this->dispatch('wishlist-updated', count: $count);
+
         $this->recordView($productId);
     }
 

@@ -42,6 +42,7 @@ new class extends Component
     {
         $customer = Auth::guard('web')->user();
         if (! $customer) {
+            $this->dispatch('wishlist-toast', message: 'Please log in to use wishlist.', level: 'error');
             $this->redirect(route('login'));
             return;
         }
@@ -81,17 +82,41 @@ new class extends Component
             return;
         }
 
-        $existing = Wishlist::where('customer_id', $customer->id)
-            ->where('product_id', $productId)
-            ->first();
+        try {
+            $existing = Wishlist::where('customer_id', $customer->id)
+                ->where('product_id', $productId)
+                ->first();
 
-        if ($existing) {
-            $existing->delete();
-        } else {
-            Wishlist::firstOrCreate([
-                'customer_id' => $customer->id,
-                'product_id'  => $productId,
-            ]);
+            $wished = false;
+            if ($existing) {
+                $existing->delete();
+            } else {
+                Wishlist::firstOrCreate([
+                    'customer_id' => $customer->id,
+                    'product_id'  => $productId,
+                ]);
+                $wished = true;
+            }
+
+            $count = Wishlist::where('customer_id', $customer->id)->count();
+            $this->dispatch('wishlist-updated', count: $count);
+            $this->dispatch('wishlist-sync', productId: $productId, wished: $wished);
+            $this->dispatch(
+                'wishlist-toast',
+                message: $wished ? 'Added to wishlist.' : 'Removed from wishlist.',
+                level: 'success'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            $actual = Wishlist::where('customer_id', $customer->id)
+                ->where('product_id', $productId)
+                ->exists();
+            $count = Wishlist::where('customer_id', $customer->id)->count();
+
+            $this->dispatch('wishlist-updated', count: $count);
+            $this->dispatch('wishlist-sync', productId: $productId, wished: $actual);
+            $this->dispatch('wishlist-toast', message: 'Could not update wishlist. Please try again.', level: 'error');
         }
 
         unset($this->wishlistIds);
@@ -99,7 +124,22 @@ new class extends Component
 };
 ?>
 
-<div>
+<div x-data="{
+        toastOpen: false,
+        toastMessage: '',
+        toastLevel: 'success',
+        toastTimer: null,
+        showToast(message, level) {
+            this.toastMessage = message || '';
+            this.toastLevel = level || 'success';
+            this.toastOpen = true;
+            if (this.toastTimer) {
+                clearTimeout(this.toastTimer);
+            }
+            this.toastTimer = setTimeout(() => { this.toastOpen = false; }, 1800);
+        }
+    }"
+    x-on:wishlist-toast.window="showToast($event.detail.message, $event.detail.level)">
     @if($this->products->isNotEmpty())
         <section class="mx-auto w-full max-w-[1440px] px-4 md:px-8 lg:px-12 py-12">
             <div class="flex items-end justify-between mb-6 border-b border-[#d6e3dc] pb-4">
@@ -120,7 +160,58 @@ new class extends Component
                         $isLowStock = $product->stock <= $threshold;
                         $inWishlist = isset($this->wishlistIds[$product->id]);
                     @endphp
-                    <article class="group relative flex flex-col overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-sm transition-shadow duration-300 hover:shadow-xl">
+                    <article x-data="{
+                                id: {{ $product->id }},
+                                hovering: false,
+                                wished: {{ $inWishlist ? 'true' : 'false' }},
+                                pending: false,
+                                async toggleAjax(event) {
+                                    if (this.pending) return;
+                                    this.pending = true;
+                                    const form = event.currentTarget;
+                                    const formData = new FormData(form);
+
+                                    try {
+                                        const response = await fetch(form.action, {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'Accept': 'application/json'
+                                            },
+                                            body: formData,
+                                            credentials: 'same-origin'
+                                        });
+
+                                        if (response.redirected) {
+                                            window.location.href = response.url;
+                                            return;
+                                        }
+
+                                        const payload = await response.json();
+                                        if (!response.ok) {
+                                            throw new Error('Wishlist update failed');
+                                        }
+
+                                        this.wished = !!payload.wished;
+                                        window.dispatchEvent(new CustomEvent('wishlist-updated', { detail: { count: Number(payload.count || 0) } }));
+                                        window.dispatchEvent(new CustomEvent('wishlist-toast', {
+                                            detail: {
+                                                message: payload.status === 'wishlist-added' ? 'Added to wishlist.' : 'Removed from wishlist.',
+                                                level: 'success'
+                                            }
+                                        }));
+                                    } catch (e) {
+                                        window.dispatchEvent(new CustomEvent('wishlist-toast', {
+                                            detail: { message: 'Could not update wishlist. Please try again.', level: 'error' }
+                                        }));
+                                    } finally {
+                                        this.pending = false;
+                                    }
+                                }
+                            }"
+                             @mouseenter="hovering = true"
+                             @mouseleave="hovering = false"
+                             class="group relative flex flex-col overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-sm transition-shadow duration-300 hover:shadow-xl">
                         <div class="relative aspect-[3/4] overflow-hidden bg-gray-100">
                             <a href="{{ route('product.show', $product->id) }}" class="block h-full w-full">
                                 @if($product->image_path)
@@ -133,17 +224,20 @@ new class extends Component
                                 @endif
                             </a>
 
-                            {{-- Wishlist heart — hidden until hover --}}
-                            <button type="button"
-                                    wire:click="toggleWishlist({{ $product->id }})"
-                                    class="absolute right-3 top-3 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-200 hover:bg-white"
-                                    title="{{ $inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}">
-                                @if($inWishlist)
-                                    <span class="text-rose-500 text-sm leading-none">♥</span>
-                                @else
-                                    <span class="text-gray-400 text-sm leading-none">♡</span>
-                                @endif
-                            </button>
+                                    {{-- Wishlist heart: always visible when wishlisted, hover-only otherwise --}}
+                                    <form method="POST"
+                                          action="{{ route('wishlist.toggle', $product->id) }}"
+                                          @submit.prevent="toggleAjax($event)">
+                                        @csrf
+                                        <button type="submit"
+                                                :disabled="pending"
+                                                :class="(hovering || wished) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'"
+                                                class="absolute right-3 top-3 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm transition-opacity duration-150"
+                                                title="{{ $inWishlist ? 'Remove from wishlist' : 'Add to wishlist' }}">
+                                            <span x-show="wished" x-cloak class="text-rose-500 text-sm leading-none">♥</span>
+                                            <span x-show="!wished" x-cloak class="text-gray-400 text-sm leading-none">♡</span>
+                                        </button>
+                                    </form>
 
                             {{-- Condition + sale badges --}}
                             <div class="absolute left-3 top-3 z-20 flex flex-col gap-1.5">
@@ -200,4 +294,11 @@ new class extends Component
             </div>
         </section>
     @endif
+
+    <div x-cloak x-show="toastOpen" x-transition.opacity.duration.150ms
+         class="fixed right-4 top-20 z-[80]">
+        <div class="rounded-md px-3 py-2 text-xs font-medium shadow-lg"
+             :class="toastLevel === 'error' ? 'bg-red-600 text-white' : 'bg-gray-900 text-white'"
+             x-text="toastMessage"></div>
+    </div>
 </div>

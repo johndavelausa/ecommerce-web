@@ -29,9 +29,16 @@
         $logoutRoute = 'logout';
         $notificationsRoute = 'customer.notifications.read-all';
     }
+
+    $wishlistCount = 0;
+    if ($user && !request()->is('admin/*') && !request()->is('seller/*')) {
+        $wishlistCount = \App\Models\Wishlist::where('customer_id', $user->id)->count();
+    }
 @endphp
 
-<nav x-data="{ open: false }" class="bg-white">
+<nav x-data="{ open: false, wishlistCount: {{ (int) $wishlistCount }} }"
+     x-on:wishlist-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') wishlistCount = Number($event.detail.count) || 0"
+     class="bg-white">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -103,7 +110,10 @@
                             {{ __('My Orders') }}
                         </x-nav-link>
                         <x-nav-link :href="route('customer.wishlist')" :active="request()->routeIs('customer.wishlist')">
-                            {{ __('Wishlist') }}
+                            <span>{{ __('Wishlist') }}</span>
+                            <span x-cloak x-show="wishlistCount > 0"
+                                  class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold"
+                                  x-text="wishlistCount"></span>
                         </x-nav-link>
                         <x-nav-link :href="route('customer.reviews')" :active="request()->routeIs('customer.reviews')">
                             {{ __('Reviews') }}
@@ -330,7 +340,10 @@
                     {{ __('My Orders') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('customer.wishlist')" :active="request()->routeIs('customer.wishlist')">
-                    {{ __('Wishlist') }}
+                    <span>{{ __('Wishlist') }}</span>
+                    <span x-cloak x-show="wishlistCount > 0"
+                          class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold"
+                          x-text="wishlistCount"></span>
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('customer.reviews')" :active="request()->routeIs('customer.reviews')">
                     {{ __('Reviews') }}

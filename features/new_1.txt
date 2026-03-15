@@ -1,0 +1,130 @@
+Order Flow Integration Tracker (new_1)
+
+Legend:
+[DONE] Implemented in app
+[PARTIAL] Some parts implemented
+[TODO] Not yet implemented
+[NEXT] Next steps to implement
+
+1) Product Discovery and Trust Layer
+[PARTIAL] Browse/search/filter/seller shop is present.
+[PARTIAL] Product card shows price/stock/seller verification but not full trust pack (sold count, return window).
+[PARTIAL] Product detail has stock and pricing, but no full return/shipping SLA UI.
+[PARTIAL] Eligibility checks exist in cart/checkout and product query filters.
+[TODO] Unified eligibility error UX on product page and checkout mismatch banner.
+
+2) Add to Cart and Checkout
+[DONE] Cart stores seller_id and supports multi-seller split.
+[PARTIAL] Address and order note supported.
+[DONE] Customer checkout is COD-only (wallet/GCash buyer payment options removed).
+[DONE] Server-side recalculation for subtotal + seller delivery fees.
+[DONE] Snapshot-lock table for checkout pricing/version with immutable guard on order placement.
+
+3) Order Creation and Split Logic
+[DONE] One order per seller during checkout.
+[DONE] Immutable order item price_at_purchase used.
+[PARTIAL] Tracking is generated at shipment time (seller flow) instead of order creation.
+[PARTIAL] Stock is deducted at order placement (no reserve TTL yet).
+[DONE] Buyer sees grouped confirmation for multiple seller orders.
+
+4) Payment Flow (Escrow First)
+[PARTIAL] Awaiting payment / paid / to_pack / ready_to_ship statuses are now modeled with guarded transitions.
+[PARTIAL] Payout release pipeline now creates seller payout records for completed orders, with dispute-aware hold behavior.
+[PARTIAL] Admin manual hold/release controls and seller payout dashboard are now available.
+
+5) Seller Fulfillment Flow
+[DONE] Seller receives new order notification.
+[PARTIAL] Seller can print packing slip and mark shipped.
+[DONE] Seller now picks courier and sets manual or auto-generated tracking number.
+[DONE] Shipment handoff timestamp (shipped_at) is saved.
+[DONE] Seller Accept step + SLA auto-cancel penalties.
+
+6) Logistics and Tracking
+[PARTIAL] Buyer and seller can see courier, tracking, shipped/delivered timestamps.
+[DONE] Courier webhook ingestion and tracking event timeline.
+[DONE] Stale shipment watchdog alerts.
+
+7) Delivery Confirmation and Completion
+[DONE] Buyer manual Confirm Received marks delivered.
+[DONE] delivered_at timestamp is now saved.
+[DONE] Auto-complete after dispute window via scheduled command.
+[DONE] Payout release pipeline (scheduled command + seller payout ledger) is implemented.
+
+8) Returns, Refunds, Disputes
+[DONE] Buyer can submit structured dispute case with reason + optional evidence.
+[DONE] Seller can review open disputes and submit response note before admin arbitration.
+[DONE] Admin can resolve disputes with final resolution status and admin note.
+[DONE] Added dispute lifecycle stages (under_admin_review, return_requested, return_in_transit, return_received, refund_pending, refund_completed) with guarded transitions.
+
+9) Review and Reputation Loop
+[PARTIAL] Buyer can rate seller after delivery.
+[TODO] Review window expiry, abuse moderation, ranking integration.
+
+10) Cancellation Rules
+[PARTIAL] Buyer cancel window (processing, <=30 mins) exists.
+[PARTIAL] Seller can cancel processing orders.
+[DONE] Standardized cancellation reason codes are now stored with cancellation metadata.
+[DONE] Refund branching logic by payment/dispute state is implemented with payout coupling safeguards.
+
+11) State Machine and Transition Guards
+[PARTIAL] Current statuses now include processing, shipped, out_for_delivery, delivered, completed, cancelled.
+[DONE] Added order status history audit trail (table + automatic logging).
+[DONE] Added centralized transition guard helper in Order model and applied to customer/seller transitions.
+[PARTIAL] Expanded state machine with out_for_delivery and completed.
+[DONE] Expanded payment-state machine with awaiting_payment, paid, to_pack, ready_to_ship.
+[DONE] Added dispute transition guard and expanded dispute lifecycle states beyond open/seller_review/admin resolution.
+[DONE] Central transition policy now blocks invalid transitions for current statuses.
+
+12) Notifications
+[PARTIAL] New order and status update notifications exist.
+[PARTIAL] Dispute notifications now fire for buyer-opened, seller-response, and admin-resolution events.
+[DONE] SLA reminders and admin anomaly alerts added via scheduled order SLA monitor.
+
+13) SLA and Metrics
+[TODO] Seller acceptance rate, on-time ship rate, cancellation rate, return rate dashboards.
+
+14) Anti-Fraud and Safety
+[PARTIAL] Admin action logging exists for important overrides.
+[TODO] Risk scoring, payout holds, abuse pattern detection.
+
+15) MVP Delivery Status
+[PARTIAL] Core order placement + shipping + delivery + review path works.
+[TODO] Paid/to_pack/ready_to_ship/completed statuses and escrow release.
+
+16) Advanced Features
+[TODO] Multi-warehouse, courier API, smart ranking, compensation automation, voucher stacking, evidence workflows.
+
+----------------------------------------
+Implemented in this step
+----------------------------------------
+1. Added structured OrderDispute model and order->disputes relation.
+2. Buyer dispute form now stores reason, description, and optional evidence upload.
+3. Admin order details now show disputes and include dispute resolution modal/actions.
+4. Added order_disputes table to canonical schema and incremental SQL patch.
+
+Database files updated
+1. shop_db.sql (canonical schema for fresh setup)
+2. order_flow_alter.sql (incremental patch for existing DB)
+
+----------------------------------------
+NEXT (Step-by-step backlog)
+----------------------------------------
+[NEXT-1 DONE] Add cancellation reason codes and save who cancelled.
+[NEXT-2 DONE] Introduce status constants and transition guard service.
+[NEXT-3 DONE] Add out_for_delivery + completed with auto-complete job.
+[NEXT-4 DONE] Create dispute table with evidence path and admin resolution status.
+[NEXT-5 DONE] Add seller-side dispute review workflow before admin arbitration.
+[NEXT-6 DONE] Add dispute notifications and block auto-complete while dispute is open.
+[NEXT-7 DONE] Add SLA reminders for seller acceptance/shipping and admin anomaly alerts.
+[NEXT-8 DONE] Add payout release pipeline after completion/dispute closure.
+[NEXT-9 DONE] Add admin/seller payout dashboard views and manual hold/release controls.
+[NEXT-10 DONE] Add full payment-state workflow (awaiting_payment, paid, to_pack, ready_to_ship) with guarded transitions.
+[NEXT-11 DONE] Add return/dispute lifecycle states and transition guards beyond open/seller_review/admin resolution.
+[NEXT-12 DONE] Add refund branching logic by payment/dispute state and connect payout holds/releases to finalized dispute outcomes.
+[NEXT-13 DONE] Surface refund status/audit details in customer/seller/admin order views and dashboards.
+[NEXT-14 DONE] Add refund/dispute KPI cards and filters (pending/completed/no-refund) to admin and seller reporting screens.
+[NEXT-15 DONE] Add SLA metrics dashboard cards for seller acceptance rate, on-time ship rate, cancellation rate, and return rate.
+[NEXT-16 DONE] Add checkout snapshot-lock table and enforce immutable checkout pricing/version guard.
+[NEXT-17 DONE] Add seller Accept step with SLA timer and auto-cancel penalties for unaccepted orders.
+[NEXT-18 DONE] Add courier webhook ingestion and tracking event timeline for buyer/seller/admin views.
+[NEXT-19 DONE] Add stale shipment watchdog alerts for delayed in_transit/out_for_delivery orders.

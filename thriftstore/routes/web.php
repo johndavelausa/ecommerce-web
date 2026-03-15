@@ -125,12 +125,27 @@ Route::middleware(['auth:web', 'role:customer'])->group(function () {
     Route::post('/wishlist/toggle/{id}', function (\Illuminate\Http\Request $request, int $id) {
         $product = \App\Models\Product::where('is_active', true)->findOrFail($id);
         $w = \App\Models\Wishlist::where('customer_id', $request->user()->id)->where('product_id', $product->id)->first();
+        $wished = false;
         if ($w) {
             $w->delete();
-            return redirect()->back()->with('status', 'wishlist-removed');
+            $status = 'wishlist-removed';
+        } else {
+            \App\Models\Wishlist::firstOrCreate(['customer_id' => $request->user()->id, 'product_id' => $product->id]);
+            $wished = true;
+            $status = 'wishlist-added';
         }
-        \App\Models\Wishlist::firstOrCreate(['customer_id' => $request->user()->id, 'product_id' => $product->id]);
-        return redirect()->back()->with('status', 'wishlist-added');
+
+        $count = \App\Models\Wishlist::where('customer_id', $request->user()->id)->count();
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => $status,
+                'wished' => $wished,
+                'count' => $count,
+            ]);
+        }
+
+        return redirect()->back()->with('status', $status);
     })->name('wishlist.toggle');
     Route::view('/messages', 'customer.messages')->name('customer.messages');
     Route::post('/notifications/read-all', function () {

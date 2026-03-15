@@ -41,6 +41,9 @@ new class extends Component
             ->where('customer_id', $customer->id)
             ->where('product_id', $productId)
             ->delete();
+
+        $count = Wishlist::where('customer_id', $customer->id)->count();
+        $this->dispatch('wishlist-updated', count: $count);
     }
 
     public function addToCart(int $productId): void
