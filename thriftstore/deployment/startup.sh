@@ -1,26 +1,32 @@
 #!/bin/bash
-echo "Starting Deployment Script..."
+echo "Starting Final Deployment Script..."
 
-# 1. Detect App Location
-# Sometimes Azure zips the files as a subfolder, sometimes as root. We handle both.
-if [ -d "/home/site/wwwroot/thriftstore" ]; then
+# 1. Detect App Location correctly by looking for the 'artisan' file
+if [ -f "/home/site/wwwroot/thriftstore/artisan" ]; then
     APP_ROOT="/home/site/wwwroot/thriftstore"
     echo "Found app in subfolder: $APP_ROOT"
-else
+elif [ -f "/home/site/wwwroot/artisan" ]; then
     APP_ROOT="/home/site/wwwroot"
-    echo "Using root folder: $APP_ROOT"
+    echo "Found app in root folder: $APP_ROOT"
+else
+    echo "ERROR: Could not find Artisan! Check deployment."
+    exit 1
 fi
 
 cd $APP_ROOT
 
-# 2. Setup Permissions
+# 2. Cleanup placeholder files that block the site
+echo "Cleaning up Azure placeholder files..."
+rm -f /home/site/wwwroot/hostingstart.html
+
+# 3. Setup Permissions
 echo "Setting permissions on $APP_ROOT..."
 mkdir -p storage/framework/{sessions,views,cache/data}
 mkdir -p storage/logs
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-# 3. Laravel Setup
+# 4. Laravel Setup
 echo "Cleaning and optimizing Laravel..."
 php artisan optimize:clear
 php artisan view:clear
@@ -29,7 +35,7 @@ php artisan config:cache || true
 php artisan route:cache || true
 php artisan view:cache || true
 
-# 4. Nginx Configuration
+# 5. Nginx Configuration
 echo "Forcing Nginx to point to $APP_ROOT/public..."
 cat <<EOF > /etc/nginx/sites-available/default
 server {
@@ -43,7 +49,7 @@ server {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
-    location ~ \.php\$ {
+    location ~ \.php$ {
         include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
@@ -56,11 +62,10 @@ EOF
 # Ensure the config is active
 ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# 5. Refresh Services
+# 6. Refresh Services
 echo "Restarting services..."
 service nginx restart
-# Force PHP to reload everything
 killall php-fpm || true
 php-fpm -D
 
-echo "Deployment Script Finished Successfully. Site should be live at $APP_ROOT/public"
+echo "Deployment Script Finished Successfully. Site should be live now!"
