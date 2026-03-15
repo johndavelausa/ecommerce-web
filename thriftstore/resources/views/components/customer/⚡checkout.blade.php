@@ -363,7 +363,7 @@ new class extends Component
         $this->checkoutSnapshotVersion = null;
         $this->placed = true;
         $this->createdOrders = $createdOrders;
-        $this->dispatch('cart-updated');
+        $this->dispatch('cart-updated', count: 0);
     }
 };
 ?>

@@ -31,13 +31,34 @@
     }
 
     $wishlistCount = 0;
+    $cartCount = 0;
+    $navCategories = collect();
     if ($user && !request()->is('admin/*') && !request()->is('seller/*')) {
         $wishlistCount = \App\Models\Wishlist::where('customer_id', $user->id)->count();
+        $cartRows = session('cart', []);
+        if (is_array($cartRows)) {
+            $cartCount = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cartRows));
+        }
+
+        $navCategories = \App\Models\Product::query()
+            ->selectRaw('category, COUNT(*) as product_count')
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->whereHas('seller', function ($q) {
+                $q->where('status', 'approved')
+                  ->where('is_open', true);
+            })
+            ->groupBy('category')
+            ->orderBy('category')
+            ->get();
     }
 @endphp
 
-<nav x-data="{ open: false, wishlistCount: {{ (int) $wishlistCount }} }"
+<nav x-data="{ open: false, wishlistCount: {{ (int) $wishlistCount }}, cartCount: {{ (int) $cartCount }} }"
      x-on:wishlist-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') wishlistCount = Number($event.detail.count) || 0"
+     x-on:cart-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') cartCount = Number($event.detail.count) || 0"
      class="bg-white">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -106,14 +127,37 @@
                             {{ __('Store Settings') }}
                         </x-nav-link>
                     @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
+                        <div x-data="{ openCategories: false }"
+                             @mouseenter="openCategories = true"
+                             @mouseleave="openCategories = false"
+                                class="relative h-full flex items-center">
+                            <button type="button"
+                                    class="inline-flex items-center h-full text-sm font-medium text-gray-500 hover:text-gray-700">
+                                Categories
+                                <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <div x-cloak x-show="openCategories"
+                                 x-transition.opacity.duration.120ms
+                                   class="absolute left-1/2 top-full -translate-x-1/2 mt-1 w-72 rounded-xl border border-gray-200 bg-white shadow-xl z-50">
+                                <div class="max-h-72 overflow-y-auto py-1">
+                                    @forelse($navCategories as $cat)
+                                        <a href="{{ route('customer.dashboard') }}?category={{ urlencode((string) $cat->category) }}"
+                                           class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                            <span>{{ $cat->category }}</span>
+                                            <span class="text-xs font-semibold text-gray-500">{{ (int) $cat->product_count }}</span>
+                                        </a>
+                                    @empty
+                                        <div class="px-3 py-2 text-sm text-gray-500">No categories available.</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
                         <x-nav-link :href="route('customer.orders')" :active="request()->routeIs('customer.orders')">
                             {{ __('My Orders') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('customer.wishlist')" :active="request()->routeIs('customer.wishlist')">
-                            <span>{{ __('Wishlist') }}</span>
-                            <span x-cloak x-show="wishlistCount > 0"
-                                  class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold"
-                                  x-text="wishlistCount"></span>
                         </x-nav-link>
                         <x-nav-link :href="route('customer.reviews')" :active="request()->routeIs('customer.reviews')">
                             {{ __('Reviews') }}
@@ -121,15 +165,38 @@
                         <x-nav-link :href="route('customer.messages')" :active="request()->routeIs('customer.messages')">
                             {{ __('Messages') }}
                         </x-nav-link>
-                        <x-nav-link :href="route('customer.cart')" :active="request()->routeIs('customer.cart')">
-                            {{ __('Cart') }}
-                        </x-nav-link>
                     @endif
                 </div>
             </div>
 
             <!-- Notifications + Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6 gap-4">
+                @if($user && !request()->is('admin/*') && !request()->is('seller/*'))
+                    <a href="{{ route('customer.wishlist') }}"
+                       class="relative inline-flex items-center justify-center p-2 rounded-full {{ request()->routeIs('customer.wishlist') ? 'text-rose-600 bg-rose-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' }} focus:outline-none"
+                       title="Wishlist"
+                       aria-label="Wishlist">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        <span x-cloak x-show="wishlistCount > 0"
+                              class="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold"
+                              x-text="wishlistCount"></span>
+                    </a>
+
+                    <a href="{{ route('customer.cart') }}"
+                       class="relative inline-flex items-center justify-center p-2 rounded-full {{ request()->routeIs('customer.cart') ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100' }} focus:outline-none"
+                       title="Cart"
+                       aria-label="Cart">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5.4 5m1.6 8l-1 5h12m-9 0a1 1 0 100 2 1 1 0 000-2zm8 0a1 1 0 100 2 1 1 0 000-2z" />
+                        </svg>
+                        <span x-cloak x-show="cartCount > 0"
+                              class="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-semibold"
+                              x-text="cartCount"></span>
+                    </a>
+                @endif
+
                 @if($user)
                     @php($unreadCount = $user->unreadNotifications()->count())
                     @php($latestNotifications = $user->unreadNotifications()->latest()->limit(5)->get())
@@ -352,7 +419,10 @@
                     {{ __('Messages') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('customer.cart')" :active="request()->routeIs('customer.cart')">
-                    {{ __('Cart') }}
+                    <span>{{ __('Cart') }}</span>
+                    <span x-cloak x-show="cartCount > 0"
+                          class="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-semibold"
+                          x-text="cartCount"></span>
                 </x-responsive-nav-link>
             @endif
         </div>

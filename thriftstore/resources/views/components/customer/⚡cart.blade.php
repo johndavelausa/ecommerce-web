@@ -23,7 +23,8 @@ new class extends Component
 
         $cart[$key]['quantity']++;
         Session::put('cart', $cart);
-        $this->dispatch('cart-updated');
+        $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
     }
 
     public function decrement(string $key): void
@@ -37,7 +38,8 @@ new class extends Component
         }
 
         Session::put('cart', $cart);
-        $this->dispatch('cart-updated');
+        $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
     }
 
     public function remove(string $key): void
@@ -45,13 +47,14 @@ new class extends Component
         $cart = Session::get('cart', []);
         unset($cart[$key]);
         Session::put('cart', $cart);
-        $this->dispatch('cart-updated');
+        $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
     }
 
     public function clear(): void
     {
         Session::forget('cart');
-        $this->dispatch('cart-updated');
+        $this->dispatch('cart-updated', count: 0);
     }
 };
 ?>

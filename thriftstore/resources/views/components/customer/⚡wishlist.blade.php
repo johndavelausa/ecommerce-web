@@ -82,7 +82,8 @@ new class extends Component
         ];
 
         Session::put('cart', $cart);
-        $this->dispatch('cart-updated');
+        $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
     }
 };
 ?>
