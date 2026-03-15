@@ -5,18 +5,20 @@ use App\Models\Message;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new class extends Component
 {
+    use WithPagination;
+
     public ?int $selectedConversationId = null;
     public string $replyBody = '';
 
-    #[Computed]
-    public function conversations()
+    public function getConversationsProperty()
     {
         $seller = Auth::guard('seller')->user()?->seller;
         if (! $seller) {
-            return collect();
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
 
         return Conversation::query()
@@ -24,9 +26,8 @@ new class extends Component
             ->where('seller_id', $seller->id)
             ->with(['customer'])
             ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->where('sender_type', 'customer')])
-            ->get()
-            ->sortByDesc(fn ($c) => optional($c->updated_at ?? $c->messages()->max('created_at'))->getTimestamp() ?? 0)
-            ->values();
+            ->orderByRaw('(SELECT MAX(created_at) FROM messages WHERE messages.conversation_id = conversations.id) DESC')
+            ->paginate(20);
     }
 
     public function selectConversation(int $id): void
@@ -114,6 +115,11 @@ new class extends Component
                 <div class="p-4 text-center text-gray-500 text-sm">No customer conversations yet.</div>
             @endforelse
         </div>
+        @if($this->conversations->hasPages())
+            <div class="p-2 border-t">
+                {{ $this->conversations->links() }}
+            </div>
+        @endif
     </div>
 
     <div class="flex-1 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">

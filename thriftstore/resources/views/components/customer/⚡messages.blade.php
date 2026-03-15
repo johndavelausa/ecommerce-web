@@ -45,6 +45,11 @@ new class extends Component
 
     public function mount(): void
     {
+        $sellerId = request()->query('seller');
+        if ($sellerId && $this->customer) {
+            $this->startWithSeller((int) $sellerId);
+            return;
+        }
         if ($this->conversations->isNotEmpty()) {
             $this->activeConversationId = $this->conversations->first()->id;
         }

@@ -2,9 +2,12 @@
 
 use App\Models\Payment;
 use App\Models\Seller;
+use App\Models\SellerActivityLog;
+use App\Models\SellerNote;
 use App\Notifications\PaymentRejectedForSeller;
 use App\Notifications\SellerSuspended;
 use App\Notifications\SellerUnsuspended;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -15,6 +18,7 @@ new class extends Component
     use WithPagination;
 
     public string $statusFilter = '';
+    public string $search = '';
     public ?int $selectedSellerId = null;
     public bool $showDeleteConfirm = false;
     public ?int $deleteSellerId = null;
@@ -23,7 +27,13 @@ new class extends Component
     public ?int $rejectPaymentId = null;
     public string $rejectReason = '';
 
-    protected $queryString = ['statusFilter' => ['except' => '']];
+    /** A2 v1.4 — Admin notes on seller profile */
+    public string $newNote = '';
+
+    protected $queryString = [
+        'statusFilter' => ['except' => ''],
+        'search' => ['except' => ''],
+    ];
 
     #[Computed]
     public function sellers()
@@ -32,7 +42,23 @@ new class extends Component
         if ($this->statusFilter !== '') {
             $q->where('status', $this->statusFilter);
         }
-        return $q->orderByDesc('created_at')->paginate(10);
+        if ($this->search !== '') {
+            $term = '%' . trim($this->search) . '%';
+            $q->where(function ($query) use ($term) {
+                $query->where('store_name', 'like', $term)
+                    ->orWhere('gcash_number', 'like', $term)
+                    ->orWhereHas('user', function ($q2) use ($term) {
+                        $q2->where('name', 'like', $term)
+                            ->orWhere('email', 'like', $term);
+                    });
+            });
+        }
+        return $q->orderByDesc('created_at')->paginate(20);
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function viewSeller(int $id): void
@@ -182,17 +208,50 @@ new class extends Component
         }
     }
 
+    /** A2 v1.4 — Verified seller badge: admin can toggle */
+    public function toggleVerified(int $sellerId): void
+    {
+        $seller = Seller::query()->findOrFail($sellerId);
+        $seller->update(['is_verified' => ! $seller->is_verified]);
+        SellerActivityLog::log($sellerId, 'verified_toggled', [
+            'is_verified' => $seller->is_verified,
+            'admin_id' => Auth::guard('admin')->id(),
+        ]);
+        $this->dispatch('seller-updated');
+    }
+
+    /** A2 v1.4 — Add admin note (internal only) */
+    public function addSellerNote(): void
+    {
+        $this->validate(['newNote' => ['required', 'string', 'max:5000']]);
+        if (! $this->selectedSellerId) {
+            return;
+        }
+        SellerNote::query()->create([
+            'seller_id' => $this->selectedSellerId,
+            'note' => trim($this->newNote),
+            'admin_id' => Auth::guard('admin')->id(),
+        ]);
+        $this->newNote = '';
+        $this->dispatch('seller-updated');
+    }
+
 };
 ?>
 
 <div>
-    <div class="flex flex-wrap gap-2 items-center mb-4">
-        <span class="text-sm text-gray-600">Filter by status:</span>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div class="flex flex-wrap gap-2 items-center">
+            <input type="text" wire:model.live.debounce.300ms="search"
+                   placeholder="Search store name, name, email, GCash…"
+                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64">
+            <span class="text-sm text-gray-600">Filter by status:</span>
         <button wire:click="$set('statusFilter', '')" class="px-3 py-1 rounded text-sm {{ $statusFilter === '' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">All</button>
         <button wire:click="$set('statusFilter', 'pending')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'pending' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Pending</button>
         <button wire:click="$set('statusFilter', 'approved')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'approved' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Approved</button>
         <button wire:click="$set('statusFilter', 'rejected')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'rejected' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Rejected</button>
         <button wire:click="$set('statusFilter', 'suspended')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'suspended' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Suspended</button>
+        </div>
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -214,6 +273,9 @@ new class extends Component
                         <td class="px-4 py-3 text-sm text-gray-900">{{ $seller->store_name }}</td>
                         <td class="px-4 py-3">
                             <span class="px-2 py-1 text-xs rounded {{ $seller->status === 'approved' ? 'bg-green-100 text-green-800' : ($seller->status === 'rejected' ? 'bg-red-100 text-red-800' : ($seller->status === 'suspended' ? 'bg-amber-100 text-amber-800' : 'bg-yellow-100 text-yellow-800')) }}">{{ ucfirst($seller->status) }}</span>
+                            @if($seller->is_verified ?? false)
+                                <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Verified seller">✓ Verified</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-500">
                             @php($last = $seller->user?->last_active_at)
@@ -260,7 +322,7 @@ new class extends Component
     </div>
 
     @if($selectedSellerId)
-        @php($seller = \App\Models\Seller::with(['user', 'payments'])->find($selectedSellerId))
+        @php($seller = \App\Models\Seller::with(['user', 'payments', 'notes.admin', 'activityLogs'])->find($selectedSellerId))
         @if($seller)
             <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
                 <div class="flex min-h-screen items-center justify-center p-4">
@@ -268,9 +330,21 @@ new class extends Component
                     <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div class="p-6">
                             <div class="flex justify-between items-start">
-                                <h3 class="text-lg font-semibold">Seller: {{ $seller->user->name }}</h3>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-lg font-semibold">Seller: {{ $seller->user->name }}</h3>
+                                    @if($seller->is_verified ?? false)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">✓ Verified</span>
+                                    @endif
+                                </div>
                                 <button wire:click="closeDetail" class="text-gray-400 hover:text-gray-600">&times;</button>
                             </div>
+                            @if($seller->status === 'approved')
+                                <div class="mt-2">
+                                    <button wire:click="toggleVerified({{ $seller->id }})" class="text-sm {{ $seller->is_verified ? 'text-amber-600 hover:underline' : 'text-indigo-600 hover:underline' }}">
+                                        {{ $seller->is_verified ? 'Remove verified badge' : 'Mark as verified' }}
+                                    </button>
+                                </div>
+                            @endif
                             <dl class="mt-4 grid grid-cols-1 gap-2 text-sm">
                                 <div><span class="text-gray-500">Store:</span> {{ $seller->store_name }}</div>
                                 <div><span class="text-gray-500">Email:</span> {{ $seller->user->email }}</div>
@@ -313,6 +387,44 @@ new class extends Component
                                 @empty
                                     <p class="text-gray-500 text-sm">No payments.</p>
                                 @endforelse
+                            </div>
+                            {{-- A2 v1.4 — Admin notes (internal only) --}}
+                            <div class="mt-6 border-t pt-4">
+                                <h4 class="font-medium text-gray-700">Admin notes</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Internal only — not visible to seller.</p>
+                                <div class="mt-2">
+                                    <textarea wire:model.defer="newNote" rows="2" placeholder="Add a note…"
+                                              class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                    @error('newNote') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
+                                    <button wire:click="addSellerNote" class="mt-1 px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-gray-800">Add note</button>
+                                </div>
+                                <ul class="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                                    @forelse($seller->notes as $note)
+                                        <li class="p-2 bg-gray-50 rounded text-sm">
+                                            <span class="text-gray-700">{{ $note->note }}</span>
+                                            <span class="block text-xs text-gray-400 mt-1">{{ $note->created_at->format('M d, Y H:i') }} @if($note->admin) · {{ $note->admin->name }} @endif</span>
+                                        </li>
+                                    @empty
+                                        <li class="text-gray-500 text-sm">No notes yet.</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+                            {{-- A2 v1.4 — Seller activity log --}}
+                            <div class="mt-6 border-t pt-4">
+                                <h4 class="font-medium text-gray-700">Seller activity log</h4>
+                                <ul class="mt-2 space-y-1 max-h-48 overflow-y-auto text-sm">
+                                    @forelse($seller->activityLogs->take(50) as $log)
+                                        <li class="flex gap-2 text-gray-600">
+                                            <span class="text-gray-400 shrink-0">{{ $log->created_at->format('Y-m-d H:i') }}</span>
+                                            <span>{{ $log->action }}</span>
+                                            @if(!empty($log->details))
+                                                <span class="text-gray-500">— {{ is_array($log->details) ? json_encode($log->details) : $log->details }}</span>
+                                            @endif
+                                        </li>
+                                    @empty
+                                        <li class="text-gray-500">No activity logged yet.</li>
+                                    @endforelse
+                                </ul>
                             </div>
                             @if($seller->status === 'rejected')
                                 <div class="mt-4 pt-4 border-t">

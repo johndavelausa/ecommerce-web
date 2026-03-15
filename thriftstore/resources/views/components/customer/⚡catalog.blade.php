@@ -2,6 +2,7 @@
 
 use App\Models\Product;
 use App\Models\Wishlist;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
@@ -15,9 +16,11 @@ new class extends Component
 
     public string $search = '';
     public string $sort = 'latest'; // latest, price_asc, price_desc, most_reviewed, on_sale
-    public string $availability = 'in_stock'; // in_stock, all
+    public string $availability = 'all'; // in_stock, all
     public string $category = ''; // dynamic categories
     public string $seller = '';   // seller_id or ''
+    public string $condition = ''; // new, like_new, good, fair, poor (A1 - v1.3)
+    public string $size_variant = ''; // C1 v1.4 — filter by size (xs,s,m,l,xl,xxl,free_size or custom text)
     public ?float $min_price = null;
     public ?float $max_price = null;
     public bool $on_sale_only = false;
@@ -25,9 +28,11 @@ new class extends Component
     protected $queryString = [
         'search' => ['except' => ''],
         'sort' => ['except' => 'latest'],
-        'availability' => ['except' => 'in_stock'],
+        'availability' => ['except' => 'all'],
         'category' => ['except' => ''],
         'seller' => ['except' => ''],
+        'condition' => ['except' => ''],
+        'size_variant' => ['except' => ''],
     ];
 
     public function updatingSearch(): void { $this->resetPage(); }
@@ -35,12 +40,36 @@ new class extends Component
     public function updatingAvailability(): void { $this->resetPage(); }
     public function updatingCategory(): void { $this->resetPage(); }
     public function updatingSeller(): void { $this->resetPage(); }
+    public function updatingCondition(): void { $this->resetPage(); }
+    public function updatingSizeVariant(): void { $this->resetPage(); }
     public function updatingMinPrice(): void { $this->resetPage(); }
     public function updatingMaxPrice(): void { $this->resetPage(); }
     public function updatedOnSaleOnly(): void { $this->resetPage(); }
 
     #[Computed]
     public function getProductsProperty()
+    {
+        $version = Cache::get('products.listing.version', 0);
+        $params = [
+            'search' => $this->search,
+            'sort' => $this->sort,
+            'availability' => $this->availability,
+            'category' => $this->category,
+            'seller' => $this->seller,
+            'condition' => $this->condition,
+            'size_variant' => $this->size_variant,
+            'min_price' => $this->min_price,
+            'max_price' => $this->max_price,
+            'on_sale_only' => $this->on_sale_only,
+            'page' => $this->getPage(),
+        ];
+        $key = 'products.listing.' . $version . '.' . md5(serialize($params));
+
+        return Cache::remember($key, 300, fn () => $this->buildProductsPaginator());
+    }
+
+    /** D4 v1.4 — Build listing query for cache or direct use. */
+    protected function buildProductsPaginator()
     {
         $q = Product::query()
             ->with('seller')
@@ -62,6 +91,14 @@ new class extends Component
 
         if ($this->seller !== '') {
             $q->where('seller_id', (int) $this->seller);
+        }
+
+        if ($this->condition !== '') {
+            $q->where('condition', $this->condition);
+        }
+
+        if ($this->size_variant !== '') {
+            $q->where('size_variant', $this->size_variant);
         }
 
         if ($this->min_price !== null) {
@@ -97,14 +134,14 @@ new class extends Component
                   ->orderBy(DB::raw('COALESCE(sale_price, price)'), 'asc');
                 break;
             case 'on_sale':
-                $q->orderByRaw('sale_price IS NULL') // on-sale (0) first, then non-sale (1)
+                $q->orderByRaw('sale_price IS NULL')
                   ->orderBy(DB::raw('COALESCE(sale_price, price)'), 'asc');
                 break;
             default:
                 $q->latest();
         }
 
-        return $q->paginate(12);
+        return $q->paginate(24);
     }
 
     #[Computed]
@@ -207,8 +244,12 @@ new class extends Component
 
         $cart = Session::get('cart', []);
         $key = (string) $product->id;
+        if (! isset($cart[$key]) && count($cart) >= 50) {
+            $this->addError('cart', __('Cart is full (max 50 items). Remove an item or checkout first.'));
+            return;
+        }
         $currentQty = $cart[$key]['quantity'] ?? 0;
-        $newQty = $currentQty + 1;
+        $newQty = min($currentQty + 1, $product->stock);
 
         $cart[$key] = [
             'product_id' => $product->id,
@@ -265,196 +306,244 @@ new class extends Component
 };
 ?>
 
-<div class="space-y-6">
-    @php($recent = $this->recentProducts)
-    @if($recent->count())
-        <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h3 class="text-sm font-semibold text-gray-900 mb-3">Recently viewed</h3>
-            <div class="flex gap-3 overflow-x-auto pb-1">
-                @foreach($recent as $product)
-                    <div class="min-w-[180px] max-w-[200px] border border-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                        <div class="h-28 bg-gray-100">
-                            @if($product->image_path)
-                                <img src="{{ asset('storage/'.$product->image_path) }}"
-                                     alt="{{ $product->name }}"
-                                     class="w-full h-full object-cover">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                    No image
-                                </div>
-                            @endif
-                        </div>
-                        <div class="p-2 space-y-1">
-                            <div class="text-xs font-semibold text-gray-900 line-clamp-2">
-                                {{ $product->name }}
-                            </div>
-                            <div class="text-[11px] text-gray-500">
-                                {{ $product->seller->store_name ?? 'Thrift seller' }}
-                            </div>
-                            <div class="text-xs font-semibold text-gray-900">
-                                ₱{{ number_format((float) ($product->sale_price ?? $product->price), 2) }}
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
+@php
+    $recent = $this->recentProducts;
+    $products = $this->products;
+    $wishlist = array_flip($this->wishlistIds);
+@endphp
+
+<div class="space-y-8">
+    <div class="flex items-center gap-2 text-sm text-gray-500">
+        <a href="{{ route('catalog') }}" class="hover:text-[#2d6c50]">Home</a>
+        <span>›</span>
+        <span class="font-semibold text-[#2d6c50]">All Products</span>
+    </div>
+
+    <div class="flex flex-col gap-8 lg:flex-row">
+        <aside class="w-full shrink-0 space-y-6 rounded-2xl border border-[#d6e3dc] bg-white p-5 lg:w-72">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-gray-900">Filters</h3>
+                <button type="button" wire:click="$set('search', ''); $set('availability', 'all'); $set('category', ''); $set('seller', ''); $set('condition', ''); $set('size_variant', ''); $set('min_price', null); $set('max_price', null); $set('on_sale_only', false); $set('sort', 'latest')" class="text-xs font-semibold text-[#2d6c50] hover:underline">
+                    Reset
+                </button>
             </div>
-        </div>
-    @endif
 
-    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div class="flex flex-wrap gap-2">
-                <input type="text" wire:model.live.debounce.300ms="search"
-                       placeholder="Search products…"
-                       class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-full sm:w-64">
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Search</label>
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search products..." class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+            </div>
 
-                <select wire:model.live="availability"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="in_stock">In stock only</option>
-                    <option value="all">All availability</option>
-                </select>
-
-                <select wire:model.live="category"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Category</label>
+                <select wire:model.live="category" class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
                     <option value="">All categories</option>
                     @foreach($this->categories as $cat)
                         <option value="{{ $cat }}">{{ $cat }}</option>
                     @endforeach
                 </select>
+            </div>
 
-                <select wire:model.live="seller"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Seller</label>
+                <select wire:model.live="seller" class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
                     <option value="">All sellers</option>
                     @foreach($this->sellers as $id => $name)
                         <option value="{{ $id }}">{{ $name }}</option>
                     @endforeach
                 </select>
+            </div>
 
-                <div class="flex items-center gap-1 text-xs text-gray-700">
-                    <input type="checkbox" wire:model.live="on_sale_only"
-                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                    <span>On sale only</span>
-                </div>
-
-                <div class="flex items-center gap-2 text-xs text-gray-700">
-                    <span>Price:</span>
-                    <input type="number" wire:model.live="min_price" step="0.01" min="0" placeholder="Min"
-                           class="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <span>–</span>
-                    <input type="number" wire:model.live="max_price" step="0.01" min="0" placeholder="Max"
-                           class="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                <select wire:model.live="sort"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="latest">Latest</option>
-                    <option value="price_asc">Price: Low to high</option>
-                    <option value="price_desc">Price: High to low</option>
-                    <option value="most_reviewed">Most reviewed</option>
-                    <option value="on_sale">On sale first</option>
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Condition</label>
+                <select wire:model.live="condition" class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                    <option value="">All conditions</option>
+                    @foreach(\App\Models\Product::conditionOptions() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-        </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Size</label>
+                <select wire:model.live="size_variant" class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                    <option value="">All sizes</option>
+                    @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Availability</label>
+                <select wire:model.live="availability" class="w-full rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                    <option value="in_stock">In stock only</option>
+                    <option value="all">All availability</option>
+                </select>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs font-bold uppercase tracking-[0.08em] text-gray-500">Price range</label>
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <input type="number" wire:model.live="min_price" step="0.01" min="0" placeholder="Min" class="rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                    <span class="text-gray-400">to</span>
+                    <input type="number" wire:model.live="max_price" step="0.01" min="0" placeholder="Max" class="rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                </div>
+            </div>
+
+            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" wire:model.live="on_sale_only" class="rounded border-[#cfe0d7] text-[#2d6c50] focus:ring-[#2d6c50]">
+                <span>On sale only</span>
+            </label>
+        </aside>
+
+        <section class="min-w-0 flex-1 space-y-6">
+            <div class="rounded-2xl border border-[#d6e3dc] bg-white p-4 shadow-sm sm:p-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-sm text-gray-600">
+                        <span class="font-bold text-gray-900">{{ $products->total() }}</span> items found
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500">Sort by:</span>
+                        <select wire:model.live="sort" class="rounded-lg border-[#cfe0d7] bg-[#f7fbf9] text-sm focus:border-[#2d6c50] focus:ring-[#2d6c50]">
+                            <option value="latest">Newest arrival</option>
+                            <option value="price_asc">Price: Low to high</option>
+                            <option value="price_desc">Price: High to low</option>
+                            <option value="most_reviewed">Most reviewed</option>
+                            <option value="on_sale">On sale first</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            @if($products->count())
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                    @foreach($products as $product)
+                        @php
+                            $threshold = (int) ($product->low_stock_threshold ?? 10);
+                            $isOutOfStock = $product->stock === 0;
+                            $isLowStock = !$isOutOfStock && $product->stock <= $threshold;
+                        @endphp
+                        <article class="group relative flex flex-col overflow-hidden rounded-2xl border border-[#dfe8e4] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl {{ $isOutOfStock ? 'opacity-75' : '' }}">
+                            <div class="relative aspect-[3/4] overflow-hidden bg-gray-100">
+                                <a href="{{ route('product.show', $product->id) }}" class="block h-full w-full">
+                                    @if($product->image_path)
+                                        <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                                    @else
+                                        <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
+                                    @endif
+                                </a>
+
+                                @if($isOutOfStock)
+                                    <span class="absolute inset-0 z-20 flex items-center justify-center bg-gray-100/70 text-xs font-semibold uppercase tracking-wider text-gray-700">Out of Stock</span>
+                                @endif
+
+                                <button type="button" wire:click="toggleWishlist({{ $product->id }})" class="absolute right-3 top-3 z-30 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-sm shadow-sm transition-colors hover:bg-white">
+                                    @if(isset($wishlist[$product->id]))
+                                        <span class="text-rose-500">♥</span>
+                                    @else
+                                        <span class="text-gray-400">♡</span>
+                                    @endif
+                                </button>
+
+                                <div class="absolute left-3 top-3 z-20 flex flex-col gap-1.5">
+                                    <span class="rounded bg-[#2d6c50] px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
+                                        {{ \App\Models\Product::conditionOptions()[$product->condition] ?? ucfirst(str_replace('_', ' ', $product->condition ?? 'Good')) }}
+                                    </span>
+                                    @if($product->sale_price)
+                                        <span class="rounded bg-amber-400 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-900">Sale</span>
+                                    @endif
+                                </div>
+
+                                @if($isLowStock)
+                                    <span class="absolute bottom-3 left-3 z-20 rounded bg-amber-500 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white">Low Stock</span>
+                                @endif
+
+                                @if($product->seller?->is_verified ?? false)
+                                    <span class="absolute bottom-3 right-3 z-20 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-[#2d6c50] shadow-sm">Verified</span>
+                                @endif
+                            </div>
+
+                            <div class="flex flex-1 flex-col p-4">
+                                <p class="mb-1 text-[11px] uppercase tracking-wider text-gray-500">{{ $product->seller?->store_name ?? 'Ukay Hub Seller' }}</p>
+                                <a href="{{ route('product.show', $product->id) }}" class="line-clamp-2 text-sm font-bold text-gray-900 transition-colors group-hover:text-[#2d6c50]">{{ $product->name }}</a>
+
+                                @if($product->size_variant)
+                                    <p class="mt-1 text-[11px] font-medium text-gray-500">Size: {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}</p>
+                                @endif
+
+                                <div class="mt-auto flex items-end justify-between pt-4">
+                                    <div class="flex flex-col">
+                                        @if($product->sale_price)
+                                            <span class="text-xs text-gray-400 line-through">₱{{ number_format((float) $product->price, 2) }}</span>
+                                            <span class="text-lg font-bold text-[#2d6c50]">₱{{ number_format((float) $product->sale_price, 2) }}</span>
+                                        @else
+                                            <span class="text-lg font-bold text-[#2d6c50]">₱{{ number_format((float) $product->price, 2) }}</span>
+                                        @endif
+                                    </div>
+
+                                    @if($product->stock > 0)
+                                        <button type="button" wire:click="addToCart({{ $product->id }})" class="inline-flex items-center justify-center rounded-lg bg-[#2d6c50]/10 p-2.5 text-[#2d6c50] transition-all hover:bg-[#2d6c50] hover:text-white" aria-label="Add to cart">
+                                            +
+                                        </button>
+                                    @else
+                                        <button type="button" disabled class="inline-flex items-center justify-center rounded-lg bg-gray-200 p-2.5 text-gray-500 cursor-not-allowed" aria-label="Out of stock">
+                                            +
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+
+                <div class="rounded-2xl border border-[#d6e3dc] bg-white p-4">
+                    {{ $products->links() }}
+                </div>
+            @else
+                <div class="rounded-2xl border border-[#d6e3dc] bg-white px-6 py-16 text-center text-sm text-gray-500">
+                    No products found. Try adjusting your filters or search term.
+                </div>
+            @endif
+        </section>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-        @php($products = $this->products)
-        @if($products->count())
-            @php($wishlist = array_flip($this->wishlistIds))
-            <div class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                @foreach($products as $product)
-                    <div class="border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-                        <div class="relative h-44 bg-gray-100">
+    @if($recent->count())
+        <section class="rounded-2xl border border-[#d6e3dc] bg-white p-5">
+            <h3 class="mb-4 text-sm font-bold uppercase tracking-[0.08em] text-gray-500">Recently viewed</h3>
+            <div class="flex gap-4 overflow-x-auto pb-2">
+                @foreach($recent as $product)
+                    @php
+                        $rThreshold = (int) ($product->low_stock_threshold ?? 10);
+                        $rOut = $product->stock === 0;
+                        $rLow = !$rOut && $product->stock <= $rThreshold;
+                    @endphp
+                    <a href="{{ route('product.show', $product->id) }}" class="block min-w-[190px] max-w-[210px] overflow-hidden rounded-xl border border-[#dfe8e4] {{ $rOut ? 'opacity-75' : '' }}">
+                        <div class="relative h-28 bg-gray-100">
                             @if($product->image_path)
-                                <img src="{{ asset('storage/'.$product->image_path) }}"
-                                     alt="{{ $product->name }}"
-                                     class="w-full h-full object-cover">
+                                <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover" loading="lazy">
                             @else
-                                <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                    No image
-                                </div>
+                                <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
                             @endif
-                            <button type="button"
-                                    wire:click="toggleWishlist({{ $product->id }})"
-                                    class="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/80 hover:bg-white text-xs">
-                                @if(isset($wishlist[$product->id]))
-                                    <span class="text-rose-500">♥</span>
-                                @else
-                                    <span class="text-gray-400">♡</span>
-                                @endif
-                            </button>
-                            @if($product->sale_price)
-                                <span class="absolute top-2 left-2 bg-rose-600 text-white text-2xs px-2 py-0.5 rounded-full uppercase tracking-wide">
-                                    Sale
-                                </span>
+                            @if($rOut)
+                                <span class="absolute inset-0 flex items-center justify-center bg-gray-100/70 text-[10px] font-semibold uppercase tracking-widest text-gray-700">Out of Stock</span>
+                            @elseif($rLow)
+                                <span class="absolute bottom-1 left-1 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">Low Stock</span>
                             @endif
                         </div>
-                        <div class="flex-1 flex flex-col p-3 space-y-1">
-                            <div class="text-sm font-semibold text-gray-900 line-clamp-2">
-                                {{ $product->name }}
-                            </div>
-                            <div class="text-xs text-gray-500 flex items-center justify-between">
-                                <span>{{ $product->seller?->store_name ?? 'Thrift seller' }}</span>
-                                @if($product->reviews_count > 0)
-                                    <span class="flex items-center gap-1">
-                                        <span class="text-yellow-400 text-xs">★</span>
-                                        <span class="text-xs text-gray-700">
-                                            {{ number_format($product->reviews_avg_rating, 1) }}
-                                        </span>
-                                        <span class="text-[11px] text-gray-400">
-                                            ({{ $product->reviews_count }})
-                                        </span>
-                                    </span>
-                                @endif
-                            </div>
-                            <div class="mt-1 flex items-baseline gap-2">
+                        <div class="space-y-1.5 p-2.5">
+                            <p class="line-clamp-2 text-xs font-semibold text-gray-900">{{ $product->name }}</p>
+                            <p class="text-xs font-bold text-[#2d6c50]">
                                 @if($product->sale_price)
-                                    <span class="text-base font-semibold text-rose-600">
-                                        ₱{{ number_format($product->sale_price, 2) }}
-                                    </span>
-                                    <span class="text-xs text-gray-400 line-through">
-                                        ₱{{ number_format($product->price, 2) }}
-                                    </span>
+                                    ₱{{ number_format((float) $product->sale_price, 2) }}
                                 @else
-                                    <span class="text-base font-semibold text-gray-900">
-                                        ₱{{ number_format($product->price, 2) }}
-                                    </span>
+                                    ₱{{ number_format((float) $product->price, 2) }}
                                 @endif
-                            </div>
-                            <div class="text-xs text-gray-500">
-                                @if($product->stock > 0)
-                                    {{ $product->stock }} in stock
-                                @else
-                                    <span class="text-rose-600 font-medium">Out of stock</span>
-                                @endif
-                            </div>
+                            </p>
                         </div>
-                        <div class="px-3 pb-3">
-                            @if($product->stock > 0)
-                                <button type="button"
-                                        wire:click="addToCart({{ $product->id }})"
-                                        class="w-full inline-flex justify-center items-center px-3 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                    Add to cart
-                                </button>
-                            @else
-                                <button type="button" disabled
-                                        class="w-full inline-flex justify-center items-center px-3 py-2 bg-gray-300 border border-gray-300 rounded-md text-xs font-semibold text-gray-600 uppercase tracking-widest cursor-not-allowed">
-                                    Sold out
-                                </button>
-                            @endif
-                        </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
-
-            <div class="mt-4">
-                {{ $products->links() }}
-            </div>
-        @else
-            <div class="py-12 text-center text-gray-500 text-sm">
-                No products found. Try adjusting your filters or search term.
-            </div>
-        @endif
-    </div>
+        </section>
+    @endif
 </div>
 

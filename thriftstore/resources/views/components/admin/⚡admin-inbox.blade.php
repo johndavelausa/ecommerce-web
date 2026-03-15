@@ -2,24 +2,45 @@
 
 use App\Models\Conversation;
 use App\Models\Message;
-use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 new class extends Component
 {
+    use WithPagination;
+
     public ?int $selectedConversationId = null;
     public string $replyBody = '';
+    public string $search = '';
 
-    #[Computed]
-    public function conversations()
+    public function getConversationsProperty()
     {
-        return Conversation::query()
+        $q = Conversation::query()
             ->whereIn('type', ['seller-admin', 'guest'])
             ->with(['seller.user', 'messages' => fn ($q) => $q->orderBy('created_at')])
-            ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->where('sender_type', '!=', 'admin')])
-            ->get()
-            ->sortByDesc(fn ($c) => $c->messages->max('created_at')?->getTimestamp() ?? 0)
-            ->values();
+            ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->where('sender_type', '!=', 'admin')]);
+
+        if ($this->search !== '') {
+            $term = '%' . trim($this->search) . '%';
+            $q->where(function ($query) use ($term) {
+                $query->whereHas('messages', function ($m) use ($term) {
+                    $m->where('body', 'like', $term);
+                })->orWhereHas('seller', function ($s) use ($term) {
+                    $s->where('store_name', 'like', $term)
+                        ->orWhereHas('user', function ($u) use ($term) {
+                            $u->where('name', 'like', $term)->orWhere('email', 'like', $term);
+                        });
+                });
+            });
+        }
+
+        return $q->orderByRaw('(SELECT MAX(created_at) FROM messages WHERE messages.conversation_id = conversations.id) DESC')
+            ->paginate(20);
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
     }
 
     public function selectConversation(int $id): void
@@ -76,7 +97,12 @@ new class extends Component
 
 <div class="flex gap-4">
     <div class="w-80 shrink-0 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">
-        <div class="p-3 border-b font-medium">Inbox</div>
+        <div class="p-3 border-b space-y-2">
+            <div class="font-medium">Inbox</div>
+            <input type="text" wire:model.live.debounce.300ms="search"
+                   placeholder="Search sender or message..."
+                   class="w-full rounded border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+        </div>
         <div class="overflow-y-auto flex-1 divide-y">
             @forelse($this->conversations as $conv)
                 <button type="button" wire:click="selectConversation({{ $conv->id }})" class="w-full text-left p-3 hover:bg-gray-50 {{ $selectedConversationId === $conv->id ? 'bg-indigo-50' : '' }}">
@@ -98,6 +124,11 @@ new class extends Component
                 <div class="p-4 text-center text-gray-500 text-sm">No conversations yet.</div>
             @endforelse
         </div>
+        @if($this->conversations->hasPages())
+            <div class="p-2 border-t">
+                {{ $this->conversations->links() }}
+            </div>
+        @endif
     </div>
 
     <div class="flex-1 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">

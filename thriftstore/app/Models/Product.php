@@ -4,12 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Wishlist;
 use App\Notifications\WishlistItemLowStock;
 
 class Product extends Model
 {
     use HasFactory;
+
+    /** D4 v1.4 — Invalidate public listing cache when any product is added, updated, or deleted. */
+    protected static function booted(): void
+    {
+        static::created(fn () => self::invalidateListingCache());
+        static::updated(fn () => self::invalidateListingCache());
+        static::deleted(fn () => self::invalidateListingCache());
+    }
+
+    public static function invalidateListingCache(): void
+    {
+        Cache::put('products.listing.version', (int) Cache::get('products.listing.version', 0) + 1, 86400);
+    }
 
     protected $fillable = [
         'seller_id',
@@ -22,14 +36,55 @@ class Product extends Model
         'stock',
         'image_path',
         'is_active',
+        'condition',
+        'size_variant',
+        'delivery_fee',
+        'views',
+        'low_stock_threshold',
     ];
+
+    /** Condition options for thrift/ukay items (A1 - v1.3) */
+    public static function conditionOptions(): array
+    {
+        return [
+            'new'       => 'New',
+            'like_new'  => 'Like New',
+            'good'      => 'Good',
+            'fair'      => 'Fair',
+            'poor'      => 'Poor',
+        ];
+    }
+
+    /** Size/variant options (C1 - v1.4) */
+    public static function sizeVariantOptions(): array
+    {
+        return [
+            'xs' => 'XS',
+            's' => 'S',
+            'm' => 'M',
+            'l' => 'L',
+            'xl' => 'XL',
+            'xxl' => 'XXL',
+            'free_size' => 'Free Size',
+        ];
+    }
+
+    /** Human-readable condition label */
+    public function getConditionLabelAttribute(): string
+    {
+        $key = $this->condition ?? 'good';
+        return self::conditionOptions()[$key] ?? ucfirst(str_replace('_', ' ', (string) $key));
+    }
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
             'sale_price' => 'decimal:2',
+            'delivery_fee' => 'decimal:2',
             'is_active' => 'boolean',
+            'views' => 'integer',
+            'low_stock_threshold' => 'integer',
         ];
     }
 
@@ -53,13 +108,18 @@ class Product extends Model
         return $this->hasMany(ProductHistory::class);
     }
 
+    public function productReports()
+    {
+        return $this->hasMany(ProductReport::class);
+    }
+
     /**
-     * Notify customers who have this product on their wishlist if stock has just dropped to a low level.
+     * Notify customers who have this product on their wishlist if stock has just dropped to low_stock_threshold or below.
      */
     public function notifyWishlistLowStockIfNeeded(int $oldStock, int $newStock): void
     {
-        // Only notify when crossing from >3 down to 1–3 items left.
-        if ($oldStock > 3 && $newStock > 0 && $newStock <= 3) {
+        $threshold = (int) ($this->low_stock_threshold ?? 10);
+        if ($oldStock > $threshold && $newStock > 0 && $newStock <= $threshold) {
             $wishlists = Wishlist::query()
                 ->with('customer')
                 ->where('product_id', $this->id)

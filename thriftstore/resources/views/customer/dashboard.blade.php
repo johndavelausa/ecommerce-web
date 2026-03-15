@@ -1,12 +1,7 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Customer Dashboard') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8 lg:py-10">
+        <div class="mx-auto w-full max-w-[1440px] px-4 md:px-8 lg:px-12">
+            <livewire:customer.platform-announcements-banner />
             <livewire:customer.catalog />
         </div>
     </div>

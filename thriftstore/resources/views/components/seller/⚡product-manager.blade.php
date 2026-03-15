@@ -2,6 +2,7 @@
 
 use App\Models\Product;
 use App\Models\ProductHistory;
+use App\Models\SellerActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -16,6 +17,8 @@ new class extends Component
     // list state
     public string $search = '';
     public string $filterStatus = '';   // '' | 'active' | 'inactive'
+    /** B1 v1.4 — Condition filter (seller's own inventory) */
+    public string $filterCondition = ''; // '' | new | like_new | good | fair | poor
 
     // form state
     public string $mode = 'list';       // list | create | edit
@@ -27,6 +30,11 @@ new class extends Component
     public string $tags = '';
     public string $price = '';
     public string $sale_price = '';
+    public string $condition = 'good';   // new, like_new, good, fair, poor (A1 - v1.3)
+    public string $size_variant = '';    // C1 v1.4 — optional size/variant (xs,s,m,l,xl,xxl,free_size or custom)
+    public string $size_custom = '';      // when size_variant is 'custom'
+    public string $delivery_fee = '';    // optional; used when seller delivery_option is per_product (A2 - v1.3)
+    public string $low_stock_threshold = '10'; // B1 v1.4 — per-product low stock warning level
     public int    $stock = 0;
     public bool   $is_active = true;
     public $image = null;               // Livewire temp upload
@@ -41,10 +49,10 @@ new class extends Component
     public int  $stockDelta = 0;
     public string $stockNote = '';
 
-    // inventory history
+    // inventory history (B2 - v1.3: paginated)
     public bool $showHistoryModal = false;
     public ?int $historyProductId = null;
-    public array $historyRows = [];
+    public int $historyPage = 1;
 
     // bulk stock update
     public array $selected = [];
@@ -53,8 +61,9 @@ new class extends Component
     public string $bulkStockNote = '';
 
     protected $queryString = [
-        'search'       => ['except' => ''],
-        'filterStatus' => ['except' => ''],
+        'search'          => ['except' => ''],
+        'filterStatus'    => ['except' => ''],
+        'filterCondition' => ['except' => ''],
     ];
 
     #[Computed]
@@ -80,7 +89,11 @@ new class extends Component
             $q->where('is_active', false);
         }
 
-        return $q->paginate(10);
+        if ($this->filterCondition !== '') {
+            $q->where('condition', $this->filterCondition);
+        }
+
+        return $q->paginate(20);
     }
 
     #[Computed]
@@ -102,12 +115,29 @@ new class extends Component
             ->all();
     }
 
-    public function updatingSearch(): void  { $this->resetPage(); }
+    public function updatingSearch(): void { $this->resetPage(); }
     public function updatingFilterStatus(): void { $this->resetPage(); }
+    public function updatingFilterCondition(): void { $this->resetPage(); }
+
+    /** C1 v1.4 — resolved size/variant value for DB (preset key or custom text). */
+    protected function sizeVariantValue(): ?string
+    {
+        if ($this->size_variant === 'custom' && trim($this->size_custom) !== '') {
+            return trim($this->size_custom);
+        }
+        if ($this->size_variant !== '' && $this->size_variant !== 'custom') {
+            return $this->size_variant;
+        }
+        return null;
+    }
 
     public function showCreate(): void
     {
-        $this->reset(['name','description','category','tags','price','sale_price','stock','is_active','image','editingId']);
+        $this->reset(['name','description','category','tags','price','sale_price','condition','size_variant','size_custom','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
+        $this->condition = 'good';
+        $this->size_variant = '';
+        $this->size_custom = '';
+        $this->low_stock_threshold = '10';
         $this->is_active = true;
         $this->mode = 'create';
     }
@@ -125,7 +155,13 @@ new class extends Component
         $this->tags           = (string) ($product->tags ?? '');
         $this->price          = (string) $product->price;
         $this->sale_price     = $product->sale_price !== null ? (string) $product->sale_price : '';
+        $this->condition      = (string) ($product->condition ?? 'good');
+        $preset = array_keys(\App\Models\Product::sizeVariantOptions());
+        $this->size_variant  = $product->size_variant && in_array($product->size_variant, $preset, true) ? $product->size_variant : ($product->size_variant ? 'custom' : '');
+        $this->size_custom   = $product->size_variant && !in_array($product->size_variant, $preset, true) ? (string) $product->size_variant : '';
+        $this->delivery_fee   = $product->delivery_fee !== null ? (string) $product->delivery_fee : '';
         $this->stock          = $product->stock;
+        $this->low_stock_threshold = (string) ($product->low_stock_threshold ?? 10);
         $this->is_active      = (bool) $product->is_active;
         $this->image          = null;
         $this->mode           = 'edit';
@@ -140,7 +176,12 @@ new class extends Component
             'tags'        => ['nullable', 'string', 'max:255'],
             'price'       => ['required', 'numeric', 'min:0'],
             'sale_price'  => ['nullable', 'numeric', 'min:0'],
+            'condition'   => ['required', 'string', 'in:new,like_new,good,fair,poor'],
+            'size_variant' => ['nullable', 'string', 'max:100'],
+            'size_custom'  => ['nullable', 'string', 'max:100'],
+            'delivery_fee'=> ['nullable', 'numeric', 'min:0'],
             'stock'       => ['required', 'integer', 'min:0'],
+            'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
             'is_active'   => ['boolean'],
             'image'       => $this->mode === 'create'
                 ? ['required', 'image', 'max:5120']
@@ -169,6 +210,10 @@ new class extends Component
                     'category'    => $this->category,
                     'tags'        => $this->tags !== '' ? $this->tags : $existing->tags,
                     'sale_price'  => $this->sale_price !== '' ? $this->sale_price : $existing->sale_price,
+                    'condition'   => $this->condition,
+                    'size_variant' => $this->sizeVariantValue(),
+                    'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : $existing->delivery_fee,
+                    'low_stock_threshold' => (int) $this->low_stock_threshold ?: $existing->low_stock_threshold,
                     'is_active'   => $this->is_active,
                 ]);
 
@@ -193,7 +238,11 @@ new class extends Component
                     'tags'        => $this->tags !== '' ? $this->tags : null,
                     'price'       => $this->price,
                     'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
+                    'condition'   => $this->condition,
+                    'size_variant' => $this->sizeVariantValue(),
+                    'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                     'stock'       => $this->stock,
+                    'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
                     'image_path'  => $imagePath,
                     'is_active'   => $this->is_active,
                 ]);
@@ -205,6 +254,7 @@ new class extends Component
                     'note'        => 'Product created',
                     'created_at'  => now(),
                 ]);
+                SellerActivityLog::log($seller->id, 'product_added', ['product_id' => $product->id, 'name' => $product->name]);
             }
         } else {
             $product = Product::query()
@@ -220,7 +270,11 @@ new class extends Component
                 'tags'        => $this->tags !== '' ? $this->tags : null,
                 'price'       => $this->price,
                 'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
+                'condition'   => $this->condition,
+                'size_variant' => $this->sizeVariantValue(),
+                'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                 'stock'       => $this->stock,
+                'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
                 'is_active'   => $this->is_active,
             ];
 
@@ -242,6 +296,12 @@ new class extends Component
                 'new_value'  => json_encode($product->fresh()->only(['name','price','stock','is_active'])),
                 'note'       => 'Product updated',
                 'created_at' => now(),
+            ]);
+            SellerActivityLog::log($seller->id, 'product_updated', [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'old' => $oldSnapshot,
+                'new' => $product->fresh()->only(['name', 'price', 'stock', 'is_active']),
             ]);
 
             $product->notifyWishlistLowStockIfNeeded($oldStock, $newStock);
@@ -289,11 +349,18 @@ new class extends Component
             ->where('seller_id', $this->seller?->id)
             ->findOrFail($this->deleteId);
 
+        $sellerId = $this->seller?->id;
+        $productName = $product->name;
+        $productId = $product->id;
+
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }
 
         $product->delete();
+        if ($sellerId) {
+            SellerActivityLog::log($sellerId, 'product_deleted', ['product_id' => $productId, 'name' => $productName]);
+        }
         $this->cancelDelete();
         $this->resetPage();
     }
@@ -450,30 +517,25 @@ new class extends Component
             ->findOrFail($id);
 
         $this->historyProductId = $product->id;
-        $this->historyRows = ProductHistory::query()
-            ->where('product_id', $product->id)
-            ->orderByDesc('created_at')
-            ->limit(50)
-            ->get()
-            ->map(function (ProductHistory $row) {
-                return [
-                    'created_at' => optional($row->created_at)->format('Y-m-d H:i'),
-                    'action'     => $row->action,
-                    'note'       => $row->note,
-                    'old_value'  => $row->old_value,
-                    'new_value'  => $row->new_value,
-                ];
-            })
-            ->all();
-
+        $this->historyPage = 1;
         $this->showHistoryModal = true;
+    }
+
+    public function getHistoryRowsProperty()
+    {
+        if (! $this->historyProductId) {
+            return new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+        }
+        return ProductHistory::query()
+            ->where('product_id', $this->historyProductId)
+            ->orderByDesc('created_at')
+            ->paginate(20, ['*'], 'historyPage', $this->historyPage);
     }
 
     public function closeHistory(): void
     {
         $this->showHistoryModal = false;
         $this->historyProductId = null;
-        $this->historyRows = [];
     }
 
     public function backToList(): void
@@ -503,6 +565,13 @@ new class extends Component
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <select wire:model.live="filterCondition"
+                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">All conditions</option>
+                    @foreach(\App\Models\Product::conditionOptions() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
             </div>
             <div class="flex gap-2">
                 <button type="button" wire:click="openBulkStockModal"
@@ -530,10 +599,12 @@ new class extends Component
                         </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Condition</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale Price</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Views</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
@@ -555,6 +626,11 @@ new class extends Component
                             @endif
                         </td>
                         <td class="px-4 py-3 font-medium text-gray-900">{{ $product->name }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ \App\Models\Product::conditionOptions()[$product->condition] ?? $product->condition }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 text-gray-600 text-xs">{{ $product->category ?? '—' }}</td>
                         <td class="px-4 py-3 text-gray-600">₱{{ number_format($product->price, 2) }}</td>
                         <td class="px-4 py-3 text-gray-600">
@@ -569,6 +645,7 @@ new class extends Component
                                         class="text-xs text-indigo-600 hover:underline ml-1">adjust</button>
                             </div>
                         </td>
+                        <td class="px-4 py-3 text-gray-600 text-sm">{{ $product->views ?? 0 }}</td>
                         <td class="px-4 py-3">
                             <button type="button" wire:click="toggleActive({{ $product->id }})"
                                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
@@ -591,7 +668,7 @@ new class extends Component
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">No products found.</td>
+                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">No products found.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -684,47 +761,48 @@ new class extends Component
                         class="text-gray-400 hover:text-gray-600 text-sm">&times;</button>
             </div>
 
-            @if(empty($historyRows))
+            @php($historyRows = $this->historyRows)
+            @if($historyRows->isEmpty())
                 <p class="text-sm text-gray-500">No history recorded yet for this product.</p>
             @else
                 <div class="overflow-y-auto border rounded-md divide-y divide-gray-100 text-sm">
                     @foreach($historyRows as $row)
                         <div class="px-4 py-3 flex items-start gap-3">
                             <div class="w-28 text-xs text-gray-500 mt-0.5">
-                                {{ $row['created_at'] }}
+                                {{ optional($row->created_at)->format('Y-m-d H:i') }}
                             </div>
                             <div class="flex-1 space-y-1">
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium
-                                        @switch($row['action'])
+                                        @switch($row->action)
                                             @case('added') bg-green-100 text-green-800 @break
                                             @case('updated') bg-blue-100 text-blue-800 @break
                                             @case('deleted') bg-red-100 text-red-800 @break
                                             @case('stock_change') bg-amber-100 text-amber-800 @break
                                             @default bg-gray-100 text-gray-700
                                         @endswitch">
-                                        {{ ucfirst(str_replace('_', ' ', $row['action'])) }}
+                                        {{ ucfirst(str_replace('_', ' ', $row->action)) }}
                                     </span>
-                                    @if($row['note'])
-                                        <span class="text-xs text-gray-700">{{ $row['note'] }}</span>
+                                    @if($row->note)
+                                        <span class="text-xs text-gray-700">{{ $row->note }}</span>
                                     @endif
                                 </div>
-                                @if($row['action'] === 'stock_change')
+                                @if($row->action === 'stock_change')
                                     <div class="text-xs text-gray-600">
-                                        Stock: {{ $row['old_value'] }} → {{ $row['new_value'] }}
+                                        Stock: {{ $row->old_value }} → {{ $row->new_value }}
                                     </div>
-                                @elseif($row['old_value'] || $row['new_value'])
+                                @elseif($row->old_value || $row->new_value)
                                     <div class="grid grid-cols-2 gap-3 text-[11px] text-gray-600">
-                                        @if($row['old_value'])
+                                        @if($row->old_value)
                                             <div>
                                                 <div class="font-medium text-gray-700 mb-0.5">Before</div>
-                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row['old_value'] }}</pre>
+                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row->old_value }}</pre>
                                             </div>
                                         @endif
-                                        @if($row['new_value'])
+                                        @if($row->new_value)
                                             <div>
                                                 <div class="font-medium text-gray-700 mb-0.5">After</div>
-                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row['new_value'] }}</pre>
+                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row->new_value }}</pre>
                                             </div>
                                         @endif
                                     </div>
@@ -733,6 +811,11 @@ new class extends Component
                         </div>
                     @endforeach
                 </div>
+                @if($historyRows->hasPages())
+                    <div class="mt-2 pt-2 border-t">
+                        {{ $historyRows->links() }}
+                    </div>
+                @endif
             @endif
 
             <div class="mt-4 flex justify-end">
@@ -752,7 +835,15 @@ new class extends Component
     <div class="space-y-4">
         <div class="flex items-center gap-3">
             <button type="button" wire:click="backToList" class="text-indigo-600 text-sm hover:underline">&larr; Back to products</button>
-            <h3 class="font-semibold text-gray-900">{{ $mode === 'create' ? 'Add new product' : 'Edit product' }}</h3>
+            <div>
+                <h3 class="font-semibold text-gray-900">{{ $mode === 'create' ? 'Add new product' : 'Edit product' }}</h3>
+                @if($mode === 'edit' && $editingId)
+                    @php($editProduct = \App\Models\Product::find($editingId))
+                    @if($editProduct)
+                        <p class="text-xs text-gray-500 mt-0.5">Views: {{ $editProduct->views ?? 0 }}</p>
+                    @endif
+                @endif
+            </div>
         </div>
 
         <div class="bg-white rounded-lg shadow p-6 space-y-5 max-w-2xl">
@@ -804,6 +895,35 @@ new class extends Component
                 </div>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Condition <span class="text-red-500">*</span></label>
+                <select wire:model.defer="condition"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    @foreach(\App\Models\Product::conditionOptions() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('condition') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Size / variant <span class="text-gray-400 text-xs">optional</span></label>
+                <select wire:model.defer="size_variant"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">— None —</option>
+                    @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                    <option value="custom">Custom</option>
+                </select>
+                @if($size_variant === 'custom')
+                    <input type="text" wire:model.defer="size_custom" maxlength="100"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="e.g. One size, 28 waist">
+                @endif
+                @error('size_variant') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Price (₱) <span class="text-red-500">*</span></label>
@@ -819,6 +939,14 @@ new class extends Component
                 </div>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Delivery fee (₱) <span class="text-gray-400 text-xs">optional — used when your store uses "Per product" delivery</span></label>
+                <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
+                       class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                       placeholder="0">
+                @error('delivery_fee') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Stock quantity <span class="text-red-500">*</span></label>
@@ -826,13 +954,21 @@ new class extends Component
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     @error('stock') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
-                <div class="flex items-end pb-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" wire:model.defer="is_active"
-                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                        <span class="text-sm text-gray-700">Active (visible to customers)</span>
-                    </label>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Low stock threshold</label>
+                    <input type="number" min="0" wire:model.defer="low_stock_threshold"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           placeholder="10">
+                    <p class="mt-0.5 text-xs text-gray-500">Wishlist notification when stock falls to this level or below.</p>
+                    @error('low_stock_threshold') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" wire:model.defer="is_active"
+                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                    <span class="text-sm text-gray-700">Active (visible to customers)</span>
+                </label>
             </div>
 
             <div>

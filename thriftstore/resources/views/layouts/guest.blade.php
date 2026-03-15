@@ -5,6 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        @php
+            $platformLogo = \App\Models\SystemSetting::get('logo_path');
+            $faviconUrl = $platformLogo ? asset('storage/' . $platformLogo) : asset('favicon.ico');
+        @endphp
+
+        <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
+
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
@@ -14,17 +21,17 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
-                </a>
-            </div>
+    <body class="font-sans text-gray-900 antialiased bg-[#f2f5f4]">
+        <div class="min-h-screen flex flex-col">
+            @include('layouts.navigation')
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
-                {{ $slot }}
-            </div>
+            <main class="flex-1 flex items-center justify-center px-4 py-8 sm:px-6">
+                <div class="w-full sm:max-w-md px-6 py-5 bg-white shadow-md overflow-hidden sm:rounded-lg border border-[#d9e1df]">
+                    {{ $slot }}
+                </div>
+            </main>
+
+            @include('layouts.footer')
         </div>
     </body>
 </html>

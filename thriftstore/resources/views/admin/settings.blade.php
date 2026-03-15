@@ -9,6 +9,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="space-y-8">
                 <livewire:admin.system-settings-form />
+                <livewire:admin.platform-announcements />
                 <livewire:admin.broadcast-announcement />
             </div>
         </div>

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Seller;
 use App\Models\Order;
 use App\Models\Review;
@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles;
@@ -35,6 +35,8 @@ class User extends Authenticatable
         'is_suspicious',
         'suspicious_reason',
         'suspicious_flagged_at',
+        'email_verified_at',
+        'pending_email',  // B1: seller email change — new email until verified
     ];
 
     /**

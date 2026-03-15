@@ -8,13 +8,15 @@
             <span class="hidden sm:inline-block text-gray-400">&bull;</span>
             <span>Built with Laravel, Livewire & Tailwind CSS.</span>
             <span class="hidden sm:inline-block text-gray-400">&bull;</span>
-            <a href="{{ route('faq') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">
-                FAQ
-            </a>
-            <span class="hidden sm:inline-block text-gray-400">/</span>
-            <a href="{{ route('contact') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">
-                Contact
-            </a>
+            <a href="{{ route('faq') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">FAQ</a>
+            <span class="text-gray-400">/</span>
+            <a href="{{ route('contact') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">Contact</a>
+            <span class="text-gray-400">/</span>
+            <a href="{{ route('legal.privacy') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">Privacy</a>
+            <span class="text-gray-400">/</span>
+            <a href="{{ route('legal.terms') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">Terms</a>
+            <span class="text-gray-400">/</span>
+            <a href="{{ route('legal.cookie-settings') }}" class="hover:text-gray-700 underline-offset-2 hover:underline">Cookies</a>
         </div>
     </div>
 </footer>

@@ -80,7 +80,30 @@ new class extends Component
             foreach ($items as $row) {
                 $subtotal += $row['price'] * $row['quantity'];
             }
+            $deliveryTotal = 0.0;
+            $sellerCount = 0;
+            if (!empty($items)) {
+                $sellerIds = array_unique(array_column($items, 'seller_id'));
+                $sellerCount = count($sellerIds);
+                $sellers = \App\Models\Seller::whereIn('id', $sellerIds)->get()->keyBy('id');
+                $productIds = array_unique(array_column($items, 'product_id'));
+                $productsForDelivery = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+                foreach ($sellerIds as $sid) {
+                    $groupRows = array_values(array_filter($items, fn($r) => (int)$r['seller_id'] === (int)$sid));
+                    $sellerModel = $sellers->get($sid);
+                    if ($sellerModel) {
+                        $deliveryTotal += $sellerModel->computeDeliveryFee($groupRows, $productsForDelivery);
+                    }
+                }
+            }
+            $grandTotal = $subtotal + $deliveryTotal;
         @endphp
+
+        @if(!empty($items) && $sellerCount > 1)
+            <div class="px-4 py-2 bg-amber-50 border-b border-amber-100 text-xs text-amber-800">
+                Items from <strong>{{ $sellerCount }} sellers</strong> — at checkout you will place {{ $sellerCount }} separate orders (one per seller, separate deliveries).
+            </div>
+        @endif
 
         @if(empty($items))
             <div class="py-12 text-center text-gray-500 text-sm">
@@ -103,6 +126,7 @@ new class extends Component
                             <td class="px-4 py-3 flex items-center gap-3">
                                 @if(!empty($row['image_path']))
                                     <img src="{{ asset('storage/'.$row['image_path']) }}"
+                                     loading="lazy"
                                          alt="{{ $row['name'] }}"
                                          class="h-12 w-12 rounded object-cover">
                                 @else
@@ -142,12 +166,29 @@ new class extends Component
                 </tbody>
             </table>
 
+            <div class="px-4 py-3 border-t space-y-1 text-sm">
+                <div class="flex justify-between text-gray-700">
+                    <span>Subtotal</span>
+                    <span>₱{{ number_format($subtotal, 2) }}</span>
+                </div>
+                @if($deliveryTotal > 0)
+                    <div class="flex justify-between text-gray-700">
+                        <span>Delivery (est.)</span>
+                        <span>₱{{ number_format($deliveryTotal, 2) }}</span>
+                    </div>
+                @else
+                    <div class="flex justify-between text-gray-500 text-xs">
+                        <span>Delivery</span>
+                        <span>Free</span>
+                    </div>
+                @endif
+            </div>
             <div class="px-4 py-4 border-t flex items-center justify-between">
-                <div class="text-sm text-gray-500">
-                    Subtotal
+                <div class="text-sm font-medium text-gray-900">
+                    Total
                 </div>
                 <div class="text-lg font-semibold text-gray-900">
-                    ₱{{ number_format($subtotal, 2) }}
+                    ₱{{ number_format($grandTotal, 2) }}
                 </div>
             </div>
         @endif

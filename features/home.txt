@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ukay Hub | Premium Thrift &amp; Vintage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2d6c50",
+                        "background-light": "#f6f7f7",
+                        "background-dark": "#151d19",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-screen w-full flex-col group/design-root overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-4 md:px-10 lg:px-20 py-3">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between gap-8">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">recycling</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">Ukay Hub</h2>
+</div>
+<div class="hidden lg:flex items-center gap-6">
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Shop</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Categories</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Sellers</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Deals</a>
+</div>
+</div>
+<div class="flex flex-1 max-w-md items-center bg-primary/5 dark:bg-white/5 rounded-lg px-3 py-2 border border-primary/10">
+<span class="material-symbols-outlined text-slate-500">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-500" placeholder="Search for vintage denim, tees..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">favorite</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">shopping_bag</span>
+<span class="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full">3</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary/20 border border-primary/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCR4PsCOoKxWoXBKd6UwNDVAamz63pPGWLrea1xRAlgmFF2ISDwVGOj-phrSVPqmGte9hg2qR_0oyKsVQ3YNLb_l2AAhvQy6cz1ETmiD0cldlcuCwXGIRwzwwoWFkVUkC_-SAPf12GtZnQJTpA1NRwJamScsJnOZAT8OQ7Cpo_qMcLskwhRjmsLwCQQEPqiYuNTNFoBSLnCzz8SprpQbN_px7eEvCbDwc6iXtQNC2bcrqKAE_amEjvQumymhsnDwFcokGIPSxc_LZ8"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] mx-auto w-full px-4 md:px-10 lg:px-20 py-8">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary font-medium">All Products</span>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Sidebar Filters -->
+<aside class="w-full lg:w-64 shrink-0 space-y-8">
+<div class="flex items-center justify-between lg:mb-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined">filter_list</span> Filters
+                    </h3>
+<button class="text-sm text-primary font-semibold hover:underline">Reset</button>
+</div>
+<!-- Filter Category: Category -->
+<div class="space-y-3">
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Category</h4>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-primary/30 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Outerwear</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded border-primary/30 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary font-medium">Vintage Tees</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-primary/30 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Bottoms</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-primary/30 text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Accessories</span>
+</label>
+</div>
+</div>
+<!-- Filter Category: Condition -->
+<div class="space-y-3">
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Condition</h4>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 border border-primary/20 bg-primary/5 rounded-lg text-xs font-medium text-primary">New</button>
+<button class="px-3 py-1.5 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-medium hover:border-primary transition-colors">Like New</button>
+<button class="px-3 py-1.5 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-medium hover:border-primary transition-colors">Good</button>
+<button class="px-3 py-1.5 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-medium hover:border-primary transition-colors">Well Worn</button>
+</div>
+</div>
+<!-- Filter Category: Price Range -->
+<div class="space-y-3">
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Price Range</h4>
+<div class="space-y-4 px-1">
+<input class="w-full h-1.5 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary" max="5000" min="0" type="range"/>
+<div class="flex items-center justify-between gap-4">
+<div class="relative flex-1">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">₱</span>
+<input class="w-full pl-6 pr-2 py-1.5 border border-primary/20 rounded-lg text-sm bg-transparent" type="number" value="0"/>
+</div>
+<span class="text-slate-400">to</span>
+<div class="relative flex-1">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-bold">₱</span>
+<input class="w-full pl-6 pr-2 py-1.5 border border-primary/20 rounded-lg text-sm bg-transparent" type="number" value="2500"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter Category: Size -->
+<div class="space-y-3">
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Size</h4>
+<div class="grid grid-cols-4 gap-2">
+<button class="aspect-square flex items-center justify-center border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-primary/5 hover:border-primary transition-colors">XS</button>
+<button class="aspect-square flex items-center justify-center border border-primary bg-primary text-white rounded-lg text-xs font-bold">S</button>
+<button class="aspect-square flex items-center justify-center border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-primary/5 hover:border-primary transition-colors">M</button>
+<button class="aspect-square flex items-center justify-center border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-primary/5 hover:border-primary transition-colors">L</button>
+<button class="aspect-square flex items-center justify-center border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-primary/5 hover:border-primary transition-colors">XL</button>
+<button class="aspect-square flex items-center justify-center border border-slate-200 dark:border-white/10 rounded-lg text-xs font-bold hover:bg-primary/5 hover:border-primary transition-colors">XXL</button>
+</div>
+</div>
+<div class="pt-6 border-t border-primary/10">
+<button class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">Apply Filters</button>
+</div>
+</aside>
+<!-- Product Grid -->
+<div class="flex-1">
+<!-- Sorting & Top Bar -->
+<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white dark:bg-white/5 p-4 rounded-xl border border-primary/5 shadow-sm">
+<p class="text-sm text-slate-600 dark:text-slate-400"><span class="font-bold text-slate-900 dark:text-white">128</span> items found</p>
+<div class="flex items-center gap-3">
+<span class="text-sm text-slate-500 font-medium whitespace-nowrap">Sort by:</span>
+<select class="border-primary/20 rounded-lg text-sm bg-transparent focus:ring-primary focus:border-primary min-w-[140px]">
+<option>Newest Arrival</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+<option>Most Popular</option>
+</select>
+<div class="flex border border-primary/20 rounded-lg overflow-hidden">
+<button class="p-2 bg-primary text-white"><span class="material-symbols-outlined">grid_view</span></button>
+<button class="p-2 hover:bg-primary/5"><span class="material-symbols-outlined">list</span></button>
+</div>
+</div>
+</div>
+<!-- 4-Column Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+<!-- Product Card 1 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Vintage 90s Denim Trucker Jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCFmrNzc23e3HHKqCaWHKtvQWfX2wtaJJscyFunwPglMOQcL9P6hKzPXfHhWqSDCGJ1s_tvXgWSdHSRZtGuuX45TSYaAriGCNw6lAWbDrKobFJjPyuOTSQH3Glb1kXDHm9j7MqXZ1vNRpo63uThA0txxB2up-vhZ2oV6F0lkgv4tR93zyPLWbRcZbeSyvZRLsZEcieA9TXXNomHwix7nNvdEcjp1WjUHt30KsAk2jEx4ZdhIpAtm1rFJyH3VHuJsePiVXjz3bysRU"/>
+<div class="absolute top-3 left-3 flex flex-col gap-2">
+<span class="bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Like New</span>
+<span class="bg-amber-400 text-slate-900 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">20% OFF</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[10px] font-bold text-primary shadow-sm">
+<span class="material-symbols-outlined text-[14px] fill-icon">verified</span> VERIFIED
+                                </div>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Thrifty Finds Co.</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Vintage 90s Denim Jacket</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 line-through">₱1,200</span>
+<span class="text-lg font-bold text-primary">₱960</span>
+</div>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Retro Graphic Cotton Tee" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl2AdHHQCbTK-LNT5VIjZNp2PKJ-hEUpoDAP5TofXxvrotEy6FjJOlkHAOLTPZM2wbwC9yZl0ZVoL60Fh8Ns1iL0r6PITvmpOVPutyxPRSKl7ZeORyPYXOVCieOIsp969zYI_CZ3c5nKrdWIrW4iYfkdm5nhV4UCwdoLTuHrGcNqwhtXNzw-qnNuttbLlixb2dt82kCdGS9_7DwcLnFpUZg4l74sJtxnawbneZ9FkFaK7h0mTxfBso_JJF6vX18-6eq-Qs4wjdtaU"/>
+<div class="absolute top-3 left-3">
+<span class="bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">New with Tags</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">The Retro Closet</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Classic Band Graphic Tee</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<span class="text-lg font-bold text-primary">₱450</span>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="High Waisted Vintage Mom Jeans" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW7ha6EDppQiMMAdaN32RGUAU_xLMluzwoS-FL6EbOo0CUUzev6gS2d7OQRRKRkAvjve9zk1Nhtyt1yW2VlpTODQljkTqI_ZwyzudgsegZjTvpfUpwpIfvYrFZWipj02bCtTdycpKSCswzLynkacNQWO40DSV4ETwk1vBJoA2SJDXPBhYXV7lSZXh2W7kZ2monHQlXkG5TJ7fyNssbWxk2GbHPxfF929AFxJJJn1Iv1miwcecwWpYP1yYoDeZDPAtdSNYJ5qdxNEE"/>
+<div class="absolute top-3 left-3">
+<span class="bg-primary/80 backdrop-blur text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Good Condition</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[10px] font-bold text-primary shadow-sm">
+<span class="material-symbols-outlined text-[14px] fill-icon">verified</span> VERIFIED
+                                </div>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Denim Hunters</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">90s High Waisted Mom Jeans</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<span class="text-lg font-bold text-primary">₱850</span>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Oversized Knit Sweater Cream" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbo2GJ8xzkdcOoNqkLjLDr_fo7BA_n5dzoqKwnUOrbJqiXgUNlTgVv576m4sMlUlENhBU3aR_yc2Df9r06wLje_eAb9IAg35Ub7xeMpl_QmYvxN7lyfNeNgdUHk3jvzo_u0luuzMuHA1mMIIVXzAOMSb404A6w8j5gY_E9NV6IazLBNnL50qA5ustFEHeM0R2gOOylrpjH-8x3kmS8TX2C1YBk65BuXrvXsFv5jk-Onbd6C58TZzPdkGNmh-i1Wf-4F6cGPjfKwdQ"/>
+<div class="absolute top-3 left-3 flex flex-col gap-2">
+<span class="bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Like New</span>
+<span class="bg-amber-400 text-slate-900 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">SALE</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Minimalist Archive</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Oversized Cream Knit Sweater</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 line-through">₱900</span>
+<span class="text-lg font-bold text-primary">₱650</span>
+</div>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Additional Rows would follow similar pattern -->
+<!-- Row 2 Card 1 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Vintage Leather Biker Jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXeS-4ld1V93G22GaYzrjI1S5cdUvzk5h77WrbucYehbszW8NSoF_zrO9b2GW-4TEeIgCiSoXbXyWCHCHayW8fHuOY5Eivsw5kKvaNGdGsXoWr6kVnL7YRPxFrKyKFxsZpQQPrBbVBz86-n4NolV4rfgVeMdgVrW36jmwcV5QlqUPZbK4-WFvqKbgpl9YUij3lUvLPlEphswX59OFcF3eNwfmtxUBonwISJ8t4wBMxSbhMJFoMm8ROl-CUdJfse-liizSqaM6MfzE"/>
+<div class="absolute top-3 left-3">
+<span class="bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Authentic Vintage</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[10px] font-bold text-primary shadow-sm">
+<span class="material-symbols-outlined text-[14px] fill-icon">verified</span> VERIFIED
+                                </div>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Leather &amp; Lore</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Leather Biker Jacket</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<span class="text-lg font-bold text-primary">₱2,500</span>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Row 2 Card 2 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Classic Black Tee" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2yQ71pV-1ocCc_Sz9vt5TvKflWRwy_SXsOPnXWwkKfh4RIGiPFoZ5KMOqBthfNDw-eoepaQQJw--AOad9AYjSqqX70KXeNRsDU6i-rrSPVF6AfXfYzoQbfTKHdtOSpS3mSSeEGdzH9SoV48U3iQC1xXphtT8Zd80QitbQAmXbP8ECxFh9aENZFYAQn0ZyOGpPsHmXzK0NA8zxagYDDZ_dkHiYA4tB3jU0dGWgWTExy-k8WtsLrLZTHg7cguw3RBIPC97eZNjYTe4"/>
+<div class="absolute top-3 left-3">
+<span class="bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">New</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Basics Essential</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Organic Cotton Black Tee</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<span class="text-lg font-bold text-primary">₱350</span>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Row 2 Card 3 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Denim Shorts Vintage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7yElS7AVvSZxqjKizrSA-PLtvw0eQnI9x_SAV366YGX9CkQ0AQc0Zx2zMlKUIVXnj8hCM2QTbqWxvsJzsyeEZsBwWj-AgAlMbnCYFy_KMV76SZp8klFj6XrZtiRPonMLSlex4wF6eUy8mP9pClOhBNNcXAXuLf2dRpmhhpJbeKusPVv30jiJ_4_t5lHImDkc_FO534fJ-_awVM6freeI7SiQ7QITu0Xw3k5pU6VAn8QUeFfCUkE6uyI508aIFT5s86EsGV4OgJ1Q"/>
+<div class="absolute top-3 left-3">
+<span class="bg-amber-400 text-slate-900 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">SALE 50%</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Summer Archive</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">High Rise Denim Shorts</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 line-through">₱600</span>
+<span class="text-lg font-bold text-primary">₱300</span>
+</div>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Row 2 Card 4 -->
+<div class="group relative flex flex-col bg-white dark:bg-white/5 rounded-2xl overflow-hidden border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+<div class="relative aspect-[3/4] overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Neutral Aesthetic Outfit" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn2uNr2mPeghQefHaB06AEgzJjOIwvBwzenHEopejpI3VFTKOK7BpcXPaeyqPPDtDzWK6lxcoQaiXMpf1kqWqYUCKOMPCO14O0IW1YH7crhPa6N_nQKj3IHjhgQPa7oelo2k-bAkY38kTcJZEeCeuHG45LFMz5KiKe3may1sYv3DZaR5k-KBX7KbW9Fj_Hdh00pEG_xyRU61Psil17d5ZrkSjW_9EaME5RlYJvDaqTFgzz1KVVAM5-N2Ve6Je1fkHxu9Nou5uqb8E"/>
+<div class="absolute top-3 left-3">
+<span class="bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Like New</span>
+</div>
+<button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full text-slate-400 hover:text-red-500 transition-colors shadow-sm">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-[10px] font-bold text-primary shadow-sm">
+<span class="material-symbols-outlined text-[14px] fill-icon">verified</span> VERIFIED
+                                </div>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Modern Thrift</p>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white line-clamp-1 mb-2 group-hover:text-primary transition-colors">Linen Mix Trench Coat</h3>
+<div class="mt-auto pt-3 flex items-center justify-between">
+<span class="text-lg font-bold text-primary">₱1,250</span>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-12 flex items-center justify-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 text-slate-500 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-bold">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 text-slate-700 dark:text-slate-300 hover:bg-primary/5 transition-colors">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 text-slate-700 dark:text-slate-300 hover:bg-primary/5 transition-colors">3</button>
+<span class="text-slate-400 px-2">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 text-slate-700 dark:text-slate-300 hover:bg-primary/5 transition-colors">12</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-primary/20 text-slate-500 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Simple -->
+<footer class="mt-20 border-t border-primary/10 bg-white dark:bg-background-dark py-12 px-4 md:px-10 lg:px-20">
+<div class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+<div class="space-y-4">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">recycling</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold">Ukay Hub</h2>
+</div>
+<p class="text-sm text-slate-500 leading-relaxed">The premier destination for sustainable fashion and verified vintage treasures in the Philippines.</p>
+</div>
+<div>
+<h4 class="font-bold mb-4">Quick Links</h4>
+<ul class="space-y-2 text-sm text-slate-500">
+<li><a class="hover:text-primary" href="#">About Us</a></li>
+<li><a class="hover:text-primary" href="#">Seller Guide</a></li>
+<li><a class="hover:text-primary" href="#">Size Chart</a></li>
+<li><a class="hover:text-primary" href="#">Contact Support</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold mb-4">Policies</h4>
+<ul class="space-y-2 text-sm text-slate-500">
+<li><a class="hover:text-primary" href="#">Refund Policy</a></li>
+<li><a class="hover:text-primary" href="#">Shipping Info</a></li>
+<li><a class="hover:text-primary" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary" href="#">Terms of Service</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold mb-4">Join Our Newsletter</h4>
+<p class="text-sm text-slate-500 mb-4">Get early access to drops and exclusive thrift tips.</p>
+<div class="flex gap-2">
+<input class="flex-1 rounded-lg border-primary/20 bg-background-light dark:bg-white/5 text-sm" placeholder="Your email" type="email"/>
+<button class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm">Join</button>
+</div>
+</div>
+</div>
+<div class="max-w-[1440px] mx-auto mt-12 pt-8 border-t border-primary/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
+<p>© 2024 Ukay Hub. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Instagram</a>
+<a class="hover:text-primary transition-colors" href="#">TikTok</a>
+<a class="hover:text-primary transition-colors" href="#">Facebook</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

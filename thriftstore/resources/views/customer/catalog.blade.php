@@ -1,14 +1,16 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Browse Products') }}
-        </h2>
-    </x-slot>
+    @php
+        $homepageBackgroundPath = \App\Models\SystemSetting::get('background_path');
+        $homepageBackgroundUrl  = $homepageBackgroundPath
+            ? asset('storage/' . $homepageBackgroundPath)
+            : asset('background_img/gela.jpeg');
+    @endphp
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <livewire:customer.catalog />
-        </div>
+    {{-- Hero background image --}}
+    <div class="w-full h-[calc(100vh-4rem)] bg-cover bg-top bg-no-repeat"
+         style="background-image: url('{{ $homepageBackgroundUrl }}');">
     </div>
-</x-app-layout>
 
+    {{-- New Arrivals (Livewire — no page reload) --}}
+    <livewire:customer.new-arrivals />
+</x-app-layout>

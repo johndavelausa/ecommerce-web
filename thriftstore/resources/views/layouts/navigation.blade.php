@@ -1,30 +1,44 @@
 @php
+    $isSellerContext = request()->is('seller/*') || request()->query('intended') === 'seller';
+    $dashboardLabel = __('Dashboard');
+    $logoRoute = 'catalog';
     if (request()->is('admin/*')) {
         $user = Auth::guard('admin')->user();
         $dashboardRoute = 'admin.dashboard';
+        $logoRoute = 'admin.dashboard';
         $logoutRoute = 'admin.logout';
         $notificationsRoute = 'admin.notifications.read-all';
     } elseif (request()->is('seller/*')) {
         $user = Auth::guard('seller')->user();
-        $dashboardRoute = ($user?->seller && $user->seller->status === 'approved') ? 'seller.dashboard' : 'seller.status';
+        $dashboardRoute = $user
+            ? (($user->seller && $user->seller->status === 'approved') ? 'seller.dashboard' : 'seller.status')
+            : 'seller.login';
+        $logoRoute = $dashboardRoute;
         $logoutRoute = 'seller.logout';
         $notificationsRoute = 'seller.notifications.read-all';
     } else {
         $user = Auth::guard('web')->user();
-        $dashboardRoute = 'customer.dashboard';
+        if (!$user && $isSellerContext) {
+            $dashboardRoute = 'seller.login';
+            $logoRoute = 'seller.login';
+            $dashboardLabel = __('Dashboard');
+        } else {
+            $dashboardRoute = $user ? 'customer.dashboard' : 'catalog';
+            $dashboardLabel = $user ? __('Shop') : __('Home');
+        }
         $logoutRoute = 'logout';
         $notificationsRoute = 'customer.notifications.read-all';
     }
 @endphp
 
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-white">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route($dashboardRoute) }}">
+                    <a href="{{ route($logoRoute) }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
@@ -32,7 +46,7 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)">
-                        {{ __('Dashboard') }}
+                        {{ $dashboardLabel }}
                     </x-nav-link>
                     @if($user && request()->is('admin/*'))
                         <x-nav-link :href="route('admin.sellers')" :active="request()->routeIs('admin.sellers')">
@@ -43,6 +57,21 @@
                         </x-nav-link>
                         <x-nav-link :href="route('admin.messages')" :active="request()->routeIs('admin.messages')">
                             {{ __('Messages') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.product-reports')" :active="request()->routeIs('admin.product-reports')">
+                            {{ __('Product reports') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.deletion-requests')" :active="request()->routeIs('admin.deletion-requests')">
+                            {{ __('Deletion requests') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.orders')" :active="request()->routeIs('admin.orders')">
+                            {{ __('Orders') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.disputes')" :active="request()->routeIs('admin.disputes')">
+                            {{ __('Disputes') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('admin.payments')" :active="request()->routeIs('admin.payments')">
+                            {{ __('Payments') }}
                         </x-nav-link>
                         <x-nav-link :href="route('admin.reports')" :active="request()->routeIs('admin.reports')">
                             {{ __('Reports') }}
@@ -136,6 +165,20 @@
                                                 Announcement: {{ $data['title'] ?? 'Update' }}
                                             @elseif(($data['type'] ?? null) === 'wishlist_low_stock')
                                                 Wishlist item low stock
+                                            @elseif(($data['type'] ?? null) === 'order_dispute_updated')
+                                                @if(($data['event'] ?? null) === 'opened')
+                                                    New dispute #{{ $data['dispute_id'] ?? '' }} on order #{{ $data['order_id'] ?? '' }}
+                                                @elseif(($data['event'] ?? null) === 'seller_responded')
+                                                    Seller responded to dispute #{{ $data['dispute_id'] ?? '' }}
+                                                @elseif(($data['event'] ?? null) === 'resolved')
+                                                    Dispute #{{ $data['dispute_id'] ?? '' }} resolved
+                                                @else
+                                                    Dispute #{{ $data['dispute_id'] ?? '' }} updated
+                                                @endif
+                                            @elseif(($data['type'] ?? null) === 'order_sla_alert')
+                                                SLA alert on order #{{ $data['order_id'] ?? '' }}
+                                            @elseif(($data['type'] ?? null) === 'seller_payout_released')
+                                                Payout released for order #{{ $data['order_id'] ?? '' }}
                                             @else
                                                 Notification
                                             @endif
@@ -151,6 +194,12 @@
                                                 {{ \Illuminate\Support\Str::limit((string) ($data['body'] ?? ''), 90) }}
                                             @elseif(($data['type'] ?? null) === 'wishlist_low_stock')
                                                 {{ $data['product_name'] ?? 'Product' }} is almost sold out ({{ $data['stock'] ?? 0 }} left)
+                                            @elseif(($data['type'] ?? null) === 'order_dispute_updated')
+                                                {{ ucfirst(str_replace('_', ' ', (string) ($data['status'] ?? 'updated'))) }} · {{ $data['reason_label'] ?? 'Dispute update' }}
+                                            @elseif(($data['type'] ?? null) === 'order_sla_alert')
+                                                {{ ucfirst((string) ($data['alert_type'] ?? 'alert')) }} · {{ ucfirst((string) ($data['stage'] ?? 'sla')) }} delayed by {{ (int) ($data['delay_hours'] ?? 0) }}h+
+                                            @elseif(($data['type'] ?? null) === 'seller_payout_released')
+                                                Net payout: ₱{{ number_format((float) ($data['net_amount'] ?? 0), 2) }}
                                             @endif
                                         </div>
                                         <div class="text-[10px] text-gray-400 mt-0.5">
@@ -167,38 +216,45 @@
                     </div>
                 @endif
 
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ $user?->name }}</div>
+                @if($user)
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                <div>{{ $user->name }}</div>
 
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
+                                <div class="ms-1">
+                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </x-slot>
 
-                    <x-slot name="content">
-                        @if($logoutRoute === 'logout')
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile') }}
-                            </x-dropdown-link>
-                        @endif
+                        <x-slot name="content">
+                            @if($logoutRoute === 'logout')
+                                <x-dropdown-link :href="route('profile.edit')">
+                                    {{ __('Profile') }}
+                                </x-dropdown-link>
+                            @endif
 
-                        <!-- Authentication (guard-specific logout) -->
-                        <form method="POST" action="{{ route($logoutRoute) }}">
-                            @csrf
+                            <!-- Authentication (guard-specific logout) -->
+                            <form method="POST" action="{{ route($logoutRoute) }}">
+                                @csrf
 
-                            <x-dropdown-link :href="route($logoutRoute)"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+                                <x-dropdown-link :href="route($logoutRoute)"
+                                        onclick="event.preventDefault();
+                                                    this.closest('form').submit();">
+                                    {{ __('Log Out') }}
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                @else
+                    @if(!request()->is('admin/*') && !request()->is('seller/*') && !$isSellerContext)
+                        <a href="{{ route('login') }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">{{ __('Log in') }}</a>
+                        <a href="{{ route('register') }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">{{ __('Register') }}</a>
+                    @endif
+                @endif
             </div>
 
             <!-- Hamburger -->
@@ -217,7 +273,7 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)">
-                {{ __('Dashboard') }}
+                {{ $dashboardLabel }}
             </x-responsive-nav-link>
             @if($user && request()->is('admin/*'))
                 <x-responsive-nav-link :href="route('admin.sellers')" :active="request()->routeIs('admin.sellers')">
@@ -226,8 +282,23 @@
                 <x-responsive-nav-link :href="route('admin.customers')" :active="request()->routeIs('admin.customers')">
                     {{ __('Customers') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.messages')" :active="request()->routeIs('admin.messages')">
-                    {{ __('Messages') }}
+<x-responsive-nav-link :href="route('admin.messages')" :active="request()->routeIs('admin.messages')">
+                            {{ __('Messages') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.product-reports')" :active="request()->routeIs('admin.product-reports')">
+                            {{ __('Product reports') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.deletion-requests')" :active="request()->routeIs('admin.deletion-requests')">
+                            {{ __('Deletion requests') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.orders')" :active="request()->routeIs('admin.orders')">
+                    {{ __('Orders') }}
+                </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('admin.disputes')" :active="request()->routeIs('admin.disputes')">
+                            {{ __('Disputes') }}
+                        </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.payments')" :active="request()->routeIs('admin.payments')">
+                    {{ __('Payments') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.reports')" :active="request()->routeIs('admin.reports')">
                     {{ __('Reports') }}
@@ -258,6 +329,9 @@
                 <x-responsive-nav-link :href="route('customer.orders')" :active="request()->routeIs('customer.orders')">
                     {{ __('My Orders') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('customer.wishlist')" :active="request()->routeIs('customer.wishlist')">
+                    {{ __('Wishlist') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('customer.reviews')" :active="request()->routeIs('customer.reviews')">
                     {{ __('Reviews') }}
                 </x-responsive-nav-link>
@@ -270,31 +344,46 @@
             @endif
         </div>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ $user?->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ $user?->email }}</div>
+        <!-- Responsive Settings Options (only when logged in) -->
+        @if($user)
+            <div class="pt-4 pb-1 border-t border-gray-200">
+                <div class="px-4">
+                    <div class="font-medium text-base text-gray-800">{{ $user->name }}</div>
+                    <div class="font-medium text-sm text-gray-500">{{ $user->email }}</div>
+                </div>
+
+                <div class="mt-3 space-y-1">
+                    @if($logoutRoute === 'logout')
+                        <x-responsive-nav-link :href="route('profile.edit')">
+                            {{ __('Profile') }}
+                        </x-responsive-nav-link>
+                    @endif
+
+                    <!-- Authentication (guard-specific logout) -->
+                    <form method="POST" action="{{ route($logoutRoute) }}">
+                        @csrf
+
+                        <x-responsive-nav-link :href="route($logoutRoute)"
+                                onclick="event.preventDefault();
+                                            this.closest('form').submit();">
+                            {{ __('Log Out') }}
+                        </x-responsive-nav-link>
+                    </form>
+                </div>
             </div>
-
-            <div class="mt-3 space-y-1">
-                @if($logoutRoute === 'logout')
-                    <x-responsive-nav-link :href="route('profile.edit')">
-                        {{ __('Profile') }}
-                    </x-responsive-nav-link>
-                @endif
-
-                <!-- Authentication (guard-specific logout) -->
-                <form method="POST" action="{{ route($logoutRoute) }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route($logoutRoute)"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
-            </div>
-        </div>
+        @else
+            @if(!request()->is('admin/*') && !request()->is('seller/*') && !$isSellerContext)
+                <div class="pt-4 pb-1 border-t border-gray-200">
+                    <div class="mt-3 space-y-1 px-4">
+                        <x-responsive-nav-link :href="route('login')">
+                            {{ __('Log in') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('register')">
+                            {{ __('Register') }}
+                        </x-responsive-nav-link>
+                    </div>
+                </div>
+            @endif
+        @endif
     </div>
 </nav>

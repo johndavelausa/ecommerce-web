@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\UpdateLastActiveAt::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\CheckMaintenanceMode::class);
 
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
@@ -22,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'seller.approved' => \App\Http\Middleware\EnsureSellerIsApproved::class,
+            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'auth.verification' => \App\Http\Middleware\AuthenticateForVerification::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

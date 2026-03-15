@@ -1,47 +1,42 @@
 <x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <div class="customer-auth-shell">
+        <div class="customer-auth-tabs">
+            <a href="{{ route('login') }}" class="customer-auth-tab is-active">{{ __('Login') }}</a>
+            <a href="{{ route('register') }}" class="customer-auth-tab">{{ __('Register') }}</a>
+        </div>
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
-
-        <!-- Email Address -->
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <h1 class="customer-auth-title">{{ __('Welcome Back') }}</h1>
+            <p class="customer-auth-subtitle">{{ __('Sign in to continue shopping your thrift finds.') }}</p>
+            <x-auth-session-status class="customer-auth-feedback" :status="session('status')" />
         </div>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+        <form method="POST" action="{{ route('login') }}" class="customer-auth-form">
+            @csrf
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+            <div class="customer-auth-field">
+                <x-input-label for="email" :value="__('Email Address')" />
+                <x-text-input id="email" class="customer-auth-input" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
+                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            </div>
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+            <div class="customer-auth-field">
+                <div class="flex items-center justify-between gap-2">
+                    <x-input-label for="password" :value="__('Password')" />
+                    @if (Route::has('password.request'))
+                        <a class="customer-auth-top-link" href="{{ route('password.request') }}">{{ __('Forgot Password?') }}</a>
+                    @endif
+                </div>
+                <x-text-input id="password" class="customer-auth-input" type="password" name="password" required autocomplete="current-password" />
+                <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+            <label for="remember_me" class="customer-auth-remember inline-flex items-center gap-2">
+                <input id="remember_me" type="checkbox" name="remember">
+                <span>{{ __('Remember me on this device') }}</span>
             </label>
-        </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-    </form>
+            <button type="submit" class="customer-auth-submit">{{ __('Sign In') }}</button>
+        </form>
+    </div>
 </x-guest-layout>

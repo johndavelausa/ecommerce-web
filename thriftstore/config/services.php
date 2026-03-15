@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'courier' => [
+        'webhook_token' => env('COURIER_WEBHOOK_TOKEN'),
+    ],
+
 ];

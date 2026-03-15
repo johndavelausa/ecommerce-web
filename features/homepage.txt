@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ukay Hub | Sustainable Filipino Thrift Fashion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2d6c50",
+                        "background-light": "#f6f7f7",
+                        "background-dark": "#151d19",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 w-full bg-primary text-white border-b border-primary/20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16 gap-4">
+<!-- Logo -->
+<div class="flex items-center gap-2 shrink-0">
+<span class="material-symbols-outlined text-3xl">recycling</span>
+<h1 class="text-xl font-extrabold tracking-tight">Ukay Hub</h1>
+</div>
+<!-- Search Bar -->
+<div class="hidden md:flex flex-1 max-w-lg">
+<div class="relative w-full">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-primary/60">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border border-transparent rounded-lg leading-5 bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-white/50 sm:text-sm" placeholder="Search for vintage denim, tees, or bags..." type="text"/>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-2 sm:gap-4">
+<nav class="hidden lg:flex items-center gap-6 mr-4">
+<a class="text-sm font-medium hover:text-white/80 transition-colors" href="#">Shop</a>
+<a class="text-sm font-medium hover:text-white/80 transition-colors" href="#">Categories</a>
+<a class="text-sm font-medium hover:text-white/80 transition-colors" href="#">Sell</a>
+</nav>
+<button class="p-2 hover:bg-white/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button class="p-2 hover:bg-white/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-1 right-1 bg-white text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+</button>
+<div class="h-6 w-px bg-white/20 mx-1"></div>
+<button class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-bold bg-white text-primary rounded-lg hover:bg-white/90 transition-colors">
+                        Login
+                    </button>
+</div>
+</div>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="relative bg-primary/5 py-16 lg:py-24">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+<div class="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&amp;fit=crop&amp;q=80&amp;w=1600')] bg-cover bg-center" data-alt="Faded lifestyle photo of a clothing rack in a sunlit room"></div>
+</div>
+<h2 class="text-4xl md:text-6xl font-black text-slate-900 dark:text-slate-100 mb-6 leading-tight tracking-tight">
+                    Your favorite <span class="text-primary">Ukay-Ukay</span>, <br class="hidden sm:block"/> now online.
+                </h2>
+<p class="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mb-10">
+                    Discover unique vintage finds and sustainable fashion from the best local thrift shops across the Philippines.
+                </p>
+<div class="w-full max-w-2xl flex flex-col sm:flex-row gap-3 bg-white p-2 rounded-xl shadow-xl border border-slate-200">
+<div class="flex-1 flex items-center px-4 gap-3">
+<span class="material-symbols-outlined text-slate-400">search</span>
+<input class="w-full border-none focus:ring-0 text-slate-900 placeholder-slate-400 bg-transparent py-3" placeholder="What are you looking for today?" type="text"/>
+</div>
+<button class="bg-primary text-white font-bold px-8 py-3 rounded-lg hover:brightness-110 transition-all shadow-lg">
+                        Find Gems
+                    </button>
+</div>
+<div class="mt-8 flex flex-wrap justify-center gap-4 text-sm font-medium text-slate-500">
+<span>Trending:</span>
+<a class="px-3 py-1 bg-primary/10 text-primary rounded-full hover:bg-primary/20" href="#">#90sVintage</a>
+<a class="px-3 py-1 bg-primary/10 text-primary rounded-full hover:bg-primary/20" href="#">#DenimJacket</a>
+<a class="px-3 py-1 bg-primary/10 text-primary rounded-full hover:bg-primary/20" href="#">#Streetwear</a>
+</div>
+</div>
+</section>
+<!-- New Arrivals Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+<div class="flex items-end justify-between mb-8 border-b border-slate-200 pb-4">
+<div>
+<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">New Arrivals</h3>
+<p class="text-slate-500 text-sm mt-1">Freshly picked treasures from our community sellers.</p>
+</div>
+<a class="text-primary font-semibold text-sm hover:underline flex items-center gap-1" href="#">
+                    View All <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+<!-- Product Card 1 -->
+<div class="group flex flex-col bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="relative aspect-[3/4] overflow-hidden">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center transition-transform group-hover:scale-105" data-alt="Classic white crew neck t-shirt on a model"></div>
+<span class="absolute top-3 left-3 bg-primary text-white text-[10px] uppercase font-bold px-2 py-1 rounded">New</span>
+<button class="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-slate-900 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-sm">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">Like New</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Vintage Oversized Tee</h4>
+<div class="flex items-center justify-between mt-1">
+<p class="text-lg font-bold text-primary">₱350</p>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="group flex flex-col bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="relative aspect-[3/4] overflow-hidden">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center transition-transform group-hover:scale-105" data-alt="High quality vintage denim jeans flat lay"></div>
+<button class="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-slate-900 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-sm">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded">Gently Used</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Levi's 501 Classic</h4>
+<div class="flex items-center justify-between mt-1">
+<p class="text-lg font-bold text-primary">₱850</p>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="group flex flex-col bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="relative aspect-[3/4] overflow-hidden">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center transition-transform group-hover:scale-105" data-alt="Stylish corduroy jacket in brown color"></div>
+<button class="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-slate-900 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-sm">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">Brand New</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Retro Corduroy Jacket</h4>
+<div class="flex items-center justify-between mt-1">
+<p class="text-lg font-bold text-primary">₱600</p>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="group flex flex-col bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+<div class="relative aspect-[3/4] overflow-hidden">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1515347644552-dac046299025?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center transition-transform group-hover:scale-105" data-alt="Elegant floral midi dress for women"></div>
+<button class="absolute top-3 right-3 p-1.5 bg-white/80 backdrop-blur rounded-full text-slate-900 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-sm">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded">Good</span>
+</div>
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Floral Summer Dress</h4>
+<div class="flex items-center justify-between mt-1">
+<p class="text-lg font-bold text-primary">₱420</p>
+<button class="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- On Sale Now Section -->
+<section class="bg-primary/5 py-16">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-end justify-between mb-8">
+<div>
+<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">On Sale Now</h3>
+<p class="text-slate-500 text-sm mt-1">Flash deals on curated favorites.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ends in:</span>
+<div class="flex gap-1">
+<span class="bg-primary text-white text-xs font-bold p-1 rounded">04h</span>
+<span class="bg-primary text-white text-xs font-bold p-1 rounded">32m</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+<!-- Sale Item 1 -->
+<div class="group bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm">
+<div class="relative aspect-[3/4]">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center" data-alt="Knitted vintage sweater in pastel colors"></div>
+<span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">-30%</span>
+</div>
+<div class="p-4">
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Vintage Knit Sweater</h4>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-lg font-bold text-red-500">₱280</span>
+<span class="text-sm text-slate-400 line-through">₱400</span>
+</div>
+</div>
+</div>
+<!-- Sale Item 2 -->
+<div class="group bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm">
+<div class="relative aspect-[3/4]">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1544441893-675973eebb39?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center" data-alt="Selection of thrifted accessories and belts"></div>
+<span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">-50%</span>
+</div>
+<div class="p-4">
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Leather Belt Pack</h4>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-lg font-bold text-red-500">₱150</span>
+<span class="text-sm text-slate-400 line-through">₱300</span>
+</div>
+</div>
+</div>
+<!-- Sale Item 3 -->
+<div class="group bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm">
+<div class="relative aspect-[3/4]">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center" data-alt="Stylish plaid skirt in green and black"></div>
+<span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">-20%</span>
+</div>
+<div class="p-4">
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Plaid Mini Skirt</h4>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-lg font-bold text-red-500">₱200</span>
+<span class="text-sm text-slate-400 line-through">₱250</span>
+</div>
+</div>
+</div>
+<!-- Sale Item 4 -->
+<div class="group bg-white dark:bg-background-dark border border-slate-200 dark:border-primary/20 rounded-xl overflow-hidden shadow-sm">
+<div class="relative aspect-[3/4]">
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1495555961986-6d4c1ecb7be3?auto=format&amp;fit=crop&amp;q=80&amp;w=400')] bg-cover bg-center" data-alt="Classic white canvas sneakers"></div>
+<span class="absolute top-3 left-3 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-1 rounded">-40%</span>
+</div>
+<div class="p-4">
+<h4 class="font-semibold text-slate-900 dark:text-slate-100 truncate">Canvas Classic Sneakers</h4>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-lg font-bold text-red-500">₱450</span>
+<span class="text-sm text-slate-400 line-through">₱750</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Picks -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-8 border-l-4 border-primary pl-4">Featured Picks</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Highlight Card 1 -->
+<div class="relative h-96 group rounded-xl overflow-hidden cursor-pointer">
+<div class="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/30 transition-all duration-500 z-10"></div>
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1520006403909-838d6b92c22e?auto=format&amp;fit=crop&amp;q=80&amp;w=800')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Aesthetic aesthetic thrift shop rack with colorful clothes"></div>
+<div class="absolute bottom-6 left-6 right-6 z-20">
+<h4 class="text-2xl font-black text-white mb-2">The Denim Edit</h4>
+<p class="text-white/80 text-sm mb-4">Curated collection of authentic vintage Levis, Wranglers and more.</p>
+<button class="bg-white text-primary font-bold px-6 py-2 rounded-lg text-sm transition-transform active:scale-95">Explore Collection</button>
+</div>
+</div>
+<!-- Highlight Card 2 -->
+<div class="relative h-96 group rounded-xl overflow-hidden cursor-pointer">
+<div class="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/30 transition-all duration-500 z-10"></div>
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&amp;fit=crop&amp;q=80&amp;w=800')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="Flat lay of streetwear essentials like tees and caps"></div>
+<div class="absolute bottom-6 left-6 right-6 z-20">
+<h4 class="text-2xl font-black text-white mb-2">90s Streetwear</h4>
+<p class="text-white/80 text-sm mb-4">Baggy silhouettes and bold graphics to elevate your street style.</p>
+<button class="bg-white text-primary font-bold px-6 py-2 rounded-lg text-sm transition-transform active:scale-95">Shop Now</button>
+</div>
+</div>
+<!-- Highlight Card 3 -->
+<div class="relative h-96 group rounded-xl overflow-hidden cursor-pointer md:col-span-2 lg:col-span-1">
+<div class="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/30 transition-all duration-500 z-10"></div>
+<div class="w-full h-full bg-[url('https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&amp;fit=crop&amp;q=80&amp;w=800')] bg-cover bg-center transition-transform duration-700 group-hover:scale-110" data-alt="A woman wearing a sustainable thrifted outfit in a garden"></div>
+<div class="absolute bottom-6 left-6 right-6 z-20">
+<h4 class="text-2xl font-black text-white mb-2">Eco-Conscious Finds</h4>
+<p class="text-white/80 text-sm mb-4">Help the planet by shopping pre-loved. Style that saves the world.</p>
+<button class="bg-white text-primary font-bold px-6 py-2 rounded-lg text-sm transition-transform active:scale-95">Learn More</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Newsletter / CTA -->
+<section class="bg-primary py-16">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<h3 class="text-3xl font-black text-white mb-4 italic">JOIN THE UKAY HUB REVOLUTION</h3>
+<p class="text-white/80 mb-8 max-w-lg mx-auto">Get exclusive early access to major drops and flash sales. Stay stylish, stay sustainable.</p>
+<form class="flex flex-col sm:flex-row gap-2">
+<input class="flex-1 px-6 py-3 rounded-lg border-none focus:ring-2 focus:ring-white/50 text-slate-900" placeholder="Enter your email address" type="email"/>
+<button class="bg-white text-primary font-black px-8 py-3 rounded-lg hover:bg-slate-100 transition-colors uppercase tracking-widest text-sm">Subscribe</button>
+</form>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-primary/20 py-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-12">
+<div class="col-span-2">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary text-2xl">recycling</span>
+<h2 class="text-xl font-extrabold text-slate-900 dark:text-slate-100">Ukay Hub</h2>
+</div>
+<p class="text-slate-500 text-sm max-w-xs leading-relaxed">
+                        The Philippines' premier online destination for pre-loved fashion. Bridging the gap between local thrift shops and sustainable style seekers.
+                    </p>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-100 mb-4">Shop</h5>
+<ul class="space-y-2 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Women</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Men</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Accessories</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">New Drops</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-100 mb-4">Sell</h5>
+<ul class="space-y-2 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Become a Seller</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Seller Dashboard</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Shipping Guide</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Payouts</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-100 mb-4">Support</h5>
+<ul class="space-y-2 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact Us</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Returns</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">FAQ</a></li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold text-slate-900 dark:text-slate-100 mb-4">Social</h5>
+<div class="flex gap-4">
+<a class="text-slate-400 hover:text-primary" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="text-slate-400 hover:text-primary" href="#"><span class="material-symbols-outlined">share</span></a>
+<a class="text-slate-400 hover:text-primary" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+</div>
+</div>
+</div>
+<div class="pt-8 border-t border-slate-200 dark:border-primary/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-slate-400 italic">Built for the culture, curated for you. © 2024 Ukay Hub PH.</p>
+<div class="flex flex-wrap gap-6 text-xs text-slate-500">
+<a class="hover:text-primary" href="#">Privacy Policy</a>
+<a class="hover:text-primary" href="#">Terms of Service</a>
+<a class="hover:text-primary" href="#">Cookie Settings</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

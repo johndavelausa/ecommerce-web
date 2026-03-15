@@ -1,0 +1,136 @@
+# Thrift Store Platform — Dashboard Additions v1.3
+# Ukay Hub by Lausa
+# These are missing dashboard metrics not covered in v1.0, v1.1, or v1.2
+
+---
+
+## ADMIN DASHBOARD — MISSING METRICS TO ADD
+
+### 1. Total Sales
+- Show total sales amount across all sellers platform-wide
+- Display as a currency card (e.g. Total Sales: ₱24,500)
+- Clicking it goes to the full sales breakdown in reports
+
+### 2. Total Orders
+- Show total number of orders placed across all sellers
+- Display as a count card (e.g. Total Orders: 142)
+- Clicking it goes to order list filtered to all statuses
+
+### 3. Order Status Breakdown
+- Show a mini breakdown of orders by status
+- Processing: [count]
+- Shipped: [count]
+- Delivered: [count]
+- Cancelled: [count]
+
+### 4. Rejected Sellers
+- Show count of sellers with status = rejected
+- Display alongside Total Registered Sellers
+- Example: Total Sellers: 30 | Rejected: 4
+
+### 5. Bad Orders
+- Definition: orders that were cancelled, returned, or failed to deliver
+- Show count and percentage of total orders
+- Example: Bad Orders: 8 (5.6% of total)
+
+### 6. Churn Rate
+- Definition: percentage of sellers who did not renew their subscription in the last month
+- Formula: (sellers who lapsed this month / total active sellers last month) x 100
+- Display as a percentage card
+- Example: Seller Churn Rate: 12% this month
+
+---
+
+## SELLER DASHBOARD — MISSING METRICS TO ADD
+
+### 1. Revenue
+- Show total revenue earned from completed orders
+- Display as a currency card separate from Total Sales
+- Revenue = sum of (price_at_purchase x quantity) for all delivered orders
+
+### 2. Net Profit
+- Definition: Revenue minus any discounts or sale price differences
+- Formula: sum of (sale_price x qty) for delivered orders — if no sale price, use regular price
+- Display as a currency card
+- Example: Net Profit: ₱8,200
+
+### 3. Pending Orders
+- Show count of orders with status = processing
+- Display as a clickable card that links to order list filtered by processing
+
+### 4. Orders to Ship
+- Show count of orders with status = processing that are ready to be marked as shipped
+- Same as Pending Orders count — just label it clearly as "Needs Shipping"
+
+### 5. Completed Orders
+- Show count of orders with status = delivered
+- Display as a clickable card
+
+### 6. Cancelled Orders
+- Show count of orders with status = cancelled
+- Display as a clickable card
+
+### 7. Bad Orders
+- Definition: cancelled + any orders reported as problematic by the customer
+- Show count and percentage
+- Example: Bad Orders: 3 (4.1% of your total orders)
+
+### 8. Out of Stock Items
+- Already tracks low stock (below 10)
+- Add a separate count for products where stock = 0
+- Display two separate cards:
+  - Low Stock: [count] products (stock below 10)
+  - Out of Stock: [count] products (stock = 0)
+
+### 9. Customer Ratings & Reviews (on dashboard)
+- Show average store rating across all products
+- Example: Store Rating: 4.3 / 5 (from 28 reviews)
+- Clicking it links to the full reviews page
+
+---
+
+## DATABASE NOTES
+
+### Admin — new queries needed
+- Total Sales: SELECT SUM(total_amount) FROM orders WHERE status = 'delivered'
+- Total Orders: SELECT COUNT(*) FROM orders
+- Order status counts: SELECT status, COUNT(*) FROM orders GROUP BY status
+- Rejected sellers: SELECT COUNT(*) FROM sellers WHERE status = 'rejected'
+- Bad orders: SELECT COUNT(*) FROM orders WHERE status = 'cancelled'
+- Churn rate: compare sellers with lapsed subscription_status this month vs last month
+
+### Seller — new queries needed
+- Revenue: SELECT SUM(price_at_purchase * quantity) FROM order_items JOIN orders WHERE orders.seller_id = ? AND orders.status = 'delivered'
+- Net Profit: same as revenue but using sale_price if available
+- Pending orders: SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'processing'
+- Completed orders: SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'delivered'
+- Cancelled orders: SELECT COUNT(*) FROM orders WHERE seller_id = ? AND status = 'cancelled'
+- Out of stock: SELECT COUNT(*) FROM products WHERE seller_id = ? AND stock = 0
+- Average rating: SELECT AVG(rating) FROM reviews JOIN products WHERE products.seller_id = ?
+
+---
+
+## SUMMARY OF WHAT TO ADD
+
+ADMIN DASHBOARD
+- Total Sales card (clickable)
+- Total Orders card (clickable)
+- Order Status breakdown (4 statuses)
+- Rejected Sellers count
+- Bad Orders count + percentage
+- Churn Rate percentage
+
+SELLER DASHBOARD
+- Revenue card
+- Net Profit card
+- Pending Orders card (clickable)
+- Orders to Ship card (clickable)
+- Completed Orders card (clickable)
+- Cancelled Orders card (clickable)
+- Bad Orders count + percentage
+- Out of Stock Items card (separate from Low Stock)
+- Average Store Rating (clickable to reviews)
+
+---
+
+# End of v1.3

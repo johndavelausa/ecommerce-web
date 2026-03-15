@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` VARCHAR(255) NOT NULL,
   `username` VARCHAR(255) NULL,
   `email` VARCHAR(255) NOT NULL,
+  `pending_email` VARCHAR(255) NULL DEFAULT NULL,
   `email_verified_at` TIMESTAMP NULL DEFAULT NULL,
   `password` VARCHAR(255) NOT NULL,
   `contact_number` VARCHAR(50) NULL,
@@ -151,13 +152,15 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`, `notifiable_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Admin announcements (broadcast to sellers)
+-- Announcements: seller broadcasts + platform homepage banner (A4 v1.4)
 CREATE TABLE IF NOT EXISTS `announcements` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `created_by` BIGINT UNSIGNED NULL,
-  `target_role` ENUM('seller') NOT NULL DEFAULT 'seller',
+  `target_role` ENUM('seller','platform') NOT NULL DEFAULT 'seller',
   `title` VARCHAR(255) NOT NULL,
   `body` TEXT NOT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `expires_at` TIMESTAMP NULL DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -239,6 +242,12 @@ CREATE TABLE IF NOT EXISTS `sellers` (
   `status` ENUM('pending','approved','rejected','suspended') NOT NULL DEFAULT 'pending',
   `subscription_due_date` DATE NULL DEFAULT NULL,
   `subscription_status` ENUM('active','grace_period','lapsed') NOT NULL DEFAULT 'active',
+  `delivery_option` ENUM('free','flat_rate','per_product') NOT NULL DEFAULT 'free',
+  `delivery_fee` DECIMAL(10,2) NULL DEFAULT NULL,
+  `is_verified` TINYINT(1) NOT NULL DEFAULT 0,
+  `business_hours` TEXT NULL,
+  `banner_path` VARCHAR(255) NULL,
+  `logo_path` VARCHAR(255) NULL,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -248,6 +257,35 @@ CREATE TABLE IF NOT EXISTS `sellers` (
   CONSTRAINT `sellers_user_id_foreign`
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- A2 v1.4 — Admin notes on seller profile
+CREATE TABLE IF NOT EXISTS `seller_notes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `seller_id` BIGINT UNSIGNED NOT NULL,
+  `note` TEXT NOT NULL,
+  `admin_id` BIGINT UNSIGNED NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `seller_notes_seller_id_index` (`seller_id`),
+  CONSTRAINT `seller_notes_seller_id_foreign`
+    FOREIGN KEY (`seller_id`) REFERENCES `sellers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `seller_notes_admin_id_foreign`
+    FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- A2 v1.4 — Seller activity log
+CREATE TABLE IF NOT EXISTS `seller_activity_logs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `seller_id` BIGINT UNSIGNED NOT NULL,
+  `action` VARCHAR(100) NOT NULL,
+  `details` JSON NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `seller_activity_logs_seller_id_created_at_index` (`seller_id`, `created_at`),
+  CONSTRAINT `seller_activity_logs_seller_id_foreign`
+    FOREIGN KEY (`seller_id`) REFERENCES `sellers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `payments` (
@@ -285,6 +323,11 @@ CREATE TABLE IF NOT EXISTS `products` (
   `stock` INT NOT NULL DEFAULT 0,
   `image_path` VARCHAR(255) NOT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `condition` ENUM('new','like_new','good','fair','poor') NOT NULL DEFAULT 'good',
+  `size_variant` VARCHAR(100) NULL DEFAULT NULL,
+  `delivery_fee` DECIMAL(10,2) NULL DEFAULT NULL,
+  `views` INT UNSIGNED NOT NULL DEFAULT 0,
+  `low_stock_threshold` INT UNSIGNED NOT NULL DEFAULT 10,
   `created_at` TIMESTAMP NULL DEFAULT NULL,
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -311,14 +354,48 @@ CREATE TABLE IF NOT EXISTS `product_histories` (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `product_reports` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` BIGINT UNSIGNED NOT NULL,
+  `customer_id` BIGINT UNSIGNED NOT NULL,
+  `reason` VARCHAR(100) NOT NULL,
+  `description` TEXT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `product_reports_product_id_created_at_index` (`product_id`, `created_at`),
+  CONSTRAINT `product_reports_product_id_foreign`
+    FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `product_reports_customer_id_foreign`
+    FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `account_deletion_requests` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+  `admin_id` BIGINT UNSIGNED NULL DEFAULT NULL,
+  `processed_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `account_deletion_requests_status_created_at_index` (`status`, `created_at`),
+  CONSTRAINT `account_deletion_requests_user_id_foreign`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `account_deletion_requests_admin_id_foreign`
+    FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `orders` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `customer_id` BIGINT UNSIGNED NOT NULL,
   `seller_id` BIGINT UNSIGNED NOT NULL,
   `tracking_number` VARCHAR(50) NULL DEFAULT NULL,
+  `estimated_delivery_date` DATE NULL DEFAULT NULL,
   `status` ENUM('processing','shipped','delivered','cancelled') NOT NULL DEFAULT 'processing',
   `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `shipping_address` TEXT NOT NULL,
+  `customer_note` TEXT NULL DEFAULT NULL,
   `store_rating` TINYINT UNSIGNED NULL DEFAULT NULL,
   `store_review` TEXT NULL,
   `cancelled_at` TIMESTAMP NULL DEFAULT NULL,
@@ -438,6 +515,24 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
   `updated_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `system_settings_key_unique` (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- A3 v1.4 — Admin order status override logging
+CREATE TABLE IF NOT EXISTS `admin_actions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `admin_id` BIGINT UNSIGNED NULL,
+  `action` VARCHAR(100) NOT NULL,
+  `target_type` VARCHAR(100) NULL,
+  `target_id` BIGINT UNSIGNED NULL,
+  `reason` TEXT NULL,
+  `details` JSON NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `admin_actions_action_created_at_index` (`action`, `created_at`),
+  KEY `admin_actions_target_index` (`target_type`, `target_id`),
+  CONSTRAINT `admin_actions_admin_id_foreign`
+    FOREIGN KEY (`admin_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET foreign_key_checks = 1;

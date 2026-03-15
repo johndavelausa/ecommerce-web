@@ -1,0 +1,640 @@
+# Thrift Store Platform — Comprehensive Additions v1.5
+# Ukay Hub by Lausa
+# Based on full review of v1.0 through v1.4
+# Covers: Admin, Seller, Customer, Platform, Product Pages, Product Cards, Seller Store Page
+
+---
+
+## OVERVIEW
+
+Sections:
+  A - Admin Additions
+  B - Seller Additions
+  C - Customer Additions
+  D - Platform / Homepage Additions
+  E - Product Detail Page (/product/{id})
+  F - Product Card Display Rules (public listing)
+  G - Seller Public Store Page (/store/{slug})
+
+Phase Legend:
+  Phase 1 = Build during core development
+  Phase 2 = Add after core is stable
+  Phase 3 = Growth / polish phase
+  Phase 4 = Advanced / future
+
+---
+
+## SECTION A — ADMIN ADDITIONS
+
+---
+
+### A1 — Dashboard New Metrics
+
+  Total Active vs Inactive Sellers
+    Show two numbers side by side on the dashboard.
+    Active = sellers with subscription_status = active
+    Inactive = sellers with subscription_status = lapsed or grace_period
+    Phase: Phase 1
+
+  Platform GMV (Gross Merchandise Value)
+    Total value of ALL orders ever placed on the platform.
+    Formula: SUM(total_amount) FROM orders (all statuses except cancelled)
+    Different from Total Profit — profit is only fees collected from sellers.
+    GMV reflects how much product value moved through the platform.
+    Display as a separate dashboard card.
+    Phase: Phase 2
+
+  Average Order Value Platform-Wide
+    Formula: SUM(total_amount) / COUNT(orders) WHERE status = delivered
+    Display as a currency card.
+    Phase: Phase 2
+
+  New Orders Today
+    COUNT of orders where created_at = today's date.
+    Quick glance metric on the dashboard.
+    Phase: Phase 1
+
+  Revenue This Month vs Last Month
+    Show current month revenue and percentage change vs last month.
+    Example: "This month: ₱12,400 (+18% vs last month)"
+    Phase: Phase 2
+
+---
+
+### A2 — Seller Management Additions
+
+  Verified Seller Badge
+    Admin can manually mark a seller as Verified after manual vetting.
+    Adds a verified badge on the seller's store page and all their product cards.
+    Migration: add is_verified (boolean, default false) to sellers table.
+    Phase: Phase 2
+
+  Admin Notes on Seller Profile
+    Admin can leave internal notes on any seller profile.
+    Notes are NOT visible to the seller — admin eyes only.
+    Migration: seller_notes table — seller_id, note, admin_id, created_at
+    Phase: Phase 2
+
+  Seller Activity Log
+    Full log of every action a seller takes on the platform:
+      - Product added
+      - Product updated (what field changed, old value, new value)
+      - Product deleted
+      - Price changed
+      - Logged in / logged out
+      - Subscription payment submitted
+      - Order marked as shipped
+    Migration: seller_activity_logs table — seller_id, action, details, created_at
+    Admin can view the full log per seller from the seller detail page.
+    Phase: Phase 3
+
+---
+
+### A3 — Order Oversight
+
+  View All Orders Platform-Wide
+    Admin can see all orders across all sellers in one table.
+    Filterable by: status, seller name, customer name, date range.
+    Admin does NOT see seller revenue totals — only order details and status.
+    Phase: Phase 2
+
+  Admin Order Status Override
+    In exceptional cases (seller disappeared, unresolved dispute, system error),
+    Admin can manually change an order status.
+    Requires a reason field before saving.
+    Action is logged in an admin_actions table.
+    Phase: Phase 3
+
+---
+
+### A4 — Content Management
+
+  Platform Announcements
+    Admin can write and publish announcements.
+    Announcements appear as a banner or notice on the homepage for all users.
+    Can be set with an expiry date — auto-hides after that date.
+    Migration: announcements table — title, body, is_active, expires_at, created_at
+    Phase: Phase 2
+
+  Editable Legal Pages
+    Admin can edit the content of these pages directly from System Settings:
+      - Privacy Policy
+      - Terms of Service
+      - Cookie Settings
+    Stored in system_settings table using keys:
+      page_privacy_policy, page_terms_of_service, page_cookie_settings
+    No hardcoding. Content editable without touching code.
+    Phase: Phase 1
+
+  Maintenance Mode Message
+    Admin can toggle maintenance mode from System Settings.
+    When enabled, all non-admin users see a custom maintenance message.
+    Admin can still access the dashboard normally.
+    Stored in system_settings: maintenance_mode (0/1), maintenance_message (text)
+    Phase: Phase 2
+
+---
+
+## SECTION B — SELLER ADDITIONS
+
+---
+
+### B1 — Product Additions
+
+  Product Condition Filter (Seller's Own Inventory)
+    Seller can filter their own product list by condition:
+      New, Like New, Good, Fair, Poor
+    Works alongside existing status filters (active, sold out, low stock).
+    Phase: Phase 1
+
+  Product Views Counter
+    Track how many times each product listing was viewed by customers.
+    Migration: add views (integer, default 0) to products table.
+    Increment on every product detail page load (unique views per session preferred).
+    Visible to seller on their product list and product detail management page.
+    Phase: Phase 2
+
+  Low Stock Threshold Setting
+    Seller can set their own low stock warning level per product or store-wide.
+    Default is 10 (as per original requirements) but seller can change it.
+    Migration: add low_stock_threshold (integer, default 10) to products table.
+    Notification fires when stock <= low_stock_threshold.
+    Phase: Phase 2
+
+---
+
+### B2 — Store Additions
+
+  Verified Seller Badge Display
+    If Admin has marked seller as verified (is_verified = true),
+    show a verified badge on:
+      - The seller's store header page
+      - Every product card from that seller
+      - The seller's name on product detail pages
+    Phase: Phase 2
+
+  Business Hours Display
+    Seller can set their store operating hours from store settings.
+    Example: Mon-Sat 8:00 AM - 5:00 PM, Closed Sunday
+    Displayed on the seller's public store profile page.
+    Migration: add business_hours (text, nullable) to sellers table.
+    Phase: Phase 3
+
+---
+
+### B3 — Order Additions
+
+  Estimated Delivery Date
+    When seller marks an order as Shipped, they can set an estimated delivery date.
+    Shown to the customer on their order tracking page.
+    Migration: add estimated_delivery_date (date, nullable) to orders table.
+    Phase: Phase 2
+
+  Order Notes from Customer
+    Customer can leave a short note at checkout
+    (e.g. "Please wrap fragile", "Leave at the door").
+    Visible to seller when viewing order details.
+    Migration: add customer_note (text, nullable) to orders table.
+    Phase: Phase 1
+
+---
+
+### B4 — Payment Additions
+
+  Subscription Renewal History Timeline
+    Seller dashboard shows a clear month-by-month timeline of all subscription payments.
+    Each entry shows: month, amount, date paid, status (approved/pending/rejected).
+    Links to their full payment history page.
+    Phase: Phase 1
+
+  Days Remaining on Subscription Countdown
+    Show prominently on seller dashboard:
+    "Your subscription expires in X days"
+    Color changes based on urgency:
+      Green = more than 14 days
+      Yellow = 7-14 days
+      Red = less than 7 days (grace period warning)
+    Phase: Phase 1
+
+---
+
+### B5 — Analytics Additions
+
+  Customer Retention Rate
+    Percentage of customers who placed more than one order from this seller.
+    Formula: (customers with 2+ orders / total unique customers) x 100
+    Displayed on seller analytics page.
+    Phase: Phase 3
+
+  Revenue Comparison (This Month vs Last Month)
+    Show seller's revenue for current month vs previous month.
+    Display percentage change with up/down arrow.
+    Example: "This month: ₱8,200 (+23% vs last month)"
+    Phase: Phase 2
+
+---
+
+## SECTION C — CUSTOMER ADDITIONS
+
+---
+
+### C1 — Shopping Additions
+
+  Product Share Button
+    On every product detail page and product card, show a Share button.
+    Copies the product URL to clipboard.
+    Useful for word-of-mouth which is the primary discovery method for ukay stores.
+    Phase: Phase 2
+
+  Size / Variant Field on Products
+    Sellers can optionally add a size or variant to a product.
+    Options: XS, S, M, L, XL, XXL, Free Size, or custom text.
+    Displayed on the product card and product detail page.
+    Migration: add size_variant (varchar, nullable) to products table.
+    Customers can filter by size in Advanced Search (v1.1 feature).
+    Phase: Phase 2
+
+  Report a Listing Button
+    On every product detail page, customer can click "Report this listing".
+    Opens a short form: reason (dropdown) + optional description.
+    Report is sent to Admin inbox/flagged items list.
+    Migration: product_reports table — product_id, customer_id, reason, description, created_at
+    Phase: Phase 2
+
+  Product Image Zoom
+    On product detail page, clicking the product image opens a full-size view.
+    Critical for thrift buyers who want to inspect item condition closely.
+    Implement with a simple lightbox (no heavy library needed).
+    Phase: Phase 1
+
+---
+
+### C2 — Order Additions
+
+  Order Receipt / Invoice Download
+    After an order is marked Delivered, customer can view and download
+    a simple PDF receipt showing:
+      - Order number and tracking number
+      - Items purchased, quantity, price
+      - Delivery fee
+      - Total amount
+      - Seller name
+      - Date of order and date received
+    Phase: Phase 3
+
+  Estimated Delivery Date on Order Tracking
+    Once seller sets the estimated delivery date when shipping,
+    show it on the customer's order tracking page.
+    Example: "Estimated delivery: March 20, 2026"
+    Phase: Phase 2
+
+---
+
+### C3 — Profile Additions
+
+  Purchase History Stats
+    Show on customer profile page:
+      - Total orders placed (all time)
+      - Total amount spent (all time)
+      - Favorite category (most purchased from)
+    Phase: Phase 3
+
+  Delete Account Option
+    Customer can submit an account deletion request from their profile settings.
+    Request goes to Admin for manual processing (not instant auto-delete).
+    Admin sees pending deletion requests and can approve or deny.
+    Customer is notified by email once processed.
+    Phase: Phase 3
+
+---
+
+## SECTION D — PLATFORM / HOMEPAGE ADDITIONS
+
+---
+
+### D1 — Homepage Sections
+
+  Featured Products Section
+    Display products that sellers have marked as Featured (v1.1 feature).
+    Show as a highlighted row/grid near the top of the homepage.
+    Label: "Featured Picks" or "Staff Picks"
+    Phase: Phase 3
+
+  New Arrivals Section
+    Show the most recently added active products across all sellers.
+    Query: SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC LIMIT 12
+    Label: "New Arrivals"
+    Phase: Phase 2
+
+  Sale Items Section
+    Show products where sale_price is not null and sale_price < price.
+    Display both original price (strikethrough) and sale price.
+    Label: "On Sale Now"
+    Phase: Phase 2
+
+  Prominent Search Bar on Homepage
+    Large search bar displayed at the top of the homepage hero section.
+    Not just in the navigation bar — a dedicated homepage search element.
+    Phase: Phase 1
+
+---
+
+### D2 — SEO and Discoverability
+
+  Product Page Meta Tags
+    Each product detail page (/product/{id}) must have:
+      - <title>: Product Name - Ukay Hub
+      - <meta name="description">: first 160 chars of product description
+      - <meta property="og:image">: product image URL (for link previews)
+    Use Laravel's Blade @section or a meta package.
+    Phase: Phase 2
+
+  Store Page URL Slug
+    Seller store pages use a readable URL slug instead of numeric ID.
+    Example: /store/ukay-ni-maria instead of /store/42
+    Migration: add slug (varchar, unique) to sellers table.
+    Auto-generate slug from store_name on registration.
+    Allow seller to customize their slug from store settings.
+    Phase: Phase 2
+
+---
+
+### D3 — Trust and Safety
+
+  Legal Pages with Real Content
+    Privacy Policy, Terms of Service, and Cookie Settings pages
+    must have actual written content — not empty placeholders.
+    Content managed by Admin from System Settings (see A4 above).
+    Phase: Phase 1
+
+  Cookie Consent Banner
+    Small banner at the bottom of the page on first visit.
+    Message: "We use cookies to improve your experience. [Accept] [Decline]"
+    Preference saved in browser localStorage.
+    If declined, non-essential cookies are not set.
+    Phase: Phase 2
+
+---
+
+### D4 — Performance
+
+  Product Image Lazy Loading
+    Product images on the homepage and listing pages load only when
+    they are scrolled into view.
+    Implementation: add loading="lazy" attribute to all <img> tags.
+    Significantly speeds up initial page load when there are many products.
+    Phase: Phase 1
+
+  Cache Public Product Listings
+    Use Laravel Cache to cache the public product listing query.
+    Cache duration: 5 minutes (products don't change that frequently).
+    Invalidate cache when any product is added, updated, or deleted.
+    Implementation: Cache::remember('products.listing', 300, fn() => ...)
+    Phase: Phase 3
+
+---
+
+## SECTION E — PRODUCT DETAIL PAGE (/product/{id})
+
+---
+
+### E1 — Product Info Section
+
+  Display the following in order:
+    1. Product image (zoomable — see C1)
+    2. Product name
+    3. Condition badge (New / Like New / Good / Fair / Poor)
+    4. Size / variant if set (e.g. Size: L)
+    5. Regular price — show with strikethrough if a sale price exists
+    6. Sale price — highlighted (red or green) if set
+    7. Stock status label:
+         In Stock = stock > 10
+         Low Stock = stock between 1 and threshold
+         Out of Stock = stock = 0
+    8. Category / tag
+    9. Product description (full text)
+    10. Seller name — clickable link to /store/{slug}
+    11. Verified badge next to seller name if seller is verified
+    12. Add to Cart button (disabled if out of stock)
+    13. Add to Wishlist button (heart icon)
+    14. Share / Copy Link button
+    15. Report this listing link (small, bottom of info section)
+
+---
+
+### E2 — Ratings and Reviews Section
+
+  Overall Rating Display:
+    - Average star rating (e.g. 4.3 / 5)
+    - Total number of reviews (e.g. "28 reviews")
+    - Star breakdown bar chart:
+        5 stars: ████████ 18
+        4 stars: ████ 6
+        3 stars: ██ 3
+        2 stars: 1
+        1 star:  0
+
+  Individual Review Cards (sorted by most recent):
+    - Customer username
+    - Star rating (1-5)
+    - Written review text
+    - Date posted
+    - Seller reply shown below in a different style (if seller replied)
+
+  Review Submission Rules:
+    - Only customers who purchased AND received this product can leave a review
+    - One review per customer per product per order
+    - Customer can edit or delete their own review
+    - Review form appears on the product page after order is marked delivered
+
+  No Reviews State:
+    - Show: "No reviews yet. Be the first to review this product."
+
+---
+
+## SECTION F — PRODUCT CARD (PUBLIC LISTING DISPLAY RULES)
+
+---
+
+### F1 — What to Show on Product Card
+
+  SHOW:
+    - Product image (lazy loaded)
+    - Product name (truncate at 2 lines)
+    - Condition badge (small tag — e.g. "Like New")
+    - Regular price
+    - Sale price if set (show both — regular strikethrough, sale highlighted)
+    - Size / variant if set (small label)
+    - Add to Cart button
+    - Add to Wishlist button (heart icon)
+    - Verified seller badge (small icon) if seller is verified
+    - "Out of Stock" overlay if stock = 0 (grey out card, disable add to cart)
+    - "Low Stock" small badge if stock <= threshold
+
+  DO NOT SHOW on card:
+    - Product description
+    - Full review text or review count
+    - Stock number
+    - Seller name (only on product detail page)
+    - Category tag (shown as filter, not on card)
+
+---
+
+## SECTION G — SELLER PUBLIC STORE PAGE (/store/{slug})
+
+---
+
+### G1 — Store Header
+
+  Display:
+    - Store banner image (full width)
+    - Store logo / avatar (overlapping banner, bottom left)
+    - Store name (large)
+    - Verified badge next to store name (if verified)
+    - Overall store rating (average across all products with reviews)
+    - Total review count
+    - Member since date (seller account creation date)
+    - Open / Closed status badge (from business hours setting)
+    - Store description (short version, expandable)
+    - Contact Seller button (opens messaging thread)
+
+---
+
+### G2 — Store Stats (Visible to Customers)
+
+  Display below store header:
+    - Total active products listed
+    - Total completed orders (social proof — e.g. "142 orders completed")
+    - Average rating (e.g. "4.6 / 5")
+    - Member since (month and year)
+
+---
+
+### G3 — Store Tabs
+
+  Tab 1 — All Products
+    Grid of all active products from this seller.
+    Same product card layout from Section F.
+    Sort options: Newest, Price Low to High, Price High to Low, Most Reviewed.
+    Pagination: 24 products per page.
+
+  Tab 2 — Categories
+    Products grouped and filterable by their assigned category.
+    Show category pills at the top (e.g. Clothing | Shoes | Accessories | All).
+    Clicking a category filters the product grid.
+    Shows count per category (e.g. "Clothing (34)").
+
+  Tab 3 — Reviews
+    All reviews left on this seller's products — aggregated in one place.
+    Show overall store rating breakdown at the top (same format as E2).
+    Each review shows:
+      - Customer username
+      - Star rating
+      - Review text
+      - Product name the review is for (clickable link to that product)
+      - Date posted
+      - Seller reply if any
+    Sorted by most recent by default.
+    Pagination: 10 reviews per page.
+
+---
+
+## SECTION H — DATABASE CHANGES NEEDED FOR v1.5
+
+---
+
+  sellers table — add columns:
+    is_verified         BOOLEAN DEFAULT FALSE
+    slug                VARCHAR(255) UNIQUE
+    business_hours      TEXT NULLABLE
+    low_stock_threshold INT DEFAULT 10 (store-wide default)
+
+  products table — add columns:
+    views               INT DEFAULT 0
+    size_variant        VARCHAR(100) NULLABLE
+    low_stock_threshold INT NULLABLE (overrides seller default if set)
+
+  orders table — add columns:
+    customer_note           TEXT NULLABLE
+    estimated_delivery_date DATE NULLABLE
+
+  New tables:
+    announcements
+      id, title, body, is_active, expires_at, created_at, updated_at
+
+    seller_notes
+      id, seller_id (FK), note, admin_id (FK), created_at
+
+    seller_activity_logs
+      id, seller_id (FK), action, details, ip_address, created_at
+
+    product_reports
+      id, product_id (FK), customer_id (FK), reason, description, status (pending/reviewed), created_at
+
+  system_settings — add new keys:
+    page_privacy_policy     (text)
+    page_terms_of_service   (text)
+    page_cookie_settings    (text)
+    maintenance_mode        (0 or 1)
+    maintenance_message     (text)
+
+---
+
+## SUMMARY — ALL v1.5 ITEMS BY PHASE
+
+PHASE 1 (Build during core):
+  - New Orders Today dashboard metric (A1)
+  - Total Active vs Inactive Sellers metric (A1)
+  - Editable Legal Pages in System Settings (A4)
+  - Order Notes from Customer at checkout (B3)
+  - Subscription Renewal History Timeline (B4)
+  - Days Remaining on Subscription Countdown (B4)
+  - Product Condition Filter on seller inventory (B1)
+  - Product Image Zoom on detail page (C1)
+  - Prominent Search Bar on Homepage (D1)
+  - Legal Pages with Real Content (D3)
+  - Product Image Lazy Loading (D4)
+  - Full Product Detail Page layout (E1)
+  - Ratings and Reviews Section on product page (E2)
+  - Product Card display rules enforced (F1)
+  - Store Header and Stats on /store/{slug} (G1, G2)
+  - Store Tabs: All Products, Categories, Reviews (G3)
+
+PHASE 2 (After core is stable):
+  - Platform GMV card (A1)
+  - Average Order Value card (A1)
+  - Revenue This Month vs Last Month card (A1)
+  - Verified Seller Badge — Admin sets it (A2)
+  - Admin Notes on Seller Profile (A2)
+  - View All Orders Platform-Wide (A3)
+  - Platform Announcements (A4)
+  - Maintenance Mode Message (A4)
+  - Verified Seller Badge — displayed on store/cards (B2)
+  - Product Views Counter (B1)
+  - Low Stock Threshold Setting per product (B1)
+  - Estimated Delivery Date — seller sets on ship (B3)
+  - Revenue Comparison This Month vs Last Month (B5)
+  - Product Share Button (C1)
+  - Size / Variant Field on products (C1)
+  - Report a Listing button (C1)
+  - Estimated Delivery Date on order tracking (C2)
+  - New Arrivals Section on homepage (D1)
+  - Sale Items Section on homepage (D1)
+  - Product Page Meta Tags for SEO (D2)
+  - Store Page URL Slug (D2)
+  - Cookie Consent Banner (D3)
+
+PHASE 3 (Growth / polish):
+  - Seller Activity Log (A2)
+  - Admin Order Status Override (A3)
+  - Business Hours Display on store page (B2)
+  - Customer Retention Rate (B5)
+  - Order Receipt / Invoice Download (C2)
+  - Purchase History Stats on profile (C3)
+  - Delete Account Option (C3)
+  - Featured Products Section on homepage (D1)
+  - Cache Public Product Listings (D4)
+
+---
+
+# End of v1.5

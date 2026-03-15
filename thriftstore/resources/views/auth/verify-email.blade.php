@@ -1,31 +1,36 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
-    </div>
-
-    @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+    <div class="seller-auth-wrap">
+        <div class="seller-auth-head">
+            <h1 class="seller-auth-title">{{ __('Verify your email') }}</h1>
+            <p class="seller-auth-subtitle">
+                {{ __('Before continuing, confirm your email address using the verification link sent to your inbox. We can send a new link anytime.') }}
+            </p>
         </div>
-    @endif
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
+        <div class="seller-auth-content">
+            @if (session('status') == 'verification-link-sent')
+                <div class="seller-auth-status">
+                    {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+                </div>
+            @endif
 
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
+            <div class="flex flex-col gap-3">
+                <form method="POST" action="{{ route('verification.send') }}">
+                    @csrf
+
+                    <button type="submit" class="seller-auth-button">
+                        {{ __('Resend verification email') }}
+                    </button>
+                </form>
+
+                <form method="POST" action="{{ route($logoutRoute ?? 'logout') }}" class="text-center">
+                    @csrf
+
+                    <button type="submit" class="seller-auth-secondary-btn">
+                        {{ __('Log out') }}
+                    </button>
+                </form>
             </div>
-        </form>
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                {{ __('Log Out') }}
-            </button>
-        </form>
+        </div>
     </div>
 </x-guest-layout>

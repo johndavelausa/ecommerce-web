@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderDispute;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
@@ -16,6 +18,7 @@ class ReportsController extends Controller
     public function __invoke(Request $request): View
     {
         $period = $request->input('sales_period', 'monthly'); // daily, weekly, monthly, yearly
+        $refundDisputeFilter = $request->input('refund_dispute_filter', 'all'); // all, pending, completed, no_refund
 
         $totalProfit = (float) Payment::query()->where('status', 'approved')->sum('amount');
         $totalRevenue = (float) Order::query()->whereIn('status', ['shipped', 'delivered'])->sum('total_amount');
@@ -39,18 +42,25 @@ class ReportsController extends Controller
         $salesQuery = Order::query()->whereIn('status', ['shipped', 'delivered']);
         $cancelledQuery = Order::query()->where('status', 'cancelled');
 
-        $applyPeriod = function ($q) use ($period) {
-            return match ($period) {
-                'daily' => $q->whereRaw('DATE(created_at) = CURDATE()'),
-                'weekly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)'),
-                'monthly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
-                'yearly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)'),
-                default => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
-            };
-        };
+        $this->applyPeriodFilter($salesQuery, $period);
+        $this->applyPeriodFilter($cancelledQuery, $period);
+        $this->applyRefundDisputeFilter($salesQuery, $refundDisputeFilter);
+        $this->applyRefundDisputeFilter($cancelledQuery, $refundDisputeFilter);
 
-        $applyPeriod($salesQuery);
-        $applyPeriod($cancelledQuery);
+        $refundBase = Order::query();
+        $this->applyPeriodFilter($refundBase, $period);
+
+        $refundPendingCountQuery = clone $refundBase;
+        $this->applyRefundDisputeFilter($refundPendingCountQuery, 'pending');
+        $refundPendingCount = (int) $refundPendingCountQuery->count();
+
+        $refundCompletedCountQuery = clone $refundBase;
+        $this->applyRefundDisputeFilter($refundCompletedCountQuery, 'completed');
+        $refundCompletedCount = (int) $refundCompletedCountQuery->count();
+
+        $refundNoRefundCountQuery = clone $refundBase;
+        $this->applyRefundDisputeFilter($refundNoRefundCountQuery, 'no_refund');
+        $refundNoRefundCount = (int) $refundNoRefundCountQuery->count();
 
         $totalSalesFiltered = (float) $salesQuery->sum('total_amount');
 
@@ -62,12 +72,16 @@ class ReportsController extends Controller
         $gcashTotal = (float) Payment::query()->where('status', 'approved')->sum('amount');
         $cashTotal = $totalRevenue;
 
-        $cancelledOrders = Order::query()->where('status', 'cancelled')->with('customer')->orderByDesc('cancelled_at')->limit(50)->get();
+        $cancelledOrders = Order::query()->where('status', 'cancelled')->with('customer');
+        $this->applyRefundDisputeFilter($cancelledOrders, $refundDisputeFilter);
+        $cancelledOrders = $cancelledOrders->orderByDesc('cancelled_at')->paginate(20);
 
         $peakDayQuery = Order::query();
         $peakHourQuery = Order::query();
-        $applyPeriod($peakDayQuery);
-        $applyPeriod($peakHourQuery);
+        $this->applyPeriodFilter($peakDayQuery, $period);
+        $this->applyPeriodFilter($peakHourQuery, $period);
+        $this->applyRefundDisputeFilter($peakDayQuery, $refundDisputeFilter);
+        $this->applyRefundDisputeFilter($peakHourQuery, $refundDisputeFilter);
 
         $peakDays = $peakDayQuery
             ->selectRaw("DAYOFWEEK(created_at) as dow, DATE_FORMAT(created_at, '%W') as day_name, COUNT(*) as total")
@@ -109,6 +123,10 @@ class ReportsController extends Controller
             'cancellationRate' => $cancellationRate,
             'peakDays' => $peakDays,
             'peakHours' => $peakHours,
+            'refundDisputeFilter' => $refundDisputeFilter,
+            'refundPendingCount' => $refundPendingCount,
+            'refundCompletedCount' => $refundCompletedCount,
+            'refundNoRefundCount' => $refundNoRefundCount,
         ]);
     }
 
@@ -167,9 +185,10 @@ class ReportsController extends Controller
     public function exportAll(Request $request): StreamedResponse
     {
         $period = $request->input('sales_period', 'monthly');
+        $refundDisputeFilter = $request->input('refund_dispute_filter', 'all');
         $fileName = 'reports-' . $period . '-' . now()->format('Y-m-d_H-i-s') . '.csv';
 
-        $callback = function () use ($period) {
+        $callback = function () use ($period, $refundDisputeFilter) {
             $handle = fopen('php://output', 'w');
 
             // Helper to write a blank line between sections
@@ -186,18 +205,25 @@ class ReportsController extends Controller
             $salesQuery = Order::query()->whereIn('status', ['shipped', 'delivered']);
             $cancelledQuery = Order::query()->where('status', 'cancelled');
 
-            $applyPeriod = function ($q) use ($period) {
-                return match ($period) {
-                    'daily' => $q->whereRaw('DATE(created_at) = CURDATE()'),
-                    'weekly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)'),
-                    'monthly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
-                    'yearly' => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)'),
-                    default => $q->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
-                };
-            };
+            $this->applyPeriodFilter($salesQuery, $period);
+            $this->applyPeriodFilter($cancelledQuery, $period);
+            $this->applyRefundDisputeFilter($salesQuery, $refundDisputeFilter);
+            $this->applyRefundDisputeFilter($cancelledQuery, $refundDisputeFilter);
 
-            $applyPeriod($salesQuery);
-            $applyPeriod($cancelledQuery);
+            $refundBase = Order::query();
+            $this->applyPeriodFilter($refundBase, $period);
+
+            $refundPendingCountQuery = clone $refundBase;
+            $this->applyRefundDisputeFilter($refundPendingCountQuery, 'pending');
+            $refundPendingCount = (int) $refundPendingCountQuery->count();
+
+            $refundCompletedCountQuery = clone $refundBase;
+            $this->applyRefundDisputeFilter($refundCompletedCountQuery, 'completed');
+            $refundCompletedCount = (int) $refundCompletedCountQuery->count();
+
+            $refundNoRefundCountQuery = clone $refundBase;
+            $this->applyRefundDisputeFilter($refundNoRefundCountQuery, 'no_refund');
+            $refundNoRefundCount = (int) $refundNoRefundCountQuery->count();
 
             $totalSalesFiltered = (float) $salesQuery->sum('total_amount');
             $completedCount = (int) $salesQuery->count();
@@ -226,8 +252,10 @@ class ReportsController extends Controller
 
             $peakDayQuery = Order::query();
             $peakHourQuery = Order::query();
-            $applyPeriod($peakDayQuery);
-            $applyPeriod($peakHourQuery);
+            $this->applyPeriodFilter($peakDayQuery, $period);
+            $this->applyPeriodFilter($peakHourQuery, $period);
+            $this->applyRefundDisputeFilter($peakDayQuery, $refundDisputeFilter);
+            $this->applyRefundDisputeFilter($peakHourQuery, $refundDisputeFilter);
 
             $peakDays = $peakDayQuery
                 ->selectRaw("DATE_FORMAT(created_at, '%W') as day_name, COUNT(*) as total")
@@ -260,6 +288,10 @@ class ReportsController extends Controller
             fputcsv($handle, ['Summary', 'Completed orders (period)', $completedCount]);
             fputcsv($handle, ['Summary', 'Cancelled orders (period)', $cancelledCount]);
             fputcsv($handle, ['Summary', 'Cancellation rate % (period)', $cancellationRate]);
+            fputcsv($handle, ['Summary', 'Refund/dispute filter', $refundDisputeFilter]);
+            fputcsv($handle, ['Summary', 'Refund/dispute pending orders (period)', $refundPendingCount]);
+            fputcsv($handle, ['Summary', 'Refund/dispute completed orders (period)', $refundCompletedCount]);
+            fputcsv($handle, ['Summary', 'No refund/dispute orders (period)', $refundNoRefundCount]);
 
             $blank();
 
@@ -307,5 +339,48 @@ class ReportsController extends Controller
         return response()->streamDownload($callback, $fileName, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    private function applyPeriodFilter(Builder $query, string $period): void
+    {
+        match ($period) {
+            'daily' => $query->whereRaw('DATE(created_at) = CURDATE()'),
+            'weekly' => $query->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)'),
+            'monthly' => $query->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
+            'yearly' => $query->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)'),
+            default => $query->whereRaw('created_at >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)'),
+        };
+    }
+
+    private function applyRefundDisputeFilter(Builder $query, string $filter): void
+    {
+        if ($filter === 'pending') {
+            $query->where(function (Builder $inner) {
+                $inner->where('refund_status', Order::REFUND_STATUS_PENDING)
+                    ->orWhereHas('disputes', function (Builder $dq) {
+                        $dq->whereIn('status', OrderDispute::ACTIVE_STATUSES);
+                    });
+            });
+
+            return;
+        }
+
+        if ($filter === 'completed') {
+            $query->where(function (Builder $inner) {
+                $inner->where('refund_status', Order::REFUND_STATUS_COMPLETED)
+                    ->orWhereHas('disputes', function (Builder $dq) {
+                        $dq->whereIn('status', OrderDispute::TERMINAL_STATUSES);
+                    });
+            });
+
+            return;
+        }
+
+        if ($filter === 'no_refund') {
+            $query->where(function (Builder $inner) {
+                $inner->whereNull('refund_status')
+                    ->orWhere('refund_status', Order::REFUND_STATUS_NOT_REQUIRED);
+            })->whereDoesntHave('disputes');
+        }
     }
 }

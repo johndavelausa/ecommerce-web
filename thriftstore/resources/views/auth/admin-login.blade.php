@@ -31,9 +31,19 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
+            @if (Route::has('password.request'))
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request', ['intended' => 'admin']) }}">
+                    {{ __('Forgot your password?') }}
+                </a>
+            @endif
+            <x-primary-button class="ms-3">
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
+        @if (Route::has('verification.resend'))
+            <p class="mt-4 text-center text-sm text-gray-600">
+                <a class="underline hover:text-gray-900" href="{{ route('verification.resend') }}">{{ __('Didn\'t receive the verification email? Resend') }}</a>
+            </p>
+        @endif
     </form>
 </x-guest-layout>

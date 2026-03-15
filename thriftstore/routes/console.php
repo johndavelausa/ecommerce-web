@@ -10,3 +10,21 @@ Artisan::command('inspire', function () {
 
 // Daily subscription status updater (grace period / lapsed logic)
 Schedule::command('subscriptions:update-status')->daily();
+
+// Order lifecycle automation: complete delivered orders after dispute window.
+Schedule::command('orders:auto-complete-delivered --days=3')->hourly();
+
+// SLA monitoring: seller reminders + admin anomaly alerts for delayed orders.
+Schedule::command('orders:monitor-sla --accept-hours=12 --ship-hours=48')->everyThirtyMinutes();
+
+// Seller acceptance SLA enforcement: auto-cancel stale paid orders and log penalty metadata.
+Schedule::command('orders:auto-cancel-unaccepted --accept-hours=12 --penalty-points=1')->everyThirtyMinutes();
+
+// Stale shipment watchdog: alerts for delayed in-transit and out-for-delivery orders.
+Schedule::command('orders:watch-stale-shipments --in-transit-hours=72 --out-for-delivery-hours=24')->everyThirtyMinutes();
+
+// Payout automation: release eligible seller payouts after completion/dispute checks.
+Schedule::command('orders:release-payouts --hours=0')->hourly();
+
+// Dispute SLA automation: escalate stale disputes to admin queue and alert parties.
+Schedule::command('orders:escalate-disputes --seller-hours=24 --admin-hours=24')->everyThirtyMinutes();

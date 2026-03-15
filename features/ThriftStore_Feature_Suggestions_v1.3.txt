@@ -1,0 +1,357 @@
+# Thrift Store Platform — Critical Missing Features v1.4
+# Ukay Hub by Lausa
+# Found after reviewing v1.0 (Build Order), v1.1 (Feature Suggestions), v1.2 (Missing Pieces)
+# These are gaps that will either break the system or cause serious problems if not addressed.
+
+---
+
+## OVERVIEW
+
+Total new items: 8
+Split into:
+  - Section A: Critical (will break or block development if ignored)
+  - Section B: Should Be Added (will cause problems at scale or in real use)
+
+---
+
+## SECTION A — CRITICAL ITEMS
+
+---
+
+### A1 — Product Condition Field
+
+Context:
+  This is a thrift / ukay-ukay store. There is currently zero mention of
+  product condition anywhere in v1.0, v1.1, or v1.2. Customers need to
+  know the condition of second-hand items before buying.
+
+What to add:
+  - Add a required "condition" field to every product
+  - Options: New, Like New, Good, Fair, Poor
+  - Store as an enum in the products table: condition ENUM('new','like_new','good','fair','poor')
+  - Display prominently on the product listing card and product detail page
+  - Customers can filter products by condition (pairs with the Advanced Search feature in v1.1)
+
+Migration change:
+  Add to products table migration:
+  $table->enum('condition', ['new', 'like_new', 'good', 'fair', 'poor']);
+
+Phase: Phase 1 — add this before any product is created
+
+---
+
+### A2 — Delivery Fee Rules
+
+Context:
+  COD is defined as the payment method but the cost of delivery is
+  completely undefined across all documents. This affects the order
+  total shown at checkout and what the customer actually pays.
+
+Decision needed (pick one before building checkout):
+
+  Option 1 — Free Delivery
+    No delivery fee. Customer pays exactly the product price.
+    Simple. Good for launch.
+
+  Option 2 — Flat Rate per Order
+    Fixed fee per order regardless of items or distance.
+    Example: ₱50 per order.
+    Store as a system setting so Admin can change it.
+    Add to system_settings: key = 'delivery_fee', value = '50'
+
+  Option 3 — Seller Sets Their Own Fee
+    Each seller defines their delivery fee on their store profile.
+    Add delivery_fee column to sellers table.
+    Shown at checkout per seller group.
+
+Recommended for launch: Option 2 (Flat Rate) — simplest to build,
+Admin can adjust it later via System Settings without code changes.
+
+Migration change (if Option 2):
+  Add to system_settings seeder:
+  ['key' => 'delivery_fee', 'value' => '50']
+
+Order total formula:
+  subtotal = sum of (price_at_purchase x quantity)
+  total = subtotal + delivery_fee
+
+Phase: Phase 1 — must be decided before checkout is built
+
+---
+
+### A3 — Multi-Seller Cart / Checkout Logic
+
+Context:
+  A customer can add products from Seller A and Seller B into one cart.
+  The current docs never define what happens at checkout. This directly
+  affects how the orders table is structured and how order notifications work.
+
+The problem:
+  If one order record is created for items from two different sellers,
+  neither seller can manage it independently.
+  If two separate orders are created, the customer needs to understand
+  they will receive two separate deliveries.
+
+Rule to implement:
+  When a customer checks out a cart with items from multiple sellers,
+  the system automatically splits the cart into one order per seller.
+
+  Example:
+    Cart has:
+      - 2 items from Seller A
+      - 1 item from Seller B
+    Result at checkout:
+      - Order #001 created for Seller A (2 items)
+      - Order #002 created for Seller B (1 item)
+    Customer sees both orders in their order history.
+    Each seller only sees their own order.
+    Each order gets its own tracking number when shipped.
+
+UI rule:
+  At checkout, show the customer a summary grouped by seller before confirming.
+  Example:
+    "Your cart contains items from 2 sellers.
+     This will create 2 separate orders with 2 separate deliveries."
+
+Delivery fee rule:
+  If using flat rate delivery — charge the delivery fee per order (per seller),
+  not once for the whole cart.
+  Example: 2 sellers = 2 x ₱50 = ₱100 total delivery fee.
+
+Phase: Phase 1 — must be resolved before checkout is built
+
+---
+
+### A4 — Forgot Password / Password Reset
+
+Context:
+  Not mentioned anywhere in v1.0, v1.1, or v1.2.
+  This is a standard auth feature. Users will get locked out without it.
+
+What to add:
+  - "Forgot Password?" link on the login page for all roles
+  - User enters their email address
+  - System sends a password reset link to that email (valid for 60 minutes)
+  - User clicks the link, enters a new password, confirms it
+  - Password is updated, old link is invalidated
+
+Laravel implementation:
+  - Laravel Breeze includes this out of the box
+  - Uses the password_reset_tokens table (created by Breeze migration)
+  - Email is sent via the mail configuration in .env
+  - No extra packages needed
+
+Applies to: Admin, Seller, Customer
+
+Phase: Phase 1 — must exist before launch
+
+---
+
+## SECTION B — SHOULD BE ADDED
+
+---
+
+### B1 — Email Verification on Registration
+
+Context:
+  Customers and sellers register with an email but there is no
+  verification step. Anyone can register with a fake email.
+  This leads to spam accounts and undeliverable notification emails.
+
+What to add:
+  - After registering, user receives a verification email with a link
+  - Until they click the link, their account is marked as unverified
+  - Unverified customers: can browse but cannot checkout
+  - Unverified sellers: stay in Pending status regardless (Admin still approves separately)
+  - Resend verification email button on the login page if user did not receive it
+
+Laravel implementation:
+  - Implement MustVerifyEmail interface on the User model
+  - Add ->verified() middleware to protected routes
+  - Laravel Breeze supports this with one config change:
+    In RegisteredUserController, the User model just needs to implement MustVerifyEmail
+  - Verification email is sent automatically on registration
+
+FOR LOCALHOST TESTING — HOW EMAIL WORKS:
+  Use Mailtrap (free). Here is the exact setup:
+
+  Step 1: Go to mailtrap.io and create a free account
+  Step 2: Go to Email Testing > Inboxes > Click your inbox > SMTP Settings
+  Step 3: Copy your credentials and paste into .env:
+
+    MAIL_MAILER=smtp
+    MAIL_HOST=sandbox.smtp.mailtrap.io
+    MAIL_PORT=2525
+    MAIL_USERNAME=your_mailtrap_username
+    MAIL_PASSWORD=your_mailtrap_password
+    MAIL_ENCRYPTION=tls
+    MAIL_FROM_ADDRESS=noreply@ukayhub.com
+    MAIL_FROM_NAME="Ukay Hub"
+
+  Step 4: Every email your app sends (verification, password reset,
+          registration approved, etc.) will appear in your Mailtrap inbox.
+          No real email is sent. Completely free. No limits during dev.
+
+FOR PRODUCTION:
+  Switch to Resend (resend.com) — free tier = 3,000 emails/month.
+  Just replace the .env MAIL_ values. Zero code changes needed.
+
+    MAIL_MAILER=smtp
+    MAIL_HOST=smtp.resend.com
+    MAIL_PORT=465
+    MAIL_USERNAME=resend
+    MAIL_PASSWORD=your_resend_api_key
+    MAIL_ENCRYPTION=tls
+
+Phase: Phase 1 — set up Mailtrap immediately when building auth
+
+---
+
+### B2 — Pagination on All List Views
+
+Context:
+  Not mentioned anywhere in any document. Every table/list in the
+  system needs pagination or the pages will time out and crash
+  with real data (e.g. 500 products, 1000 orders).
+
+Where pagination is required:
+
+  Admin side:
+    - Sellers list
+    - Customers list
+    - Payment history (registration)
+    - Payment history (subscription)
+    - Messages / inbox
+    - All report tables
+
+  Seller side:
+    - Products list
+    - Orders list
+    - Product history log
+    - Reviews list
+
+  Customer side:
+    - Public product listing (homepage)
+    - Order history
+    - Cart (not paginated — show all, but cap at 50 items max)
+
+Laravel implementation:
+  Use built-in paginate() on all Eloquent queries:
+  $sellers = Seller::paginate(20);
+  Use {{ $sellers->links() }} in Blade for pagination controls.
+  Livewire components use WithPagination trait.
+
+Recommended page sizes:
+  - Admin lists: 20 per page
+  - Seller product list: 20 per page
+  - Public product listing: 24 per page (grid of 4 columns x 6 rows)
+  - Order history: 10 per page
+
+Phase: Phase 1 — add to every query from the start, not as an afterthought
+
+---
+
+### B3 — Admin Search
+
+Context:
+  Admin has no search capability mentioned in any document.
+  Finding a specific seller, customer, or payment manually
+  through a paginated table is impractical.
+
+Where search is needed:
+
+  Sellers list:
+    - Search by: store name, full name, email, GCash number, status
+  Customers list:
+    - Search by: full name, username, email, contact number
+  Payment history:
+    - Search by: seller name, GCash reference number, date range, status
+  Messages inbox:
+    - Search by: sender name or message keyword
+  Orders (admin view):
+    - Search by: tracking number, customer name, seller name, status
+
+Implementation:
+  Use Livewire search components — search input updates results
+  in real time without page reload.
+  Add WHERE LIKE clauses to queries or use Laravel Scout for
+  more advanced search later.
+
+Phase: Phase 2 — add after core admin module is working
+
+---
+
+### B4 — Session Timeout and Security
+
+Context:
+  Not mentioned anywhere. Without this, a seller who logs in
+  on a shared computer stays logged in indefinitely.
+
+Rules to implement:
+
+  Session lifetime:
+    Set in config/session.php:
+    'lifetime' => 120  (120 minutes = 2 hours of inactivity)
+    'expire_on_close' => false
+
+  Remember Me:
+    Add "Remember Me" checkbox to login form.
+    If checked: session lasts 30 days.
+    If not checked: session expires after 2 hours of inactivity.
+
+  Logout from all devices:
+    Add a "Logout from all devices" button in user profile settings.
+    Uses Auth::logoutOtherDevices($password) in Laravel.
+    Requires the password to confirm before logging out all sessions.
+
+  Admin extra:
+    Admin session should be shorter: 60 minutes of inactivity.
+    Admin has no "Remember Me" option for security.
+
+Phase: Phase 1 — configure session lifetime before launch
+
+---
+
+## SUMMARY
+
+SECTION A — CRITICAL (build before or during Phase 1):
+
+  A1 - Product Condition Field
+       Add condition enum to products table: new, like_new, good, fair, poor
+       Required field. Display on product cards and detail page.
+
+  A2 - Delivery Fee Rules
+       Decide on fee model before building checkout.
+       Recommended: flat rate stored in system_settings, charged per order per seller.
+
+  A3 - Multi-Seller Cart Logic
+       One order created per seller at checkout.
+       Customer sees grouped summary before confirming.
+       Delivery fee charged per order.
+
+  A4 - Forgot Password / Password Reset
+       Standard auth. Laravel Breeze includes this.
+       Works for Admin, Seller, and Customer.
+
+SECTION B — SHOULD BE ADDED:
+
+  B1 - Email Verification on Registration
+       Use Mailtrap (free) for localhost.
+       Switch to Resend for production (free tier).
+       Unverified customers cannot checkout.
+
+  B2 - Pagination on All List Views
+       Use paginate() on every list query from the start.
+       Page sizes: 20 for admin lists, 24 for product grid.
+
+  B3 - Admin Search
+       Search across sellers, customers, payments, messages.
+       Use Livewire for real-time search without page reload.
+
+  B4 - Session Timeout
+       120 minutes inactivity timeout for sellers and customers.
+       60 minutes for admin. No Remember Me for admin.
+
+---
+
+# End of v1.4

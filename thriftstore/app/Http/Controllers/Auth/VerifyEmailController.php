@@ -11,17 +11,29 @@ class VerifyEmailController extends Controller
 {
     /**
      * Mark the authenticated user's email address as verified.
+     * B1 - v1.3: redirect to correct dashboard (customer or seller).
      */
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->redirectIntended($user);
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        return $this->redirectIntended($user);
+    }
+
+    private function redirectIntended($user): RedirectResponse
+    {
+        $default = $user->seller
+            ? route('seller.dashboard', [], false)
+            : route('customer.dashboard', [], false);
+
+        return redirect()->intended($default)->with('verified', 1);
     }
 }

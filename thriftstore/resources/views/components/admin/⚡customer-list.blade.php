@@ -28,13 +28,15 @@ new class extends Component
     {
         $q = User::query()->whereHas('roles', fn ($q) => $q->where('name', 'customer'));
         if ($this->search !== '') {
-            $q->where(function ($q) {
-                $q->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('email', 'like', '%' . $this->search . '%')
-                    ->orWhere('username', 'like', '%' . $this->search . '%');
+            $term = '%' . trim($this->search) . '%';
+            $q->where(function ($q) use ($term) {
+                $q->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('username', 'like', $term)
+                    ->orWhere('contact_number', 'like', $term);
             });
         }
-        return $q->orderByDesc('created_at')->paginate(10);
+        return $q->orderByDesc('created_at')->paginate(20);
     }
 
     public function confirmDelete(int $id): void
@@ -168,7 +170,7 @@ new class extends Component
 
 <div>
     <div class="mb-4">
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search by name or email..." class="rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-full max-w-md">
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search by name, username, email, or contact number…" class="rounded border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-full max-w-md">
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">

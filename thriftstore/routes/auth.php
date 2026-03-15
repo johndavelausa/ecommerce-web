@@ -22,6 +22,12 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
+    // B1 - v1.3: Resend verification email (guest)
+    Route::get('resend-verification', [\App\Http\Controllers\Auth\ResendVerificationController::class, 'create'])
+        ->name('verification.resend');
+    Route::post('resend-verification', [\App\Http\Controllers\Auth\ResendVerificationController::class, 'store'])
+        ->name('verification.resend.store');
+
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
@@ -35,7 +41,8 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
-Route::middleware('auth')->group(function () {
+// Verification routes: allow both web (customer) and seller guards (B1 - v1.3)
+Route::middleware('auth.verification')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

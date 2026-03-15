@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Wishlist extends Model
 {
+    const UPDATED_AT = null;
+
     protected $fillable = [
         'customer_id',
         'product_id',

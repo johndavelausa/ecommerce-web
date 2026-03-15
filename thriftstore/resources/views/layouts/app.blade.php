@@ -5,6 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        @php
+            $platformLogo = \App\Models\SystemSetting::get('logo_path');
+            $faviconUrl = $platformLogo ? asset('storage/' . $platformLogo) : asset('favicon.ico');
+        @endphp
+
+        <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
+
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
@@ -13,9 +20,11 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @livewireStyles
+        @stack('styles')
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 flex flex-col">
+        <div class="min-h-screen {{ request()->routeIs('seller.register', 'seller.login') ? 'bg-[#f2f5f4]' : 'bg-gray-100' }} flex flex-col">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -28,11 +37,13 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="flex-1">
+            <main class="flex-1 {{ request()->routeIs('seller.register') ? 'overflow-hidden flex items-center' : '' }} {{ request()->routeIs('seller.login') ? 'overflow-auto flex items-center justify-center seller-login-main-bg' : '' }}">
                 {{ $slot }}
             </main>
 
             @include('layouts.footer')
         </div>
+
+        @livewireScripts
     </body>
 </html>

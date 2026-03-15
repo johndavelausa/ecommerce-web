@@ -62,8 +62,12 @@ new class extends Component
 
         $cart = Session::get('cart', []);
         $key = (string) $product->id;
+        if (! isset($cart[$key]) && count($cart) >= 50) {
+            $this->addError('cart', __('Cart is full (max 50 items). Remove an item or checkout first.'));
+            return;
+        }
         $currentQty = $cart[$key]['quantity'] ?? 0;
-        $newQty = $currentQty + 1;
+        $newQty = min($currentQty + 1, $product->stock);
 
         $cart[$key] = [
             'product_id' => $product->id,
@@ -104,7 +108,8 @@ new class extends Component
                             @if($product->image_path)
                                 <img src="{{ asset('storage/'.$product->image_path) }}"
                                      alt="{{ $product->name }}"
-                                     class="w-full h-full object-cover">
+                                     class="w-full h-full object-cover"
+                                     loading="lazy">
                             @else
                                 <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
                                     No image

@@ -1,0 +1,89 @@
+Design a clean and modern e-commerce web app UI called "Ukay Hub" 
+— a Filipino thrift / ukay-ukay online store.
+
+COLOR PALETTE:
+Primary: #2D6A4F (dark green — navbar, primary buttons, active states)
+Secondary: #52B788 (medium green — hover states, highlights)
+Light accent: #B7E4C7 (light green — badges, tags, subtle backgrounds)
+Background: #F9FAFB (off-white — page background)
+Surface: #FFFFFF (white — cards, modals, forms)
+Text primary: #1A1A2E (headings, body)
+Text secondary: #4A5568 (labels, placeholders, subtext)
+Border: #E2E8F0 (card borders, dividers, inputs)
+Danger: #E53E3E (delete, errors, out of stock)
+Warning: #D97706 (low stock, subscription alerts)
+Success: #38A169 (approved, success states)
+
+DESIGN RULES:
+- White is the dominant color. Green is accent only — not overwhelming.
+- Clean, minimal, lots of breathing room.
+- Cards: white background, light grey border (#E2E8F0), soft drop shadow.
+- Navbar: #2D6A4F background, white logo and links.
+- Buttons: primary = #2D6A4F with white text, rounded corners.
+- Sidebar (dashboard): white background, green left border on active item.
+- Tables: white background, #F1F5F9 header row, subtle alternating rows.
+- Badges:
+    Processing = #DBEAFE / #1D4ED8
+    Shipped = #FEF3C7 / #B45309
+    Delivered = #DCFCE7 / #166534
+    Cancelled = #FEE2E2 / #991B1B
+    Pending = #F1F5F9 / #475569
+    Approved = #DCFCE7 / #166534
+    Rejected = #FEE2E2 / #991B1B
+- Typography: Inter font. Bold headings, regular body.
+- Mobile responsive layouts.
+- Generous padding and spacing throughout.
+
+PAGES TO DESIGN:
+
+1. Homepage (public)
+   - Navbar with logo, search bar, cart icon, login/register
+   - Hero section with search bar and tagline
+   - New Arrivals product grid
+   - Sale Items section
+   - Featured Products section
+   - Footer with Privacy Policy, Terms of Service, Cookie Settings
+
+2. Product Listing Page
+   - Filter sidebar (category, condition, price range, size)
+   - Product grid (4 columns desktop, 2 mobile)
+   - Each product card shows: image, name, condition badge, price/sale price, 
+     add to cart button, wishlist heart icon
+
+3. Product Detail Page (/product/{id})
+   - Large product image with zoom
+   - Product name, condition badge, size, price, sale price
+   - Stock status badge
+   - Add to Cart + Wishlist buttons
+   - Share button
+   - Seller name (clickable)
+   - Full description
+   - Ratings and reviews section with star breakdown
+
+4. Seller Public Store Page (/store/{slug})
+   - Store banner image
+   - Store avatar, name, verified badge, rating, member since
+   - Contact Seller button
+   - Tabs: All Products / Categories / Reviews
+
+5. Customer Dashboard
+   - Order history table with status badges
+   - Profile settings page
+
+6. Seller Dashboard
+   - Sidebar navigation
+   - Stats cards: Total Sales, Revenue, Total Orders, 
+     Pending Orders, Low Stock alerts, Subscription countdown
+   - Product management table
+   - Order management table
+
+7. Admin Dashboard
+   - Sidebar navigation
+   - Stats cards: Total Profit, Total Revenue, Total Sellers, 
+     Total Customers, Total Orders, Unread Messages
+   - Recent activity feed
+
+8. Login and Register pages
+   - Clean centered card layout
+   - Seller registration with GCash payment section
+   - Customer registration simple form

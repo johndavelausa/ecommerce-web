@@ -10,13 +10,13 @@
             <div class="flex flex-wrap gap-3 items-center justify-between">
                 <div class="flex flex-wrap gap-2 items-center">
                     <span class="text-sm text-gray-600">Total sales period:</span>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'daily']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'daily' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Daily</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'weekly']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Weekly</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'monthly']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Monthly</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'yearly']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'yearly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Yearly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'daily', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'daily' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Daily</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'weekly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Weekly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'monthly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Monthly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'yearly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="px-3 py-1 rounded text-sm {{ ($salesPeriod ?? '') === 'yearly' ? 'bg-indigo-600 text-white' : 'bg-gray-200' }}">Yearly</a>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('admin.reports.export-all', ['sales_period' => $salesPeriod ?? 'monthly']) }}"
+                    <a href="{{ route('admin.reports.export-all', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}"
                        class="inline-flex items-center px-3 py-1.5 rounded-md border border-indigo-600 text-xs font-medium text-indigo-600 hover:bg-indigo-50">
                         Export all reports (CSV)
                     </a>
@@ -24,6 +24,44 @@
                        class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50">
                         Export payment history (CSV)
                     </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="text-sm font-medium text-gray-700">Refund/dispute filter</div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'all']) }}"
+                       class="px-3 py-1 rounded text-sm {{ ($refundDisputeFilter ?? 'all') === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700' }}">All</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'pending']) }}"
+                       class="px-3 py-1 rounded text-sm {{ ($refundDisputeFilter ?? 'all') === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800' }}">Pending</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'completed']) }}"
+                       class="px-3 py-1 rounded text-sm {{ ($refundDisputeFilter ?? 'all') === 'completed' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800' }}">Completed</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'no_refund']) }}"
+                       class="px-3 py-1 rounded text-sm {{ ($refundDisputeFilter ?? 'all') === 'no_refund' ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-800' }}">No refund/dispute</a>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    @php($filterLabel = match($refundDisputeFilter ?? 'all') {
+                        'pending' => 'Pending',
+                        'completed' => 'Completed',
+                        'no_refund' => 'No refund/dispute',
+                        default => 'All',
+                    })
+                    Current filter: <span class="font-semibold text-gray-700">{{ $filterLabel }}</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-amber-400">
+                    <div class="text-sm text-gray-500">Refund/dispute pending</div>
+                    <div class="text-xl font-semibold">{{ $refundPendingCount ?? 0 }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                    <div class="text-sm text-gray-500">Refund/dispute completed</div>
+                    <div class="text-xl font-semibold">{{ $refundCompletedCount ?? 0 }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-slate-500">
+                    <div class="text-sm text-gray-500">No refund/dispute</div>
+                    <div class="text-xl font-semibold">{{ $refundNoRefundCount ?? 0 }}</div>
                 </div>
             </div>
 
@@ -171,6 +209,11 @@
                             @endforelse
                         </tbody>
                     </table>
+                    @if(isset($cancelledOrders) && $cancelledOrders->hasPages())
+                        <div class="px-4 py-2 border-t">
+                            {{ $cancelledOrders->links() }}
+                        </div>
+                    @endif
                 </div>
             </div>
 

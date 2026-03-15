@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use App\Models\Message;
 use App\Models\Order;
+use App\Models\OrderDispute;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Seller;
@@ -15,6 +17,26 @@ class AdminDashboardController extends Controller
 {
     public function __invoke(): View
     {
+        // Total Sales: platform-wide sum of delivered orders (feature v1.2 - Admin Phase 1)
+        $totalSales = (float) Order::query()
+            ->where('status', 'delivered')
+            ->sum('total_amount');
+
+        // Total Orders: count of all orders platform-wide (feature v1.2 - Admin #2)
+        $totalOrders = (int) Order::query()->count();
+
+        // Bad Orders: cancelled, returned, or failed to deliver (feature v1.2 - Admin #5)
+        $badOrdersCount = (int) Order::query()->where('status', 'cancelled')->count();
+        $badOrdersPercent = $totalOrders > 0 ? round(($badOrdersCount / $totalOrders) * 100, 1) : 0.0;
+
+        // Order Status Breakdown: counts by status (feature v1.2 - Admin #3)
+        $orderStatusBreakdown = Order::query()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->get()
+            ->pluck('count', 'status')
+            ->toArray();
+
         $totalProfit = (float) Payment::query()
             ->where('status', 'approved')
             ->sum('amount');
@@ -43,6 +65,133 @@ class AdminDashboardController extends Controller
             ->get();
 
         $totalApprovedSellers = (int) Seller::query()->where('status', 'approved')->count();
+        $totalSellers = (int) Seller::query()->count();
+        $rejectedSellers = (int) Seller::query()->where('status', 'rejected')->count();
+
+        // A1 - v1.4: Active vs Inactive Sellers (subscription status)
+        $activeSellers = (int) Seller::query()->where('subscription_status', 'active')->count();
+        $inactiveSellers = (int) Seller::query()
+            ->whereIn('subscription_status', ['lapsed', 'grace_period'])
+            ->count();
+
+        // A1 - v1.4: Platform GMV (all orders except cancelled)
+        $platformGmv = (float) Order::query()
+            ->where('status', '!=', 'cancelled')
+            ->sum('total_amount');
+
+        // A1 - v1.4: Average Order Value (delivered only)
+        $deliveredCount = (int) Order::query()->where('status', 'delivered')->count();
+        $deliveredSum = (float) Order::query()->where('status', 'delivered')->sum('total_amount');
+        $averageOrderValue = $deliveredCount > 0 ? round($deliveredSum / $deliveredCount, 2) : 0.0;
+
+        // A1 - v1.4: New Orders Today
+        $newOrdersToday = (int) Order::query()
+            ->whereDate('created_at', Carbon::today())
+            ->count();
+
+        $slaScope = (int) Order::query()
+            ->whereIn('status', [
+                Order::STATUS_PAID,
+                Order::STATUS_TO_PACK,
+                Order::STATUS_READY_TO_SHIP,
+                Order::STATUS_PROCESSING,
+                Order::STATUS_SHIPPED,
+                Order::STATUS_OUT_FOR_DELIVERY,
+                Order::STATUS_DELIVERED,
+                Order::STATUS_COMPLETED,
+                Order::STATUS_CANCELLED,
+            ])
+            ->count();
+
+        $acceptedOrders = (int) Order::query()
+            ->whereIn('status', [
+                Order::STATUS_SHIPPED,
+                Order::STATUS_OUT_FOR_DELIVERY,
+                Order::STATUS_DELIVERED,
+                Order::STATUS_COMPLETED,
+            ])
+            ->count();
+
+        $shipmentScope = (int) Order::query()
+            ->whereIn('status', [
+                Order::STATUS_SHIPPED,
+                Order::STATUS_OUT_FOR_DELIVERY,
+                Order::STATUS_DELIVERED,
+                Order::STATUS_COMPLETED,
+            ])
+            ->count();
+
+        $onTimeShipments = (int) Order::query()
+            ->whereIn('status', [
+                Order::STATUS_SHIPPED,
+                Order::STATUS_OUT_FOR_DELIVERY,
+                Order::STATUS_DELIVERED,
+                Order::STATUS_COMPLETED,
+            ])
+            ->whereNotNull('shipped_at')
+            ->whereRaw('TIMESTAMPDIFF(HOUR, created_at, shipped_at) <= 48')
+            ->count();
+
+        $cancelledOrders = (int) Order::query()
+            ->where('status', Order::STATUS_CANCELLED)
+            ->count();
+
+        $returnScope = (int) Order::query()
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
+            ->count();
+
+        $returnedOrders = (int) OrderDispute::query()
+            ->whereIn('status', [
+                OrderDispute::STATUS_RETURN_REQUESTED,
+                OrderDispute::STATUS_RETURN_IN_TRANSIT,
+                OrderDispute::STATUS_RETURN_RECEIVED,
+                OrderDispute::STATUS_REFUND_PENDING,
+                OrderDispute::STATUS_REFUND_COMPLETED,
+                OrderDispute::STATUS_RESOLVED_APPROVED,
+            ])
+            ->distinct('order_id')
+            ->count('order_id');
+
+        $sellerAcceptanceRate = $slaScope > 0 ? round(($acceptedOrders / $slaScope) * 100, 1) : 0.0;
+        $onTimeShipRate = $shipmentScope > 0 ? round(($onTimeShipments / $shipmentScope) * 100, 1) : 0.0;
+        $sellerCancellationRate = $slaScope > 0 ? round(($cancelledOrders / $slaScope) * 100, 1) : 0.0;
+        $returnRate = $returnScope > 0 ? round(($returnedOrders / $returnScope) * 100, 1) : 0.0;
+
+        // A1 - v1.4: Revenue This Month vs Last Month (% change)
+        $revenueThisMonth = (float) Order::query()
+            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('total_amount');
+        $revenueLastMonth = (float) Order::query()
+            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereMonth('created_at', Carbon::now()->subMonth()->month)
+            ->whereYear('created_at', Carbon::now()->subMonth()->year)
+            ->sum('total_amount');
+        $revenueMonthChangePercent = $revenueLastMonth > 0
+            ? round((($revenueThisMonth - $revenueLastMonth) / $revenueLastMonth) * 100, 1)
+            : ($revenueThisMonth > 0 ? 100.0 : 0.0);
+
+        // Churn Rate: % of sellers who did not renew in the last month (feature v1.2 - Admin #6)
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+        // Sellers lapse when (due_date + 7 days) has passed; first lapse day = due_date + 8
+        $lapsedThisMonth = (int) Seller::query()
+            ->where('subscription_status', 'lapsed')
+            ->whereNotNull('subscription_due_date')
+            ->whereBetween('subscription_due_date', [
+                $startOfMonth->copy()->subDays(8),
+                $endOfMonth->copy()->subDays(8),
+            ])
+            ->count();
+        $activeOrGraceNow = (int) Seller::query()
+            ->whereIn('subscription_status', ['active', 'grace_period'])
+            ->count();
+        $totalActiveLastMonth = $activeOrGraceNow + $lapsedThisMonth;
+        $churnRate = $totalActiveLastMonth > 0
+            ? round(($lapsedThisMonth / $totalActiveLastMonth) * 100, 1)
+            : 0.0;
+
         $totalCustomers = (int) User::query()->whereHas('roles', fn ($q) => $q->where('name', 'customer'))->count();
 
         $unreadMessages = (int) Message::query()
@@ -81,10 +230,18 @@ class AdminDashboardController extends Controller
             ->get();
 
         return view('admin.dashboard', [
+            'totalSales' => $totalSales,
+            'totalOrders' => $totalOrders,
+            'badOrdersCount' => $badOrdersCount,
+            'badOrdersPercent' => $badOrdersPercent,
+            'orderStatusBreakdown' => $orderStatusBreakdown,
             'totalProfit' => $totalProfit,
             'totalRevenue' => $totalRevenue,
             'monthlyRevenue' => $monthlyRevenue,
             'totalApprovedSellers' => $totalApprovedSellers,
+            'totalSellers' => $totalSellers,
+            'rejectedSellers' => $rejectedSellers,
+            'churnRate' => $churnRate,
             'totalCustomers' => $totalCustomers,
             'unreadMessages' => $unreadMessages,
             'totalRegistrationFees' => $totalRegistrationFees,
@@ -92,6 +249,25 @@ class AdminDashboardController extends Controller
             'topProducts' => $topProducts,
             'topSellers' => $topSellers,
             'sellerRegistrations' => $sellerRegistrations,
+            'activeSellers' => $activeSellers,
+            'inactiveSellers' => $inactiveSellers,
+            'platformGmv' => $platformGmv,
+            'averageOrderValue' => $averageOrderValue,
+            'newOrdersToday' => $newOrdersToday,
+            'revenueThisMonth' => $revenueThisMonth,
+            'revenueLastMonth' => $revenueLastMonth,
+            'revenueMonthChangePercent' => $revenueMonthChangePercent,
+            'sellerAcceptanceRate' => $sellerAcceptanceRate,
+            'acceptedOrders' => $acceptedOrders,
+            'slaScope' => $slaScope,
+            'onTimeShipRate' => $onTimeShipRate,
+            'onTimeShipments' => $onTimeShipments,
+            'shipmentScope' => $shipmentScope,
+            'sellerCancellationRate' => $sellerCancellationRate,
+            'cancelledOrdersSla' => $cancelledOrders,
+            'returnRate' => $returnRate,
+            'returnedOrders' => $returnedOrders,
+            'returnScope' => $returnScope,
         ]);
     }
 }
