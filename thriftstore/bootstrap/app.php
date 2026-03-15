@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', \App\Http\Middleware\UpdateLastActiveAt::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\CheckMaintenanceMode::class);
 
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'role' => RoleMiddleware::class,
@@ -28,7 +30,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
-            return redirect()->route('catalog');
-        });
+        //
     })->create();
