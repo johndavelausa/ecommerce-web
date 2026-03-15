@@ -16,13 +16,12 @@ chmod -R 775 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null
 
 # 3. Apply the WORKING Nginx configuration
-# This matches the manual fix we just confirmed in SSH
 echo "Updating Nginx configuration..."
 cat <<EOF > /etc/nginx/sites-available/default
 server {
     listen 8080;
     listen [::]:8080;
-    root /home/site/wwwroot/public;
+    root /home/site/wwwroot/thriftstore/public;
     index index.php index.html index.htm;
     server_name _;
 
@@ -45,8 +44,10 @@ service nginx restart
 
 # 5. Finalize Laravel
 echo "Finalizing Laravel setup..."
+cd /home/site/wwwroot/thriftstore
 php artisan storage:link --force || true
-php artisan view:clear || true
+php artisan view:cache || true
 php artisan config:cache || true
+php artisan route:cache || true
 
 echo "Deployment Script Finished."
