@@ -38,7 +38,12 @@
 
             <!-- Page Content -->
             <main class="flex-1 {{ request()->routeIs('seller.register') ? 'overflow-hidden flex items-center' : '' }} {{ request()->routeIs('seller.login') ? 'overflow-auto flex items-center justify-center seller-login-main-bg' : '' }}">
-                {{ $slot }}
+                @if(isset($slot))
+                    {{ $slot }}
+                @else
+                    @yield('content')
+                @endif
+                        
             </main>
 
             @include('layouts.footer')
