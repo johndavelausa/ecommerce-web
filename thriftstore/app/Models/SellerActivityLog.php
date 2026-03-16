@@ -15,6 +15,7 @@ class SellerActivityLog extends Model
     {
         return [
             'details' => 'array',
+            'created_at' => 'datetime',
         ];
     }
 

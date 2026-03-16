@@ -11,7 +11,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'customer.catalog')->name('catalog');
+Route::view('/', 'customer.home')->name('catalog');
 
 // NEXT-18 — Courier webhook ingestion endpoint (token-protected, no CSRF).
 Route::post('/webhooks/courier/tracking', CourierTrackingWebhookController::class)
@@ -114,7 +114,7 @@ Route::middleware(['auth:seller'])->prefix('seller')->group(function () {
 
 // Customer routes (auth:web — default guard for customers). Checkout requires verified email (B1 - v1.3).
 Route::middleware(['auth:web', 'role:customer'])->group(function () {
-    Route::view('/products', 'customer.dashboard')->name('customer.dashboard');
+    Route::view('/products', 'customer.catalog')->name('customer.dashboard');
     Route::redirect('/dashboard', '/products');
     Route::view('/cart', 'customer.cart')->name('customer.cart');
     Route::view('/checkout', 'customer.checkout')->middleware('verified')->name('customer.checkout');

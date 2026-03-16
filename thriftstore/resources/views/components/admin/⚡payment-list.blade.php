@@ -4,7 +4,6 @@ use App\Models\Payment;
 use App\Models\Order;
 use App\Models\SellerPayout;
 use App\Notifications\SellerPayoutReleased;
-use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -37,8 +36,7 @@ new class extends Component
         }
     }
 
-    #[Computed]
-    public function payments()
+    public function getPaymentsProperty()
     {
         $q = Payment::query()
             ->with('seller.user')
@@ -72,8 +70,7 @@ new class extends Component
         return $q->paginate(20);
     }
 
-    #[Computed]
-    public function payouts()
+    public function getPayoutsProperty()
     {
         $q = SellerPayout::query()
             ->with(['seller.user', 'order'])
@@ -107,8 +104,7 @@ new class extends Component
         return $q->paginate(20, ['*'], 'payouts_page');
     }
 
-    #[Computed]
-    public function payoutSummary()
+    public function getPayoutSummaryProperty()
     {
         $released = SellerPayout::query()->where('status', SellerPayout::STATUS_RELEASED);
         $onHold = SellerPayout::query()->where('status', SellerPayout::STATUS_ON_HOLD);
@@ -211,7 +207,9 @@ new class extends Component
         $payout->released_at = now();
         $payout->save();
 
-        $payout->seller?->user?->notify(new SellerPayoutReleased($payout));
+        if ($payout->seller && $payout->seller->user) {
+            $payout->seller->user->notify(new SellerPayoutReleased($payout));
+        }
     }
 };
 ?>
@@ -260,19 +258,25 @@ new class extends Component
             <tbody class="divide-y divide-gray-200 bg-white">
                 @forelse($this->payments as $p)
                     <tr>
-                        <td class="px-4 py-3 text-gray-700">{{ $p->created_at?->format('Y-m-d H:i') }}</td>
-                        <td class="px-4 py-3 text-gray-900">{{ $p->seller?->store_name ?? '—' }}<br><span class="text-xs text-gray-500">{{ $p->seller?->user?->name ?? '' }}</span></td>
+                        <td class="px-4 py-3 text-gray-700">{{ $p->created_at ? $p->created_at->format('Y-m-d H:i') : '' }}</td>
+                        <td class="px-4 py-3 text-gray-900">
+                            {{ $p->seller ? $p->seller->store_name : '—' }}<br>
+                            <span class="text-xs text-gray-500">{{ $p->seller && $p->seller->user ? $p->seller->user->name : '' }}</span>
+                        </td>
                         <td class="px-4 py-3 text-gray-700">{{ ucfirst($p->type) }}</td>
                         <td class="px-4 py-3 text-right font-medium">₱{{ number_format($p->amount, 2) }}</td>
                         <td class="px-4 py-3 text-gray-700 font-mono text-xs">{{ $p->reference_number }}</td>
                         <td class="px-4 py-3">
                             @php
-                                $badge = match($p->status) {
-                                    'approved' => 'bg-green-100 text-green-800',
-                                    'rejected' => 'bg-red-100 text-red-800',
-                                    'pending' => 'bg-amber-100 text-amber-800',
-                                    default => 'bg-gray-100 text-gray-700',
-                                };
+                                if ($p->status === 'approved') {
+                                    $badge = 'bg-green-100 text-green-800';
+                                } elseif ($p->status === 'rejected') {
+                                    $badge = 'bg-red-100 text-red-800';
+                                } elseif ($p->status === 'pending') {
+                                    $badge = 'bg-amber-100 text-amber-800';
+                                } else {
+                                    $badge = 'bg-gray-100 text-gray-700';
+                                }
                             @endphp
                             <span class="px-2 py-1 rounded text-xs font-medium {{ $badge }}">{{ ucfirst($p->status) }}</span>
                         </td>
@@ -309,7 +313,9 @@ new class extends Component
             </div>
         </div>
 
-        @php($payoutSummary = $this->payoutSummary)
+        @php
+            $payoutSummary = $this->payoutSummary;
+        @endphp
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="rounded-lg border border-green-200 bg-green-50 p-3">
                 <div class="text-xs font-semibold uppercase tracking-wide text-green-700">Released payouts</div>
@@ -342,7 +348,7 @@ new class extends Component
                             <td class="px-4 py-3 text-gray-900">{{ $sp->seller?->store_name ?? '—' }}<br><span class="text-xs text-gray-500">{{ $sp->seller?->user?->name ?? '' }}</span></td>
                             <td class="px-4 py-3 text-gray-700 font-medium">
                                 #{{ $sp->order_id }}
-                                @if($sp->order?->refund_status)
+                                @if($sp->order && $sp->order->refund_status)
                                     <div class="mt-1 text-xs text-gray-500">
                                         Refund: {{ \App\Models\Order::refundStatusLabel($sp->order->refund_status) }}
                                     </div>
@@ -351,17 +357,19 @@ new class extends Component
                             <td class="px-4 py-3 text-right font-semibold text-gray-900">₱{{ number_format((float) $sp->net_amount, 2) }}</td>
                             <td class="px-4 py-3">
                                 @php
-                                    $badge = match($sp->status) {
-                                        'released' => 'bg-green-100 text-green-800',
-                                        'on_hold' => 'bg-amber-100 text-amber-800',
-                                        default => 'bg-gray-100 text-gray-700',
-                                    };
+                                    if ($sp->status === 'released') {
+                                        $badge = 'bg-green-100 text-green-800';
+                                    } elseif ($sp->status === 'on_hold') {
+                                        $badge = 'bg-amber-100 text-amber-800';
+                                    } else {
+                                        $badge = 'bg-gray-100 text-gray-700';
+                                    }
                                 @endphp
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst(str_replace('_', ' ', $sp->status)) }}</span>
                                 @if($sp->status === 'on_hold' && $sp->hold_reason)
                                     <div class="text-xs text-gray-500 mt-1">{{ ucfirst(str_replace('_', ' ', $sp->hold_reason)) }}</div>
                                 @endif
-                                @if($sp->order?->refunded_at)
+                                @if($sp->order && $sp->order->refunded_at)
                                     <div class="text-xs text-gray-500 mt-1">Order refunded at {{ $sp->order->refunded_at->format('Y-m-d H:i') }}</div>
                                 @endif
                             </td>

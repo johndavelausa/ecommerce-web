@@ -23,8 +23,8 @@
             $logoRoute = 'seller.login';
             $dashboardLabel = __('Dashboard');
         } else {
-            $dashboardRoute = $user ? 'customer.dashboard' : 'catalog';
-            $dashboardLabel = $user ? __('Shop') : __('Home');
+            $dashboardRoute = 'catalog';
+            $dashboardLabel = __('Home');
         }
         $logoutRoute = 'logout';
         $notificationsRoute = 'customer.notifications.read-all';
@@ -71,15 +71,20 @@
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)">
-                        {{ $dashboardLabel }}
-                    </x-nav-link>
-                    @if($user && request()->is('admin/*'))
-                        <x-nav-link :href="route('admin.sellers')" :active="request()->routeIs('admin.sellers')">
-                            {{ __('Sellers') }}
-                        </x-nav-link>
+                 <!-- Navigation Links -->
+                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                     <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs($dashboardRoute)">
+                         {{ $dashboardLabel }}
+                     </x-nav-link>
+                     @if($user && !request()->is('admin/*') && !request()->is('seller/*'))
+                         <x-nav-link :href="route('customer.dashboard')" :active="request()->routeIs('customer.dashboard')">
+                             {{ __('Shop') }}
+                         </x-nav-link>
+                     @endif
+                     @if($user && request()->is('admin/*'))
+                         <x-nav-link :href="route('admin.sellers')" :active="request()->routeIs('admin.sellers')">
+                             {{ __('Sellers') }}
+                         </x-nav-link>
                         <x-nav-link :href="route('admin.customers')" :active="request()->routeIs('admin.customers')">
                             {{ __('Customers') }}
                         </x-nav-link>

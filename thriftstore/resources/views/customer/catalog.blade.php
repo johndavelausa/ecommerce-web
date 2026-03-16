@@ -1,16 +1,8 @@
 <x-app-layout>
-    @php
-        $homepageBackgroundPath = \App\Models\SystemSetting::get('background_path');
-        $homepageBackgroundUrl  = $homepageBackgroundPath
-            ? asset('storage/' . $homepageBackgroundPath)
-            : asset('background_img/gela.jpeg');
-    @endphp
-
-    {{-- Hero background image --}}
-    <div class="w-full h-[calc(100vh-4rem)] bg-cover bg-top bg-no-repeat"
-         style="background-image: url('{{ $homepageBackgroundUrl }}');">
+    <div class="py-8 lg:py-10">
+        <div class="mx-auto w-full max-w-[1440px] px-4 md:px-8 lg:px-12">
+            <livewire:customer.catalog />
+        </div>
     </div>
-
-    {{-- New Arrivals (Livewire — no page reload) --}}
-    <livewire:customer.new-arrivals />
 </x-app-layout>
+

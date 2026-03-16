@@ -412,13 +412,47 @@ new class extends Component
                             {{-- A2 v1.4 — Seller activity log --}}
                             <div class="mt-6 border-t pt-4">
                                 <h4 class="font-medium text-gray-700">Seller activity log</h4>
-                                <ul class="mt-2 space-y-1 max-h-48 overflow-y-auto text-sm">
+                                <ul class="mt-2 space-y-2 max-h-56 overflow-y-auto text-sm">
                                     @forelse($seller->activityLogs->take(50) as $log)
-                                        <li class="flex gap-2 text-gray-600">
-                                            <span class="text-gray-400 shrink-0">{{ $log->created_at->format('Y-m-d H:i') }}</span>
-                                            <span>{{ $log->action }}</span>
+                                        <li class="flex flex-col gap-1 text-gray-600 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-gray-400 text-xs">{{ $log->created_at->format('Y-m-d H:i') }}</span>
+                                                <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                                                    {{ str_replace('_', ' ', $log->action) }}
+                                                </span>
+                                            </div>
                                             @if(!empty($log->details))
-                                                <span class="text-gray-500">— {{ is_array($log->details) ? json_encode($log->details) : $log->details }}</span>
+                                                @php($details = $log->details)
+                                                <div class="mt-1 border-t border-dashed border-gray-200 pt-1.5 text-gray-500 text-xs space-y-0.5">
+                                                    @if(is_array($details))
+                                                        @foreach($details as $key => $value)
+                                                            <div>
+                                                                <span class="font-semibold">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
+                                                                @if(is_array($value))
+                                                                    @php($isAssoc = \Illuminate\Support\Arr::isAssoc($value))
+                                                                    @if($isAssoc)
+                                                                        <div class="mt-0.5 ml-4 space-y-0.5">
+                                                                            @foreach($value as $subKey => $subValue)
+                                                                                <div>
+                                                                                    <span class="font-semibold">{{ ucfirst(str_replace('_', ' ', $subKey)) }}:</span>
+                                                                                    <span>{{ is_bool($subValue) ? ($subValue ? 'Yes' : 'No') : $subValue }}</span>
+                                                                                </div>
+                                                                            @endforeach
+                                                                        </div>
+                                                                    @else
+                                                                        <span class="whitespace-pre-wrap font-mono">
+                                                                            {{ implode(', ', $value) }}
+                                                                        </span>
+                                                                    @endif
+                                                                @else
+                                                                    <span>{{ is_bool($value) ? ($value ? 'Yes' : 'No') : $value }}</span>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                    @else
+                                                        <div>{{ $details }}</div>
+                                                    @endif
+                                                </div>
                                             @endif
                                         </li>
                                     @empty
