@@ -5,49 +5,107 @@ Built from the specs in:
 - `ThriftStore_System_Requirements.docx`
 - `ThriftStore_Build_Order.docx`
 
-## Database (no migrations)
+This repo contains the Laravel app in `thriftstore/`.
 
-This project uses **MySQL database `shop_db`** and a single SQL script instead of Laravel migrations:
+## Requirements
 
-- `shop_db.sql`
+- PHP 8.2+
+- Composer 2.x
+- Node.js 18+ (or 20/22) + npm
+- MySQL 8+ (or MariaDB 10.6+)
 
-### Import the schema
+## Setup (local)
 
-1) Create/import the database schema:
-
-```sql
-SOURCE /absolute/path/to/shop_db.sql;
-```
-
-Or in phpMyAdmin, import the `shop_db.sql` file.
-
-2) Configure Laravel:
-
-- `thriftstore/.env`
-  - `DB_CONNECTION=mysql`
-  - `DB_DATABASE=shop_db`
-  - `DB_USERNAME=...`
-  - `DB_PASSWORD=...`
-  - `FILESYSTEM_DISK=public`
-
-3) Run seeders (roles, admin user, system settings):
+From the repo root:
 
 ```bash
 cd thriftstore
-php artisan db:seed
 ```
 
-Default seeded admin credentials:
+1) Install PHP dependencies:
 
+```bash
+composer install
+```
+
+2) Configure env:
+
+```bash
+copy .env.example .env
+php artisan key:generate
+```
+
+Update `.env` to match your DB:
+
+- `DB_CONNECTION=mysql`
+- `DB_HOST=127.0.0.1`
+- `DB_PORT=3306`
+- `DB_DATABASE=shop_db`
+- `DB_USERNAME=...`
+- `DB_PASSWORD=...`
+
+3) Migrate + seed:
+
+```bash
+php artisan migrate --seed
+```
+
+4) Storage symlink (for uploaded images):
+
+```bash
+php artisan storage:link
+```
+
+5) Install frontend deps + run Vite:
+
+```bash
+npm install
+npm run dev
+```
+
+PowerShell note (Windows): if `npm` fails with “running scripts is disabled”, either run `npm.cmd` instead of `npm`,
+or change your execution policy (e.g. `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`).
+
+6) Run the app:
+
+```bash
+php artisan serve
+```
+
+App URL: `http://127.0.0.1:8000`
+
+Optional (recommended): run the queue worker in a second terminal:
+
+```bash
+php artisan queue:work
+```
+
+## Default admin account
+
+Seeded by `Database\\Seeders\\AdminSeeder`:
+
+- URL: `http://127.0.0.1:8000/admin/login`
 - Email: `admin@thriftstore.local`
 - Password: `admin12345`
 
-## Run the app
+## Legacy database SQL (optional)
+
+The repo also includes SQL dumps:
+
+- `shop_db.sql`
+- `order_flow_alter.sql`
+
+They’re not required if you use `php artisan migrate`. If you import SQL manually, you’ll still want to run:
 
 ```bash
-cd thriftstore
-npm install
-npm run dev
-php artisan serve
-php artisan queue:work
+php artisan db:seed
+```
+
+## Common commands
+
+```bash
+php artisan optimize:clear
+php artisan view:clear
+php artisan route:list
+php artisan test
 ```
