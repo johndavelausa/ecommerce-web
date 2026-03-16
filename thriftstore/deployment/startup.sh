@@ -1,16 +1,13 @@
 #!/bin/bash
 echo "Starting Final robust Deployment Script..."
 
-# 1. Detect App Location correctly
-if [ -f "/home/site/wwwroot/thriftstore/artisan" ]; then
+# 1. Detect App Location
+if [ -d "/home/site/wwwroot/thriftstore" ]; then
     APP_ROOT="/home/site/wwwroot/thriftstore"
-    echo "Found app in subfolder: $APP_ROOT"
-elif [ -f "/home/site/wwwroot/artisan" ]; then
-    APP_ROOT="/home/site/wwwroot"
-    echo "Found app in root folder: $APP_ROOT"
+    CONF_PATH="/home/site/wwwroot/thriftstore/deployment/nginx.conf"
 else
-    echo "ERROR: Could not find Artisan!"
-    exit 1
+    APP_ROOT="/home/site/wwwroot"
+    CONF_PATH="/home/site/wwwroot/deployment/nginx.conf"
 fi
 
 cd $APP_ROOT
@@ -18,47 +15,30 @@ cd $APP_ROOT
 # 2. Cleanup placeholder files
 rm -f /home/site/wwwroot/hostingstart.html
 
-# 3. Setup Permissions (FAST - ONLY WHAT MATTERS)
-echo "Setting permissions (Optimized)..."
-mkdir -p storage/framework/{sessions,views,cache/data}
-mkdir -p storage/logs
-
-# We only chown the writable folders to keep it fast!
+# 3. Setup Permissions (FAST & LIGHT)
+mkdir -p storage/framework/{sessions,views,cache/data} storage/logs
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-# 4. Laravel Setup
+# 4. Apply the Clean Nginx Config
+echo "Applying clean Nginx config from $CONF_PATH..."
+if [ -f "$CONF_PATH" ]; then
+    # Update the root path in the static config if we are in a subfolder
+    sed -i "s|root /home/site/wwwroot/public;|root $APP_ROOT/public;|g" "$CONF_PATH"
+    cp "$CONF_PATH" /etc/nginx/sites-available/default
+else
+    echo "ERROR: nginx.conf not found!"
+fi
+
+# 5. Laravel Pulse
 php artisan optimize:clear
 php artisan view:clear
 php artisan storage:link --force || true
 
-# 5. Nginx Configuration (DYNAMIC PATH)
-echo "Configuring Nginx for $APP_ROOT/public..."
-cat > /etc/nginx/sites-available/default <<EOF
-server {
-    listen 8080;
-    listen [::]:8080;
-    root $APP_ROOT/public;
-    index index.php index.html index.htm;
-    server_name _;
-
-    location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
-    }
-
-    location ~ \.php\$ {
-        include fastcgi_params;
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_read_timeout 300;
-    }
-}
-EOF
-
-# 6. Refresh Services
+# 6. Kickstart Services
 service nginx restart
 killall php-fpm || true
 php-fpm -D
 
 echo "Deployment Finished. Site should be live."
+
