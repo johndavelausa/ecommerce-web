@@ -14,11 +14,11 @@ class StoreController extends Controller
     /**
      * Public store profile page (B2 v1.4, G1 v1.4, G2 v1.4). Store header and stats.
      */
-    public function show(Request $request, int $id): View
+    public function show(Request $request, $store_name): View
     {
         $seller = Seller::query()
             ->with('user')
-            ->where('id', $id)
+            ->where('store_name', $store_name)
             ->where('status', 'approved')
             ->firstOrFail();
 

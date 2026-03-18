@@ -401,7 +401,7 @@
      x-on:cart-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') cartCount = Number($event.detail.count) || 0"
      class="ts-nav">
 
-    <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8" style="width:100%;">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
 
             {{-- ── Left: Logo + Links ───────────────────────── --}}
@@ -412,17 +412,17 @@
                     </a>
                 </div>
 
-                
-
-				<div class="hidden sm:flex items-center h-full gap-0.5">
-                    {{-- Removed Home link as logo already redirects to homepage --}}
+                <div class="hidden sm:flex items-center h-full gap-0.5">
+                    <a href="{{ route($dashboardRoute) }}"
+                       class="ts-nav-link {{ request()->routeIs($dashboardRoute) ? 'ts-active' : '' }}">
+                        {{ $dashboardLabel }}
+                    </a>
 
                     @if($user && !request()->is('admin/*') && !request()->is('seller/*'))
                         <a href="{{ route('customer.dashboard') }}"
                            class="ts-nav-link {{ request()->routeIs('customer.dashboard') ? 'ts-active' : '' }}">
                             {{ __('Shop') }}
                         </a>
-                        {{-- All support/legal links removed from navbar --}}
                     @endif
 
                     @if($user && request()->is('admin/*'))
@@ -458,7 +458,6 @@
                                 {{ __($l) }}
                             </a>
                         @endforeach
-                        {{-- FAQ link removed from navbar --}}
 
                     @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
                         {{-- Categories --}}
@@ -476,105 +475,35 @@
                                  x-transition:enter="transition ease-out duration-120"
                                  x-transition:enter-start="opacity-0 -translate-y-1"
                                  x-transition:enter-end="opacity-100 translate-y-0"
-                                 class="absolute left-1/2 top-full -translate-x-1/2 pt-3 -mt-2 w-44 z-50">
-                                <div class="ts-dropdown-panel">
-                                    <div style="max-height:280px;overflow-y:auto;">
-                                        @forelse($navCategories as $cat)
-                                            <a href="{{ route('customer.dashboard') }}?category={{ urlencode((string) $cat->category) }}"
-                                               class="ts-dropdown-item">
-                                                <span>{{ $cat->category }}</span>
-                                                <span class="ts-cat-pill">{{ (int) $cat->product_count }}</span>
-                                            </a>
-                                        @empty
-                                            <div style="padding:14px 16px;font-size:12px;color:#4A5568;text-align:center;">No categories available.</div>
-                                        @endforelse
-                                    </div>
+                                 class="ts-dropdown-panel absolute left-1/2 top-full -translate-x-1/2 mt-2 w-64 z-50">
+                                <div style="max-height:280px;overflow-y:auto;">
+                                    @forelse($navCategories as $cat)
+                                        <a href="{{ route('customer.dashboard') }}?category={{ urlencode((string) $cat->category) }}"
+                                           class="ts-dropdown-item">
+                                            <span>{{ $cat->category }}</span>
+                                            <span class="ts-cat-pill">{{ (int) $cat->product_count }}</span>
+                                        </a>
+                                    @empty
+                                        <div style="padding:14px 16px;font-size:12px;color:#4A5568;text-align:center;">No categories available.</div>
+                                    @endforelse
                                 </div>
                             </div>
                         </div>
 
-                        {{-- Removed My Orders, Reviews, and Messages from navbar --}}
+                        @foreach([
+                            ['customer.orders',   'My Orders'],
+                            ['customer.reviews',  'Reviews'],
+                            ['customer.messages', 'Messages'],
+                        ] as [$r, $l])
+                            <a href="{{ route($r) }}"
+                               class="ts-nav-link {{ request()->routeIs($r) ? 'ts-active' : '' }}">
+                                {{ __($l) }}
+                            </a>
+                        @endforeach
                     @endif
                 </div>
             </div>
-    <!-- Search Bar (Desktop) -->
-    @if (!request()->is('admin/*') && !request()->is('seller/*'))
-        <div class="hidden sm:flex items-center justify-center w-full relative" style="max-width:420px;">
-            <div x-data="{
-                query: '',
-                suggestions: [],
-                show: false,
-                highlight: -1,
-                loading: false,
-                fetchSuggestions() {
-                    if (this.query.length < 2) { this.suggestions = []; this.show = false; return; }
-                    this.loading = true;
-                    fetch('/search/suggest?q=' + encodeURIComponent(this.query))
-                        .then(r => r.json())
-                        .then(data => {
-                            this.suggestions = data;
-                            this.show = true;
-                            this.loading = false;
-                        });
-                },
-                select(idx) {
-                    if (this.suggestions[idx]) {
-                        window.location.href = this.suggestions[idx].url;
-                    }
-                },
-                move(dir) {
-                    if (!this.show) return;
-                    this.highlight = (this.highlight + dir + this.suggestions.length) % this.suggestions.length;
-                },
-                complete(idx) {
-                    if (this.suggestions[idx]) {
-                        this.query = this.suggestions[idx].name;
-                    }
-                }
-            }" class="w-full relative">
-                <input type="text"
-                    class="block w-full rounded-full border border-gray-300 px-5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"
-                    placeholder="Search products, sellers..."
-                    x-model="query"
-                    @input.debounce.250ms="fetchSuggestions()"
-                    @focus="fetchSuggestions(); show = suggestions.length > 0"
-                    @keydown.arrow-down.prevent="move(1)"
-                    @keydown.arrow-up.prevent="move(-1)"
-                    @keydown.enter.prevent="select(highlight >= 0 ? highlight : 0)"
-                    @keydown.esc="show = false"
-                    autocomplete="off"
-                    style="height:38px; min-height:38px;"
-                >
-                <!-- Suggestions Dropdown -->
-                <div x-show="show" x-cloak 
-                    class="absolute left-0 mt-2 w-full bg-white border border-gray-200 rounded-full shadow-2xl z-50 flex flex-col"
-                    style="top:100%; min-width:0; height: auto; max-height: 140px; overflow-y: auto; font-size: 13px;">
-                    <template x-if="loading">
-                        <div class="px-4 py-2 text-center text-gray-400 text-sm">Searching...</div>
-                    </template>
-                    <template x-if="!loading && suggestions.length === 0">
-                        <div class="px-4 py-2 text-center text-gray-400 text-sm">No Results found</div>
-                    </template>
-                    <template x-for="(item, idx) in suggestions" :key="item.url">
-                        <div @mousedown.prevent="select(idx)"
-                             @mouseenter="highlight = idx"
-                             :class="'flex items-center gap-2 px-4 py-2 cursor-pointer transition-all text-sm ' + (highlight === idx ? 'bg-green-50' : 'hover:bg-gray-50')">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 overflow-hidden">
-                                <template x-if="item.type === 'product'">
-                                    <img :src="item.image_path ? item.image_path : '/images/no-image.png'" alt="Product" class="object-cover w-6 h-6" loading="lazy">
-                                </template>
-                                <template x-if="item.type === 'seller'">
-                                    <img :src="item.logo_path ? item.logo_path : '/images/no-logo.png'" alt="Seller" class="object-cover w-6 h-6" loading="lazy">
-                                </template>
-                            </span>
-                        <span class="font-semibold text-gray-900" x-text="item.prefix"></span><span class="text-gray-400" x-text="item.suffix"></span>
-                        <span class="ml-auto text-xs px-2 py-0.5 rounded-full" :class="item.type === 'product' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'" x-text="item.type === 'product' ? 'Product' : 'Seller'"></span>
-                    </div>
-                    </template>
-                </div>
-            </div>
-        </div>
-    @endif
+
             {{-- ── Right: Icons + User ─────────────────────── --}}
             <div class="hidden sm:flex items-center gap-1.5">
 

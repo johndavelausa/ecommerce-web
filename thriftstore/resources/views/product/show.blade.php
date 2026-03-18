@@ -3,12 +3,20 @@
     $stockStatus = $product->stock === 0 ? 'out' : ($product->stock <= $threshold ? 'low' : 'in');
 @endphp
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Product') }}</h2>
-    </x-slot>
 
-    <div class="py-8" x-data="{ lightbox: false }">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+    {{-- <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Product') }}</h2>
+    </x-slot> --}}
+
+    <div class="py-8 lg:py-10" x-data="{ lightbox: false }">
+        <div class="mx-auto w-full max-w-[1440px] px-4 md:px-8 lg:px-12">
+            <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                <a href="{{ route('catalog') }}" class="hover:text-[#2d6c50] transition-colors">Home</a>
+                <span class="text-gray-300">›</span>
+                <a href="{{ route('customer.dashboard') }}" class="hover:text-[#2d6c50] transition-colors">All Products</a>
+                <span class="text-gray-300">›</span>
+                <span class="font-semibold text-gray-800">{{ $product->name }}</span>
+            </nav>
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                     {{-- 1. Product image (zoomable) --}}
@@ -81,7 +89,7 @@
                         {{-- 10. Seller name (clickable) | 11. Verified badge --}}
                         <div class="text-sm text-gray-700">
                             <span class="font-medium">Seller:</span>
-                            <a href="{{ route('store.show', $product->seller?->id ?? 0) }}" class="text-indigo-600 hover:underline">{{ $product->seller?->store_name ?? '—' }}</a>
+                            <a href="{{ route('store.show', $product->seller?->store_name ?? '') }}" class="text-indigo-600 hover:underline">{{ $product->seller?->store_name ?? '—' }}</a>
                             @if($product->seller?->is_verified ?? false)
                                 <span class="inline-flex items-center text-blue-600 text-sm ml-1" title="Verified seller">✓ Verified</span>
                             @endif

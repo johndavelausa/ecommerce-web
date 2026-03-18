@@ -12,7 +12,8 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Lato', 'Figtree', ...defaultTheme.fontFamily.sans],
+                heading: ['Playfair Display', 'serif'],
             },
         },
     },

@@ -300,6 +300,7 @@ new class extends Component
         Session::put('cart', $cart);
         $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
         $this->dispatch('cart-updated', count: $count);
+        $this->dispatch('toast', type: 'success', message: 'Added to Cart');
     }
 
     public function toggleWishlist(int $productId): void
@@ -316,11 +317,13 @@ new class extends Component
 
         if ($existing) {
             $existing->delete();
+            $this->dispatch('toast', type: 'info', message: 'Removed from Wishlist');
         } else {
             Wishlist::firstOrCreate([
                 'customer_id' => $customer->id,
                 'product_id' => $productId,
             ]);
+            $this->dispatch('toast', type: 'success', message: 'Added to Wishlist');
         }
 
         $count = Wishlist::where('customer_id', $customer->id)->count();

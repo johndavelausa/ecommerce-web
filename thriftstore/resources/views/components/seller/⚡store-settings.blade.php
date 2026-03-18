@@ -8,6 +8,8 @@ use Livewire\Component;
 
 new class extends Component
 {
+    use \Livewire\WithFileUploads;
+
     public string $name = '';
     public string $email = '';
     public string $contact_number = '';
@@ -29,6 +31,8 @@ new class extends Component
     public bool $emailVerificationSent = false;
     public ?string $pending_email = null;
 
+    public $avatar = null;
+
     public function mount(): void
     {
         $user = Auth::guard('seller')->user();
@@ -47,6 +51,8 @@ new class extends Component
         $this->delivery_fee = $seller && $seller->delivery_fee !== null ? (string) $seller->delivery_fee : '';
         $this->business_hours = (string) ($seller?->business_hours ?? '');
         $this->is_open = (bool) ($seller?->is_open ?? true);
+
+        $this->avatar = null;
     }
 
     public function save(): void
@@ -70,6 +76,7 @@ new class extends Component
             'business_hours' => ['nullable', 'string', 'max:1000'],
             'gcash_number' => ['nullable', 'string', 'max:50'],
             'delivery_option' => ['required', 'string', 'in:free,flat_rate,per_product'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
         ];
         if ($this->delivery_option === 'flat_rate') {
             $rules['delivery_fee'] = ['required', 'numeric', 'min:0'];
@@ -78,11 +85,17 @@ new class extends Component
         }
         $this->validate($rules);
 
-        $user->update([
+
+        $userData = [
             'name' => $this->name,
             'contact_number' => $this->contact_number,
             'address' => $this->address,
-        ]);
+        ];
+        if ($this->avatar) {
+            $avatarPath = $this->avatar->store('avatars', 'public');
+            $userData['avatar'] = $avatarPath;
+        }
+        $user->update($userData);
 
         // B1 - v1.3: Seller email change requires verification of new email
         $newEmail = strtolower(trim($this->email));
@@ -127,6 +140,26 @@ new class extends Component
         @endif
 
         <div class="grid grid-cols-1 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Profile Photo</label>
+                <div class="flex items-center gap-4 mt-2">
+                    @php($currentAvatar = Auth::guard('seller')->user()?->avatar)
+                    @if($currentAvatar)
+                        <img src="{{ asset('storage/' . $currentAvatar) }}" class="h-16 w-16 rounded-full object-cover border" alt="Profile photo">
+                    @else
+                        <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        </div>
+                    @endif
+                    <div class="flex-1">
+                        <input type="file" wire:model="avatar" accept="image/*" class="block text-sm text-gray-500">
+                        <div wire:loading wire:target="avatar" class="text-xs text-indigo-600 mt-1">Uploading…</div>
+                        @error('avatar') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                        <p class="text-xs text-gray-500 mt-1">Max 2MB. JPG, PNG, GIF allowed.</p>
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700">Name</label>
                 <input type="text" wire:model.defer="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">

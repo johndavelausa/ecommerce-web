@@ -300,6 +300,7 @@ new class extends Component
         Session::put('cart', $cart);
         $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
         $this->dispatch('cart-updated', count: $count);
+        $this->dispatch('toast', type: 'success', message: 'Added to Cart');
     }
 
     public function toggleWishlist(int $productId): void
@@ -316,11 +317,13 @@ new class extends Component
 
         if ($existing) {
             $existing->delete();
+            $this->dispatch('toast', type: 'info', message: 'Removed from Wishlist');
         } else {
             Wishlist::firstOrCreate([
                 'customer_id' => $customer->id,
                 'product_id' => $productId,
             ]);
+            $this->dispatch('toast', type: 'success', message: 'Added to Wishlist');
         }
 
         $count = Wishlist::where('customer_id', $customer->id)->count();
@@ -351,10 +354,11 @@ new class extends Component
     $wishlist = array_flip($this->wishlistIds);
 @endphp
 
-<div class="space-y-6">
+
+<div class="space-y-6 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
 
     {{-- Breadcrumb --}}
-    <nav class="flex items-center gap-2 text-sm text-gray-500">
+    <nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
         <a href="{{ route('catalog') }}" class="hover:text-[#2d6c50] transition-colors">Home</a>
         <span class="text-gray-300">›</span>
         <span class="font-semibold text-gray-800">All Products</span>

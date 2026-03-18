@@ -27,7 +27,7 @@ Route::patch('/review/{id}', [App\Http\Controllers\ProductReviewController::clas
 Route::delete('/review/{id}', [App\Http\Controllers\ProductReviewController::class, 'destroy'])->middleware(['auth:web', 'role:customer'])->name('product.review.destroy');
 
 // B2 v1.4 — Public store profile (verified badge, business hours)
-Route::get('/store/{id}', [App\Http\Controllers\StoreController::class, 'show'])->name('store.show');
+Route::get('/store/{store_name}', [App\Http\Controllers\StoreController::class, 'show'])->name('store.show');
 
 Route::get('/contact', [ContactController::class, 'create'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
@@ -193,5 +193,17 @@ Route::middleware('auth:web')->group(function () {
     })->name('profile.addresses.store');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
+// Support & Legal Pages (fix RouteNotFoundException)
+Route::view('/support/faq', 'support.faq')->name('support.faq');
+Route::view('/support/contact', 'support.contact')->name('support.contact');
+Route::view('/support/privacy', 'support.privacy')->name('support.privacy');
+Route::view('/support/terms', 'support.terms')->name('support.terms');
+Route::view('/support/cookies', 'support.cookies')->name('support.cookies');
+
+// --- Dynamic Search Suggestions ---
+use App\Http\Controllers\SearchController;
+Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
 
 require __DIR__.'/auth.php';
