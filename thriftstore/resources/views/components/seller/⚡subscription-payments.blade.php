@@ -211,43 +211,45 @@ new class extends Component
             <div class="space-y-3">
                 <h4 class="text-sm font-semibold text-gray-900">Recent payments</h4>
                 <div class="border rounded-lg divide-y divide-gray-100 bg-gray-50/60">
-                    @forelse($this->payments as $payment)
-                        <div class="px-3 py-2 text-sm bg-white first:rounded-t-lg last:rounded-b-lg">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="font-medium text-gray-900">
-                                        {{ ucfirst($payment->type) }} · ₱{{ number_format($payment->amount, 2) }}
+                    @if ($this->payments->isNotEmpty())
+                        @foreach ($this->payments as $payment)
+                            <div class="px-3 py-2 text-sm bg-white first:rounded-t-lg last:rounded-b-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-medium text-gray-900">
+                                            {{ ucfirst($payment->type) }} · ₱{{ number_format($payment->amount, 2) }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Ref: {{ $payment->reference_number }} ·
+                                            {{ optional($payment->created_at)->format('Y-m-d H:i') }}
+                                        </div>
                                     </div>
-                                    <div class="text-xs text-gray-500">
-                                        Ref: {{ $payment->reference_number }} ·
-                                        {{ optional($payment->created_at)->format('Y-m-d H:i') }}
-                                    </div>
+                                    @php
+                                        $badge = match($payment->status) {
+                                            'approved' => 'bg-green-100 text-green-800',
+                                            'rejected' => 'bg-red-100 text-red-800',
+                                            'pending' => 'bg-amber-100 text-amber-800',
+                                            default => 'bg-gray-100 text-gray-700',
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
+                                        {{ ucfirst($payment->status) }}
+                                    </span>
                                 </div>
-                                @php
-                                    $badge = match($payment->status) {
-                                        'approved' => 'bg-green-100 text-green-800',
-                                        'rejected' => 'bg-red-100 text-red-800',
-                                        'pending' => 'bg-amber-100 text-amber-800',
-                                        default => 'bg-gray-100 text-gray-700',
-                                    };
-                                @endphp
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
-                                    {{ ucfirst($payment->status) }}
-                                </span>
+                                @if ($payment->approved_at)
+                                    <div class="mt-1 text-xs text-gray-500">
+                                        Approved: {{ $payment->approved_at->format('Y-m-d H:i') }}
+                                    </div>
+                                @endif
                             </div>
-                            @if($payment->approved_at)
-                                <div class="mt-1 text-xs text-gray-500">
-                                    Approved: {{ $payment->approved_at->format('Y-m-d H:i') }}
-                                </div>
-                            @endif
-                        </div>
-                    @empty
+                        @endforeach
+                    @else
                         <div class="px-3 py-4 text-sm text-gray-500">
                             No payments submitted yet.
                         </div>
-                    @endforelse
+                    @endif
                 </div>
-                @if($this->payments->hasPages())
+                @if ($this->payments->hasPages())
                     <div class="mt-2">
                         {{ $this->payments->links() }}
                     </div>
@@ -274,7 +276,9 @@ new class extends Component
             </div>
         </div>
 
-        @php($summary = $this->payoutSummary)
+        @php
+            $summary = $this->payoutSummary;
+        @endphp
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="rounded-lg border border-green-200 bg-green-50 p-4">
                 <div class="text-xs font-semibold uppercase tracking-wide text-green-700">Released payouts</div>
@@ -301,47 +305,49 @@ new class extends Component
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    @forelse($this->payouts as $payout)
-                        <tr>
-                            <td class="px-4 py-3 text-gray-700">{{ $payout->created_at?->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-3 text-gray-700 font-medium">
-                                #{{ $payout->order_id }}
-                                @if($payout->order?->refund_status)
-                                    <div class="mt-1 text-xs text-gray-500">
-                                        Refund: {{ \App\Models\Order::refundStatusLabel($payout->order->refund_status) }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right text-gray-700">₱{{ number_format((float) $payout->gross_amount, 2) }}</td>
-                            <td class="px-4 py-3 text-right text-gray-700">₱{{ number_format((float) $payout->platform_fee_amount, 2) }}</td>
-                            <td class="px-4 py-3 text-right font-semibold text-gray-900">₱{{ number_format((float) $payout->net_amount, 2) }}</td>
-                            <td class="px-4 py-3">
-                                @php
-                                    $badge = match($payout->status) {
-                                        'released' => 'bg-green-100 text-green-800',
-                                        'on_hold' => 'bg-amber-100 text-amber-800',
-                                        default => 'bg-gray-100 text-gray-700',
-                                    };
-                                @endphp
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
-                                    {{ ucfirst(str_replace('_', ' ', $payout->status)) }}
-                                </span>
-                                @if($payout->status === 'on_hold' && $payout->hold_reason)
-                                    <div class="mt-1 text-xs text-gray-500">{{ ucfirst(str_replace('_', ' ', $payout->hold_reason)) }}</div>
-                                @endif
-                                @if($payout->order?->refunded_at)
-                                    <div class="mt-1 text-xs text-gray-500">Order refunded at {{ $payout->order->refunded_at->format('Y-m-d H:i') }}</div>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
+                    @if ($this->payouts->isNotEmpty())
+                        @foreach ($this->payouts as $payout)
+                            <tr>
+                                <td class="px-4 py-3 text-gray-700">{{ $payout->created_at?->format('Y-m-d H:i') }}</td>
+                                <td class="px-4 py-3 text-gray-700 font-medium">
+                                    #{{ $payout->order_id }}
+                                    @if ($payout->order?->refund_status)
+                                        <div class="mt-1 text-xs text-gray-500">
+                                            Refund: {{ \App\Models\Order::refundStatusLabel($payout->order->refund_status) }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-right text-gray-700">₱{{ number_format((float) $payout->gross_amount, 2) }}</td>
+                                <td class="px-4 py-3 text-right text-gray-700">₱{{ number_format((float) $payout->platform_fee_amount, 2) }}</td>
+                                <td class="px-4 py-3 text-right font-semibold text-gray-900">₱{{ number_format((float) $payout->net_amount, 2) }}</td>
+                                <td class="px-4 py-3">
+                                    @php
+                                        $badge = match($payout->status) {
+                                            'released' => 'bg-green-100 text-green-800',
+                                            'on_hold' => 'bg-amber-100 text-amber-800',
+                                            default => 'bg-gray-100 text-gray-700',
+                                        };
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
+                                        {{ ucfirst(str_replace('_', ' ', $payout->status)) }}
+                                    </span>
+                                    @if ($payout->status === 'on_hold' && $payout->hold_reason)
+                                        <div class="mt-1 text-xs text-gray-500">{{ ucfirst(str_replace('_', ' ', $payout->hold_reason)) }}</div>
+                                    @endif
+                                    @if ($payout->order?->refunded_at)
+                                        <div class="mt-1 text-xs text-gray-500">Order refunded at {{ $payout->order->refunded_at->format('Y-m-d H:i') }}</div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    @else
                         <tr>
                             <td colspan="6" class="px-4 py-8 text-center text-gray-500">No payout records yet.</td>
                         </tr>
-                    @endforelse
+                    @endif
                 </tbody>
             </table>
-            @if($this->payouts->hasPages())
+            @if ($this->payouts->hasPages())
                 <div class="px-4 py-2 border-t">
                     {{ $this->payouts->links() }}
                 </div>

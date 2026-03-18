@@ -1,14 +1,11 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('My Orders') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <livewire:seller.order-manager />
-        </div>
+    <div class="flex min-h-screen">
+        @include('layouts.seller-sidebar')
+        <main class="flex-1 p-6">
+            <div class="max-w-7xl mx-auto">
+                <livewire:seller.order-manager />
+            </div>
+        </main>
     </div>
 </x-app-layout>
 

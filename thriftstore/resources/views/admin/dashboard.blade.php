@@ -1,13 +1,10 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Admin Dashboard') }}
-        </h2>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="flex min-h-screen">
+        @include('layouts.admin-sidebar')
+        <main class="flex-1 p-6 bg-gray-50">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <a href="{{ route('admin.reports') }}" class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 block hover:bg-gray-50 transition">
                     <div class="text-sm text-gray-500">Total Sales</div>
                     <div class="text-2xl font-semibold">₱{{ number_format($totalSales ?? 0, 2) }}</div>
@@ -266,7 +263,8 @@
                     </table>
                 </div>
             </div>
-        </div>
+            </div>
+        </main>
     </div>
 </x-app-layout>
 

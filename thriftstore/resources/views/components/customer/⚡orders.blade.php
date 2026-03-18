@@ -489,8 +489,8 @@ new class extends Component
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <?php $orders = $this->orders; ?>
-        <?php if($orders instanceof \Illuminate\Pagination\LengthAwarePaginator && $orders->count()): ?>
+        @php $orders = $this->orders; @endphp
+        @if ($orders instanceof \Illuminate\Pagination\LengthAwarePaginator && $orders->count())
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">
                     <tr>
@@ -504,7 +504,7 @@ new class extends Component
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <?php foreach($orders as $order): ?>
+                    @foreach ($orders as $order)
                         <tr>
                             <td class="px-4 py-3 text-xs text-gray-500 align-top">
                                 {{ optional($order->created_at)->format('Y-m-d H:i') }}
@@ -514,11 +514,11 @@ new class extends Component
                             </td>
                             <td class="px-4 py-3 text-xs text-gray-700 align-top">
                                 <ul class="space-y-1">
-                                    <?php foreach($order->items as $item): ?>
+                                    @foreach ($order->items as $item)
                                         <li>
                                             {{ $item->quantity }} × {{ $item->product->name ?? 'Product #'.$item->product_id }}
                                         </li>
-                                    <?php endforeach; ?>
+                                    @endforeach
                                 </ul>
                             </td>
                             <td class="px-4 py-3 align-top">
@@ -618,33 +618,33 @@ new class extends Component
                                 @endif
                             </td>
                             <td class="px-4 py-3 align-top text-xs text-gray-700">
-                                <?php if($order->store_rating): ?>
+                                @if ($order->store_rating)
                                     <div class="flex items-center gap-1">
                                         <span class="text-yellow-400">
                                             {{ str_repeat('★', $order->store_rating) }}{{ str_repeat('☆', 5 - $order->store_rating) }}
                                         </span>
                                         <span>{{ $order->store_rating }}/5</span>
                                     </div>
-                                    <?php if($order->store_review): ?>
+                                    @if ($order->store_review)
                                         <div class="mt-1 text-[11px] text-gray-500 line-clamp-2">
                                             {{ $order->store_review }}
                                         </div>
-                                    <?php endif; ?>
-                                <?php else: ?>
+                                    @endif
+                                @else
                                     <span class="text-gray-400">Not rated</span>
-                                <?php endif; ?>
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-right text-gray-900 font-medium align-top">
                                 ₱{{ number_format($order->total_amount, 2) }}
                             </td>
                             <td class="px-4 py-3 text-right text-xs align-top space-y-1">
-                                <?php if(in_array($order->status, ['awaiting_payment', 'paid', 'to_pack', 'ready_to_ship', 'processing'], true)): ?>
+                                @if (in_array($order->status, ['awaiting_payment', 'paid', 'to_pack', 'ready_to_ship', 'processing'], true))
                                     <button type="button"
                                             wire:click="cancel({{ $order->id }})"
                                             class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50">
                                         Cancel
                                     </button>
-                                <?php elseif($order->status === 'out_for_delivery'): ?>
+                                @elseif ($order->status === 'out_for_delivery')
                                     <button type="button"
                                             wire:click="markReceived({{ $order->id }})"
                                             class="inline-flex items-center px-2 py-1 border border-emerald-500 text-emerald-700 rounded-md text-xs hover:bg-emerald-50">
@@ -656,13 +656,13 @@ new class extends Component
                                             class="inline-flex items-center px-2 py-1 border border-red-500 text-red-700 rounded-md text-xs hover:bg-red-50">
                                         Did not receive parcel
                                     </button>
-                                <?php elseif($order->status === 'shipped'): ?>
+                                @elseif ($order->status === 'shipped')
                                     <button type="button"
                                             wire:click="markReceived({{ $order->id }})"
                                             class="inline-flex items-center px-2 py-1 border border-indigo-500 text-indigo-600 rounded-md text-xs hover:bg-indigo-50">
                                         Mark received
                                     </button>
-                                <?php elseif(in_array($order->status, ['delivered', 'completed'], true)): ?>
+                                @elseif (in_array($order->status, ['delivered', 'completed'], true))
                                     <a href="{{ route('customer.orders.receipt', $order) }}"
                                        class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50"
                                        target="_blank" rel="noopener">
@@ -678,27 +678,27 @@ new class extends Component
                                             class="inline-flex items-center px-2 py-1 border border-indigo-500 text-indigo-600 rounded-md text-xs hover:bg-indigo-50">
                                         Re-order
                                     </button>
-                                    <?php if(!$order->store_rating): ?>
+                                    @if (!$order->store_rating)
                                         <button type="button"
                                                 wire:click="openRateModal({{ $order->id }})"
                                                 class="inline-flex items-center px-2 py-1 border border-amber-500 text-amber-700 rounded-md text-xs hover:bg-amber-50">
                                             Rate seller
                                         </button>
-                                    <?php endif; ?>
-                                <?php endif; ?>
+                                    @endif
+                                @endif
                             </td>
                         </tr>
-                    <?php endforeach; ?>
+                    @endforeach
                 </tbody>
             </table>
             <div class="px-4 py-3 border-t">
                 {{ $orders->links() }}
             </div>
-        <?php else: ?>
+        @else
             <div class="py-12 text-center text-gray-500 text-sm">
                 You have no orders yet.
             </div>
-        <?php endif; ?>
+        @endif
     </div>
     @if($issueOrderId)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

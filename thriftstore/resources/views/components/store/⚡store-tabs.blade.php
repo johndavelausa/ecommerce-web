@@ -305,10 +305,10 @@ new class extends Component {
                                 <button type="button" wire:click="toggleWishlist({{ $product->id }})"
                                     class="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/80 hover:bg-white text-xs z-20">
                                     @if (isset($wishlist[$product->id]))
-                                    <span class="text-rose-500">♥</span>
-                                @else
-                                    <span class="text-gray-400">♡</span>
-                                @endif
+                                       <span class="text-rose-500">♥</span>
+                                    @else
+                                        <span class="text-gray-400">♡</span>
+                                    @endif
                                 </button>
                                 @if ($product->sale_price)
                                     <span

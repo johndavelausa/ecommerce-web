@@ -420,54 +420,53 @@ new class extends Component
                 <p class="msg-sidebar-title">Conversations</p>
             </div>
 
-            <?php $conversations = $this->conversations; ?>
+            @php $conversations = $this->conversations; @endphp
 
-            <?php if($conversations->isEmpty()): ?>
+            @if ($conversations->isEmpty())
                 <p class="msg-empty-text">No conversations yet. Start one below.</p>
-            <?php else: ?>
+            @else
                 <ul class="msg-conv-list">
-                    <?php foreach($conversations as $conv): ?>
+                    @foreach ($conversations as $conv)
                         <li class="msg-conv-item">
                             <button type="button"
-                                    wire:click="openConversation(<?= $conv->id ?>)"
-                                    class="msg-conv-btn <?= $activeConversationId === $conv->id ? 'active' : '' ?>">
+                                    wire:click="openConversation({{ $conv->id }})"
+                                    class="msg-conv-btn {{ $activeConversationId === $conv->id ? 'active' : '' }}">
                                 <span class="msg-conv-name">
-                                    <?= e($conv->seller->store_name ?? 'Seller #'.$conv->seller_id) ?>
+                                    {{ $conv->seller->store_name ?? 'Seller #'.$conv->seller_id }}
                                 </span>
                                 <span class="msg-conv-time">
-                                    <?= optional($conv->updated_at)->diffForHumans() ?>
+                                    {{ optional($conv->updated_at)->diffForHumans() }}
                                 </span>
                             </button>
                         </li>
-                    <?php endforeach; ?>
+                    @endforeach
                 </ul>
-            <?php endif; ?>
+            @endif
 
-            {{-- Start new conversation --}}
             <div class="msg-new-section">
                 <p class="msg-new-label">Start new conversation</p>
-                <?php $sellers = $this->sellersFromOrders; ?>
-                <?php if($sellers->isEmpty()): ?>
+                @php $sellers = $this->sellersFromOrders; @endphp
+                @if ($sellers->isEmpty())
                     <p style="font-size:0.75rem;color:#4A5568;margin:0;">
                         Place an order first to message a seller.
                     </p>
-                <?php else: ?>
+                @else
                     <ul class="msg-seller-list">
-                        <?php foreach($sellers as $seller): ?>
+                        @foreach ($sellers as $seller)
                             <li>
                                 <button type="button"
-                                        wire:click="startWithSeller(<?= $seller->id ?>)"
+                                        wire:click="startWithSeller({{ $seller->id }})"
                                         class="msg-seller-btn">
                                     <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                               d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                     </svg>
-                                    <?= e($seller->store_name) ?>
+                                    {{ $seller->store_name }}
                                 </button>
                             </li>
-                        <?php endforeach; ?>
+                        @endforeach
                     </ul>
-                <?php endif; ?>
+                @endif
             </div>
         </div>
 
@@ -475,11 +474,11 @@ new class extends Component
         <div class="msg-chat-panel">
 
             {{-- Header --}}
-            <?php if($activeConversationId): ?>
-                <?php
+            @if ($activeConversationId)
+                @php
                     $activeConv = $conversations->firstWhere('id', $activeConversationId);
                     $sellerName = $activeConv?->seller?->store_name ?? ('Seller #' . ($activeConv?->seller_id ?? ''));
-                ?>
+                @endphp
                 <div class="msg-chat-header">
                     <div class="msg-chat-avatar">
                         <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -488,11 +487,11 @@ new class extends Component
                         </svg>
                     </div>
                     <div>
-                        <p class="msg-chat-header-name"><?= e($sellerName) ?></p>
+                        <p class="msg-chat-header-name">{{ $sellerName }}</p>
                         <p class="msg-chat-header-sub">Seller</p>
                     </div>
                 </div>
-            <?php else: ?>
+            @else
                 <div class="msg-chat-header">
                     <div>
                         <p class="msg-chat-header-name" style="color:#4A5568;font-weight:500;">No conversation selected</p>
@@ -501,23 +500,23 @@ new class extends Component
             <?php endif; ?>
 
             {{-- Messages --}}
-            <?php $messages = $this->messages; ?>
-            <?php if($activeConversationId && $messages->isNotEmpty()): ?>
+            @php $messages = $this->messages; @endphp
+            @if ($activeConversationId && $messages->isNotEmpty())
                 <div class="msg-body">
-                    <?php $customer = $this->customer; ?>
-                    <?php foreach($messages as $msg): ?>
-                        <?php $isMe = $msg->sender_type === 'customer' && $msg->sender_id === $customer->id; ?>
-                        <div class="msg-bubble-row <?= $isMe ? 'me' : 'them' ?>">
+                    @php $customer = $this->customer; @endphp
+                    @foreach ($messages as $msg)
+                        @php $isMe = $msg->sender_type === 'customer' && $msg->sender_id === $customer->id; @endphp
+                        <div class="msg-bubble-row {{ $isMe ? 'me' : 'them' }}">
                             <div class="msg-bubble">
-                                <?= e($msg->body) ?>
+                                {{ $msg->body }}
                                 <span class="msg-bubble-time">
-                                    <?= optional($msg->created_at)->format('M d, H:i') ?>
+                                    {{ optional($msg->created_at)->format('M d, H:i') }}
                                 </span>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    @endforeach
                 </div>
-            <?php elseif($activeConversationId): ?>
+            @elseif ($activeConversationId)
                 <div class="msg-placeholder">
                     <div class="msg-placeholder-icon">
                         <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -527,17 +526,7 @@ new class extends Component
                     </div>
                     <p class="msg-placeholder-text">No messages yet.<br>Say hello to get the conversation started!</p>
                 </div>
-            <?php else: ?>
-                <div class="msg-placeholder">
-                    <div class="msg-placeholder-icon">
-                        <svg style="width:24px;height:24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"/>
-                        </svg>
-                    </div>
-                    <p class="msg-placeholder-text">Select a conversation from the left<br>or start a new one with a seller.</p>
-                </div>
-            <?php endif; ?>
+            @endif
 
             {{-- Input bar --}}
             <form wire:submit.prevent="send" class="msg-input-bar">
@@ -545,10 +534,10 @@ new class extends Component
                        wire:model.defer="body"
                        class="msg-input"
                        placeholder="Type a message..."
-                       <?= !$activeConversationId ? 'disabled' : '' ?>>
+                       {{ !$activeConversationId ? 'disabled' : '' }}>
                 <button type="submit"
                         class="msg-send-btn"
-                        <?= !$activeConversationId ? 'disabled' : '' ?>>
+                        {{ !$activeConversationId ? 'disabled' : '' }}>
                     <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>

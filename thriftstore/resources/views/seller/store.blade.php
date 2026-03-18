@@ -5,10 +5,13 @@
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <livewire:seller.store-settings />
-        </div>
+    <div class="flex min-h-screen">
+        @include('layouts.seller-sidebar')
+        <main class="flex-1 p-6">
+            <div class="max-w-7xl mx-auto">
+                <livewire:seller.store-settings />
+            </div>
+        </main>
     </div>
 </x-app-layout>
 

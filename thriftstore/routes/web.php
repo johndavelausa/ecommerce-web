@@ -8,6 +8,7 @@ use App\Http\Controllers\Webhooks\CourierTrackingWebhookController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\LegalPageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AddressController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -162,35 +163,10 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/deletion-request', [ProfileController::class, 'requestDeletion'])->name('profile.deletion-request');
-    Route::post('/profile/addresses', function (\Illuminate\Http\Request $request) {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-
-        $data = $request->validate([
-            'label' => ['required', 'string', 'max:50'],
-            'recipient_name' => ['nullable', 'string', 'max:255'],
-            'line1' => ['required', 'string', 'max:255'],
-            'line2' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'region' => ['nullable', 'string', 'max:100'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'is_default' => ['nullable', 'boolean'],
-        ]);
-
-        $isDefault = (bool) ($data['is_default'] ?? false);
-        unset($data['is_default']);
-
-        $address = $user->addresses()->create($data + ['is_default' => $isDefault]);
-
-        if ($isDefault) {
-            $user->addresses()
-                ->where('id', '!=', $address->id)
-                ->update(['is_default' => false]);
-        }
-
-        return back()->with('status', 'address-saved');
-    })->name('profile.addresses.store');
+    Route::post('/profile/addresses', [AddressController::class, 'store'])->name('profile.addresses.store');
+    Route::patch('/profile/addresses/{address}', [AddressController::class, 'update'])->name('profile.addresses.update');
+    Route::delete('/profile/addresses/{address}', [AddressController::class, 'destroy'])->name('profile.addresses.destroy');
+    Route::post('/profile/addresses/{address}/default', [AddressController::class, 'setDefault'])->name('profile.addresses.set-default');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

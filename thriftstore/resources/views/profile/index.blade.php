@@ -1,79 +1,195 @@
 @php
-    $section = request()->query('section', 'personal');
+    $initialSection = request()->query('section', 'personal');
     $sections = [
-        'personal' => 'Personal Information',
-        'security' => 'Security',
-        'orders' => 'My Orders',
-        'messages' => 'Messages',
-        'deletion' => 'Account Deletion',
+        'personal' => [
+            'label' => 'Personal Information',
+            'desc' => 'Manage your name, email and basic details',
+            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>'
+        ],
+        'security' => [
+            'label' => 'Security',
+            'desc' => 'Keep your account secure with a strong password',
+            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>'
+        ],
+        'orders' => [
+            'label' => 'My Orders',
+            'desc' => 'Track your purchases and view order history',
+            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>'
+        ],
+        'messages' => [
+            'label' => 'Messages',
+            'desc' => 'Communication with sellers and support',
+            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>'
+        ],
+        'deletion' => [
+            'label' => 'Account Settings',
+            'desc' => 'Privacy and account deletion requests',
+            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
+        ],
     ];
 @endphp
 
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 flex gap-8">
-            <!-- Sidebar -->
-            <aside class="w-full max-w-xs">
-                <div class="bg-white rounded-lg shadow p-6 space-y-2">
-                    <div>
-                        <div class="font-semibold text-gray-700 text-xs mb-2 uppercase tracking-wider">Profile Sections</div>
-                        <ul class="space-y-1">
-                            <li><a href="?section=personal" class="sidebar-link{{ $section == 'personal' ? ' font-bold text-green-700' : '' }}">Personal Information</a></li>
-                            <li><a href="?section=security" class="sidebar-link{{ $section == 'security' ? ' font-bold text-green-700' : '' }}">Security</a></li>
-                            <li><a href="?section=orders" class="sidebar-link{{ $section == 'orders' ? ' font-bold text-green-700' : '' }}">My Orders</a></li>
-                            <li><a href="?section=messages" class="sidebar-link{{ $section == 'messages' ? ' font-bold text-green-700' : '' }}">Messages</a></li>
-                            <li><a href="?section=deletion" class="sidebar-link{{ $section == 'deletion' ? ' font-bold text-green-700' : '' }}">Account Deletion</a></li>
-                        </ul>
-                    </div>
+    <div x-data="{ 
+            section: '{{ $initialSection }}',
+            setSection(newSection) {
+                this.section = newSection;
+                const url = new URL(window.location);
+                url.searchParams.set('section', newSection);
+                window.history.pushState({}, '', url);
+            }
+        }" 
+        class="user-profile-bg py-8 min-h-screen">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            {{-- Profile Header --}}
+            <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in-up">
+                <div>
+                    <h1 class="profile-section-title !text-2xl">Account Settings</h1>
+                    <p class="profile-section-subtitle text-sm">Manage your personal details and preferences.</p>
                 </div>
-            </aside>
+                
+                <nav class="flex" aria-label="Breadcrumb">
+                    <ol class="inline-flex items-center space-x-1 md:space-x-2 text-xs font-medium text-gray-500">
+                        <li><a href="/" class="hover:text-green-700">Home</a></li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/></svg>
+                                <span class="ml-1 md:ml-2">Profile</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
 
-            <!-- Main Content -->
-            <main class="flex-1 space-y-8">
-                @if($section === 'personal')
-                    <section class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                        <div>
-                            @include('profile.partials.update-profile-information-form')
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Sidebar -->
+                <aside class="w-full lg:w-64 shrink-0">
+                    <div class="profile-glass-card p-3 sticky top-6 animate-fade-in-up" style="animation-delay: 0.1s">
+                        <nav class="profile-sidebar-nav">
+                            @foreach($sections as $key => $data)
+                                <a href="?section={{ $key }}" 
+                                   @click.prevent="setSection('{{ $key }}')"
+                                   class="profile-sidebar-item"
+                                   :class="section === '{{ $key }}' ? 'is-active' : ''">
+                                    <span class="shrink-0">{!! $data['icon'] !!}</span>
+                                    <span class="text-xs uppercase tracking-wide font-bold">{{ $data['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                        
+                        <div class="mt-6 pt-4 border-t border-gray-100 px-2">
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-3 w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all uppercase tracking-wider">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                    Sign Out
+                                </button>
+                            </form>
                         </div>
-                    </section>
-                    <section class="bg-white shadow rounded-lg p-6">
-                        @include('profile.partials.addresses')
-                    </section>
-                @elseif($section === 'security')
-                    <section class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Security</h3>
-                        @include('profile.partials.update-password-form')
-                    </section>
-                @elseif($section === 'orders')
-                    <section class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">My Orders</h3>
-                        <div class="mb-6">
-                            @livewire('customer.orders')
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="flex-1 min-w-0">
+                    <div class="animate-fade-in-up" style="animation-delay: 0.2s">
+                        {{-- Personal Section --}}
+                        <div x-show="section === 'personal'" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak class="space-y-6">
+                            <div class="profile-glass-card p-6 md:p-8">
+                                <div class="mb-6">
+                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Personal Information</h3>
+                                    <p class="text-sm text-gray-500 mt-2">Update your primary identity settings.</p>
+                                </div>
+                                <div class="profile-content-form">
+                                    @include('profile.partials.update-profile-information-form')
+                                </div>
+                            </div>
+                            
+                            <div class="profile-glass-card p-6 md:p-8">
+                                <div class="profile-content-form">
+                                    @include('profile.partials.addresses')
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-md font-semibold text-gray-800 mb-2">Reviews</h4>
-                            @livewire('customer.reviews')
+
+                        {{-- Security Section --}}
+                        <div x-show="section === 'security'" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak>
+                            <div class="profile-glass-card p-6 md:p-8">
+                                <div class="mb-6">
+                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Security Details</h3>
+                                    <p class="text-sm text-gray-500 mt-2">Protect your account with a strong password.</p>
+                                </div>
+                                <div class="profile-content-form">
+                                    @include('profile.partials.update-password-form')
+                                </div>
+                            </div>
                         </div>
-                    </section>
-                @elseif($section === 'messages')
-                    <section class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Messages</h3>
-                        @livewire('customer.messages')
-                    </section>
-                @elseif($section === 'deletion')
-                    <section class="bg-white shadow rounded-lg p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Account Deletion</h3>
-                        @include('profile.partials.delete-user-form')
-                    </section>
-                @endif
-            </main>
+
+                        {{-- Orders Section --}}
+                        <div x-show="section === 'orders'" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak>
+                            <div class="profile-glass-card p-6 md:p-8">
+                                <div class="mb-8">
+                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Order Repository</h3>
+                                    <p class="text-sm text-gray-500 mt-2">Monitor your transaction history.</p>
+                                </div>
+                                <div class="space-y-10">
+                                    <div>
+                                        @livewire('customer.orders')
+                                    </div>
+                                    <div class="pt-10 border-t border-gray-100">
+                                        <h4 class="text-lg font-bold text-gray-900 mb-6">Product Feedback</h4>
+                                        @livewire('customer.reviews')
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Messages Section --}}
+                        <div x-show="section === 'messages'" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak>
+                            <div class="profile-glass-card p-6 md:p-8">
+                                <div class="mb-6">
+                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Communications</h3>
+                                    <p class="text-sm text-gray-500 mt-2">Direct messaging with vendors.</p>
+                                </div>
+                                @livewire('customer.messages')
+                            </div>
+                        </div>
+
+                        {{-- Deletion Section --}}
+                        <div x-show="section === 'deletion'" 
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-cloak>
+                            <div class="profile-glass-card p-6 md:p-8 border-red-50">
+                                <div class="mb-6">
+                                    <h3 class="text-xl font-bold text-red-600 leading-none">Termination</h3>
+                                    <p class="text-sm text-gray-500 mt-2">Remove your account data permanently.</p>
+                                </div>
+                                <div class="profile-content-form pt-4">
+                                    @include('profile.partials.delete-user-form')
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
     </div>
 </x-app-layout>

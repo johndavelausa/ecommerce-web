@@ -426,39 +426,10 @@
                     @endif
 
                     @if($user && request()->is('admin/*'))
-                        @foreach([
-                            ['admin.sellers',           'Sellers'],
-                            ['admin.customers',         'Customers'],
-                            ['admin.messages',          'Messages'],
-                            ['admin.product-reports',   'Product Reports'],
-                            ['admin.deletion-requests', 'Deletions'],
-                            ['admin.orders',            'Orders'],
-                            ['admin.disputes',          'Disputes'],
-                            ['admin.payments',          'Payments'],
-                            ['admin.reports',           'Reports'],
-                            ['admin.settings',          'Settings'],
-                        ] as [$r, $l])
-                            <a href="{{ route($r) }}"
-                               class="ts-nav-link {{ request()->routeIs($r) ? 'ts-active' : '' }}">
-                                {{ __($l) }}
-                            </a>
-                        @endforeach
+                        {{-- Admin: Links moved to sidebar --}}
 
                     @elseif($user && request()->is('seller/*'))
-                        @foreach([
-                            ['seller.messages', 'Messages'],
-                            ['seller.reviews',  'Reviews'],
-                            ['seller.payments', 'Payments'],
-                            ['seller.orders',   'Orders'],
-                            ['seller.products', 'Products'],
-                            ['seller.store',    'Store Settings'],
-                        ] as [$r, $l])
-                            <a href="{{ route($r) }}"
-                               class="ts-nav-link {{ request()->routeIs($r) ? 'ts-active' : '' }}">
-                                {{ __($l) }}
-                            </a>
-                        @endforeach
-                        {{-- FAQ link removed from navbar --}}
+                        {{-- Seller: Only show notification and profile, no nav links --}}
 
                     @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
                         {{-- Categories --}}
@@ -768,25 +739,8 @@
                 {{ $dashboardLabel }}
             </a>
 
-            @if($user && request()->is('admin/*'))
-                @foreach([
-                    ['admin.sellers','Sellers'],['admin.customers','Customers'],
-                    ['admin.messages','Messages'],['admin.product-reports','Product Reports'],
-                    ['admin.deletion-requests','Deletion Requests'],['admin.orders','Orders'],
-                    ['admin.disputes','Disputes'],['admin.payments','Payments'],
-                    ['admin.reports','Reports'],['admin.settings','Settings'],
-                ] as [$r, $l])
-                    <a href="{{ route($r) }}" class="ts-mob-link {{ request()->routeIs($r) ? 'ts-active' : '' }}">{{ __($l) }}</a>
-                @endforeach
-
-            @elseif($user && request()->is('seller/*'))
-                @foreach([
-                    ['seller.reports','Reports'],['seller.messages','Messages'],
-                    ['seller.payments','Payments'],['seller.orders','Orders'],
-                    ['seller.products','Products'],['seller.store','Store Settings'],
-                ] as [$r, $l])
-                    <a href="{{ route($r) }}" class="ts-mob-link {{ request()->routeIs($r) ? 'ts-active' : '' }}">{{ __($l) }}</a>
-                @endforeach
+            @if($user && (request()->is('admin/*') || request()->is('seller/*')))
+                {{-- Admin/Seller: Links moved to sidebar --}}
 
             @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
                 <a href="{{ route('customer.orders') }}"   class="ts-mob-link {{ request()->routeIs('customer.orders')   ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>

@@ -28,7 +28,7 @@
         @stack('styles')
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen {{ request()->routeIs('seller.register', 'seller.login') ? 'bg-[#f2f5f4]' : 'bg-gray-100' }} flex flex-col">
+        <div class="min-h-screen flex flex-col @if(request()->is('seller*')) seller-bg @elseif(request()->is('admin*')) admin-bg @else user-bg @endif {{ request()->routeIs('seller.register', 'seller.login') ? 'bg-[#f2f5f4]' : '' }}">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
@@ -49,8 +49,11 @@
                 @endif
                         
             </main>
+            @if(!request()->is('admin/*', 'seller/*'))
+                @include('layouts.footer')
+            @endif
 
-            @include('layouts.footer')
+
         </div>
 
         @livewireScripts

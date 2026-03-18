@@ -1,8 +1,0 @@
-{
-  "builds": [
-    { "src": "thriftstore/Dockerfile", "use": "@vercel/docker" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "thriftstore/public/index.php" }
-  ]
-}
