@@ -24,6 +24,7 @@ class Seller extends Model
         'business_hours',
         'banner_path',
         'logo_path',
+        'suspension_reason',
     ];
 
     protected function casts(): array

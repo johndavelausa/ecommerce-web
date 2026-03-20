@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\Payment;
 use App\Models\Seller;
 use App\Models\SellerActivityLog;
@@ -26,6 +28,23 @@ new class extends Component
     public bool $showRejectModal = false;
     public ?int $rejectPaymentId = null;
     public string $rejectReason = '';
+
+    public bool $showSuspendModal = false;
+    public ?int $suspendSellerId = null;
+    public string $suspensionReason = '';
+    public string $customSuspensionNote = '';
+    public array $suspensionReasonsList = [
+        'Violation of Terms of Service',
+        'Reported Fraudulent Activity',
+        'Consistent Late Shipping',
+        'Low User Rating',
+        'Misleading Product Information',
+        'Other'
+    ];
+
+    public bool $showUnsuspendModal = false;
+    public ?int $unsuspendSellerId = null;
+    public string $unsuspendReason = '';
 
     /** A2 v1.4 — Admin notes on seller profile */
     public string $newNote = '';
@@ -192,22 +211,130 @@ new class extends Component
 
     public function suspendSeller(int $sellerId): void
     {
-        $seller = Seller::query()->with('user')->findOrFail($sellerId);
-        if ($seller->status === 'approved') {
-            $seller->update(['status' => 'suspended']);
-            $seller->user?->notify(new SellerSuspended($seller));
-            $this->dispatch('seller-updated');
-        }
+        $this->suspendSellerId = $sellerId;
+        $this->suspensionReason = $this->suspensionReasonsList[0];
+        $this->customSuspensionNote = '';
+        $this->showSuspendModal = true;
+    }
+
+    public function cancelSuspension(): void
+    {
+        $this->showSuspendModal = false;
+        $this->suspendSellerId = null;
+        $this->resetErrorBag();
+    }
+
+    public function confirmSuspension(): void
+    {
+        if (!$this->suspendSellerId) return;
+
+        $this->validate([
+            'suspensionReason' => ['required', 'string'],
+            'customSuspensionNote' => ['required_if:suspensionReason,Other', 'nullable', 'string', 'max:1000'],
+        ]);
+
+        $seller = Seller::query()->with('user')->findOrFail($this->suspendSellerId);
+        
+        $finalReason = $this->suspensionReason === 'Other' 
+            ? $this->customSuspensionNote 
+            : $this->suspensionReason;
+
+        $seller->update([
+            'status' => 'suspended',
+            'suspension_reason' => $finalReason
+        ]);
+
+        // Log activity
+        SellerActivityLog::log($seller->id, 'suspended', [
+            'reason' => $finalReason,
+            'admin_id' => Auth::guard('admin')->id(),
+        ]);
+
+        // Send Email/Database Notification
+        $seller->user?->notify(new SellerSuspended($seller));
+
+        // Send Automatic Message in Chat
+        $this->sendSuspensionMessage($seller, $finalReason);
+
+        $this->cancelSuspension();
+        $this->dispatch('seller-updated');
+    }
+
+    private function sendSuspensionMessage(Seller $seller, string $reason): void
+    {
+        $conv = Conversation::firstOrCreate([
+            'seller_id' => $seller->id,
+            'type'      => 'seller-admin',
+        ]);
+
+        Message::create([
+            'conversation_id' => $conv->id,
+            'sender_id'       => Auth::guard('admin')->id(),
+            'sender_type'     => 'admin',
+            'body'            => "YOUR ACCOUNT HAS BEEN SUSPENDED.\n\nReason: {$reason}\n\nPlease contact support if you believe this is a mistake.",
+            'is_read'         => false,
+        ]);
     }
 
     public function unsuspendSeller(int $sellerId): void
     {
-        $seller = Seller::query()->with('user')->findOrFail($sellerId);
-        if ($seller->status === 'suspended') {
-            $seller->update(['status' => 'approved']);
-            $seller->user?->notify(new SellerUnsuspended($seller));
-            $this->dispatch('seller-updated');
-        }
+        $this->unsuspendSellerId = $sellerId;
+        $this->unsuspendReason = '';
+        $this->showUnsuspendModal = true;
+    }
+
+    public function cancelUnsuspension(): void
+    {
+        $this->showUnsuspendModal = false;
+        $this->unsuspendSellerId = null;
+        $this->resetErrorBag();
+    }
+
+    public function confirmUnsuspension(): void
+    {
+        if (!$this->unsuspendSellerId) return;
+
+        $this->validate([
+            'unsuspendReason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $seller = Seller::query()->with('user')->findOrFail($this->unsuspendSellerId);
+        
+        $seller->update([
+            'status' => 'approved',
+            'suspension_reason' => null
+        ]);
+
+        // Log activity
+        SellerActivityLog::log($seller->id, 'unsuspended', [
+            'resolution_reason' => $this->unsuspendReason,
+            'admin_id' => Auth::guard('admin')->id(),
+        ]);
+
+        // Send Email/Database Notification
+        $seller->user?->notify(new SellerUnsuspended($seller));
+
+        // Send Automatic Message in Chat
+        $this->sendUnsuspensionMessage($seller, $this->unsuspendReason);
+
+        $this->cancelUnsuspension();
+        $this->dispatch('seller-updated');
+    }
+
+    private function sendUnsuspensionMessage(Seller $seller, string $reason): void
+    {
+        $conv = Conversation::firstOrCreate([
+            'seller_id' => $seller->id,
+            'type'      => 'seller-admin',
+        ]);
+
+        Message::create([
+            'conversation_id' => $conv->id,
+            'sender_id'       => Auth::guard('admin')->id(),
+            'sender_type'     => 'admin',
+            'body'            => "YOUR ACCOUNT HAS BEEN REACTIVATED.\n\nNote: {$reason}\n\nYou can now resume your sales activities. Welcome back!",
+            'is_read'         => false,
+        ]);
     }
 
     /** A2 v1.4 — Verified seller badge: admin can toggle */
@@ -503,6 +630,68 @@ new class extends Component
                 <div class="mt-4 flex gap-2 justify-end">
                     <button wire:click="cancelReject" class="px-3 py-1 border rounded">Cancel</button>
                     <button wire:click="confirmReject" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($showSuspendModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+                <h3 class="text-lg font-semibold text-gray-900">Suspend seller</h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Select a reason for suspension. This will be sent as a message to the seller.
+                </p>
+                
+                <div class="mt-4 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Reason</label>
+                        <select wire:model.live="suspensionReason" 
+                                class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach($suspensionReasonsList as $r)
+                                <option value="{{ $r }}">{{ $r }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if($suspensionReason === 'Other')
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Custom reason/note</label>
+                            <textarea wire:model.defer="customSuspensionNote" rows="3"
+                                      class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      placeholder="Explain the specific reason..."></textarea>
+                            @error('customSuspensionNote') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                        </div>
+                    @endif
+                </div>
+
+                <div class="mt-6 flex gap-2 justify-end">
+                    <button wire:click="cancelSuspension" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Cancel</button>
+                    <button wire:click="confirmSuspension" class="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">Suspend Seller</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($showUnsuspendModal)
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+                <h3 class="text-lg font-semibold text-gray-900 text-green-700">Reactivate seller account</h3>
+                <p class="mt-1 text-sm text-gray-600">
+                    Please provide a reason or note for reactivating this account (e.g., issues resolved).
+                </p>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Resolution Note</label>
+                    <textarea wire:model.defer="unsuspendReason" rows="3"
+                                class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                placeholder="e.g. Terms complied, Issue resolved..."></textarea>
+                    @error('unsuspendReason') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="mt-6 flex gap-2 justify-end">
+                    <button wire:click="cancelUnsuspension" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Cancel</button>
+                    <button wire:click="confirmUnsuspension" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Confirm Reactivation</button>
                 </div>
             </div>
         </div>

@@ -185,6 +185,7 @@ return new class extends Migration
             $table->text('business_hours')->nullable();
             $table->string('banner_path')->nullable();
             $table->string('logo_path')->nullable();
+            $table->string('suspension_reason')->nullable();
             $table->timestamps();
             $table->index('status');
         });
