@@ -18,14 +18,14 @@
         <a href="{{ route('seller.reviews') }}" class="block px-3 py-2 rounded {{ request()->routeIs('seller.reviews*') ? 'bg-green-100 text-green-900 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
             <span>Reviews</span>
         </a>
+        <a href="{{ route('seller.messages') }}" class="block px-3 py-2 rounded {{ request()->routeIs('seller.messages*') ? 'bg-green-100 text-green-900 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
+            <span>Messages</span>
+        </a>
         <a href="{{ route('seller.store') }}" class="block px-3 py-2 rounded {{ request()->routeIs('seller.store*') ? 'bg-green-100 text-green-900 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
             <span>Store Settings</span>
         </a>
         <a href="{{ route('seller.payments') }}" class="block px-3 py-2 rounded {{ request()->routeIs('seller.payments*') ? 'bg-green-100 text-green-900 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
             <span>Payments</span>
-        </a>
-        <a href="{{ route('seller.message-admin') }}" class="block px-3 py-2 rounded {{ request()->routeIs('seller.message-admin') ? 'bg-green-100 text-green-900 font-semibold' : 'text-gray-700 hover:bg-gray-50' }}">
-            <span>Message Admin</span>
         </a>
     </nav>
 </aside>

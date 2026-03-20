@@ -103,6 +103,7 @@ class SellerRegisteredUserController extends Controller
             'store_description' => $request->store_description,
             'gcash_number' => $request->gcash_number,
             'status' => 'pending',
+            'subscription_status' => 'lapsed',
         ]);
 
         $screenshotPath = $request->file('payment_screenshot')->store('payments', 'public');

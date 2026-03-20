@@ -39,6 +39,7 @@ new class extends Component
 
         return Payment::query()
             ->where('seller_id', $seller->id)
+            ->where('type', 'subscription')
             ->orderByDesc('created_at')
             ->paginate(20);
     }
@@ -113,7 +114,7 @@ new class extends Component
         }
 
         $this->validate([
-            'type'             => ['required', 'in:registration,subscription'],
+            'type'             => ['required', 'in:subscription'],
             'amount'           => ['required', 'numeric', 'min:1'],
             'gcash_number'     => ['required', 'string', 'max:50'],
             'reference_number' => ['required', 'string', 'max:100', 'unique:payments,reference_number'],
@@ -143,9 +144,9 @@ new class extends Component
     <div class="bg-white rounded-lg shadow p-6 space-y-4">
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="text-lg font-medium text-gray-900">Subscription & registration payments</h3>
+                <h3 class="text-lg font-medium text-gray-900">Subscription payments</h3>
                 <p class="mt-1 text-sm text-gray-500">
-                    Upload your GCash payment for registration or monthly subscription. Admin will review and approve.
+                    Upload your GCash payment for your monthly subscription. Admin will review and approve.
                 </p>
             </div>
         </div>
@@ -162,7 +163,6 @@ new class extends Component
                     <label class="block text-sm font-medium text-gray-700">Payment type</label>
                     <select wire:model.defer="type"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        <option value="registration">Registration</option>
                         <option value="subscription">Subscription</option>
                     </select>
                     @error('type') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror

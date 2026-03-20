@@ -26,7 +26,7 @@ class EnsureSellerIsApproved
         }
 
         $seller = $user->seller;
-        if (! $seller || $seller->status !== 'approved') {
+        if (! $seller || $seller->status !== 'approved' || $seller->subscription_status !== 'active') {
             return redirect()->route('seller.status');
         }
 

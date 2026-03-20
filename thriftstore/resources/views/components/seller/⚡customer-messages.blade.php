@@ -3,6 +3,7 @@
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -11,8 +12,23 @@ new class extends Component
 {
     use WithPagination;
 
+    #[Url]
     public ?int $selectedConversationId = null;
     public string $replyBody = '';
+
+    public function inquireAdmin(): void
+    {
+        $seller = Auth::guard('seller')->user()?->seller;
+        if (! $seller) return;
+
+        $conv = Conversation::firstOrCreate([
+            'seller_id' => $seller->id,
+            'type'      => 'seller-admin',
+        ]);
+
+        $this->selectedConversationId = $conv->id;
+        $this->replyBody = '';
+    }
 
     public function getConversationsProperty()
     {
@@ -22,10 +38,10 @@ new class extends Component
         }
 
         return Conversation::query()
-            ->where('type', 'seller-customer')
+            ->whereIn('type', ['seller-customer', 'seller-admin'])
             ->where('seller_id', $seller->id)
-            ->with(['customer'])
-            ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->where('sender_type', 'customer')])
+            ->with(['customer', 'latestMessage'])
+            ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->whereIn('sender_type', ['customer', 'admin'])])
             ->orderByRaw('(SELECT MAX(created_at) FROM messages WHERE messages.conversation_id = conversations.id) DESC')
             ->paginate(20);
     }
@@ -35,13 +51,14 @@ new class extends Component
         $this->selectedConversationId = $id;
         $this->replyBody = '';
         $this->markConversationRead($id);
+        $this->dispatch('scroll-to-bottom');
     }
 
     public function markConversationRead(int $conversationId): void
     {
         Message::query()
             ->where('conversation_id', $conversationId)
-            ->where('sender_type', 'customer')
+            ->whereIn('sender_type', ['customer', 'admin'])
             ->where('is_read', false)
             ->update(['is_read' => true]);
     }
@@ -59,7 +76,7 @@ new class extends Component
         $conv = Conversation::query()
             ->where('id', $this->selectedConversationId)
             ->where('seller_id', $seller->id)
-            ->where('type', 'seller-customer')
+            ->whereIn('type', ['seller-customer', 'seller-admin'])
             ->firstOrFail();
 
         Message::create([
@@ -73,6 +90,7 @@ new class extends Component
         $conv->update(['updated_at' => now()]);
 
         $this->replyBody = '';
+        $this->dispatch('scroll-to-bottom');
     }
 
     #[Computed]
@@ -91,7 +109,17 @@ new class extends Component
 
 <div class="flex gap-4">
     <div class="w-80 shrink-0 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">
-        <div class="p-3 border-b font-medium">Customer messages</div>
+        <div class="p-3 border-b flex items-center justify-between">
+            <span class="font-medium">Conversations</span>
+            @php
+                $hasAdminConv = $this->conversations->getCollection()->contains('type', 'seller-admin');
+            @endphp
+            @if(!$hasAdminConv)
+                <button type="button" wire:click="inquireAdmin" title="Message Admin" class="p-1 text-indigo-600 hover:bg-indigo-50 rounded">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            @endif
+        </div>
         <div class="overflow-y-auto flex-1 divide-y">
             @forelse($this->conversations as $conv)
                 <button type="button"
@@ -99,7 +127,11 @@ new class extends Component
                         class="w-full text-left p-3 hover:bg-gray-50 {{ $selectedConversationId === $conv->id ? 'bg-indigo-50' : '' }}">
                     <div class="flex justify-between items-start">
                         <span class="font-medium text-sm">
-                            {{ $conv->customer->name ?? 'Customer #'.$conv->customer_id }}
+                            @if($conv->type === 'seller-admin')
+                                <span class="text-indigo-600 font-bold">Support Admin</span>
+                            @else
+                                {{ $conv->customer->name ?? 'Customer #'.$conv->customer_id }}
+                            @endif
                         </span>
                         @if($conv->unread_count > 0)
                             <span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">
@@ -107,8 +139,13 @@ new class extends Component
                             </span>
                         @endif
                     </div>
-                    <div class="text-xs text-gray-500 mt-0.5">
-                        Updated {{ optional($conv->updated_at)->diffForHumans() }}
+                    <div class="flex items-center justify-between mt-0.5">
+                        <div class="text-xs text-gray-400 truncate flex-1">
+                            {{ $conv->latestMessage?->body ?? 'No messages yet.' }}
+                        </div>
+                        <div class="text-[10px] text-gray-400 ml-2 shrink-0">
+                            {{ optional($conv->latestMessage?->created_at)->diffForHumans(null, true) }}
+                        </div>
                     </div>
                 </button>
             @empty
@@ -127,13 +164,32 @@ new class extends Component
             @php($conv = $this->selectedConversation)
             <div class="p-3 border-b flex justify-between items-center">
                 <span class="font-medium">
-                    {{ $conv->customer->name ?? 'Customer #'.$conv->customer_id }}
+                    @if($conv->type === 'seller-admin')
+                        Support Admin
+                    @else
+                        {{ $conv->customer->name ?? 'Customer #'.$conv->customer_id }}
+                    @endif
                 </span>
                 <span class="text-xs text-gray-500">
                     Conversation #{{ $conv->id }}
                 </span>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+            <div
+                x-data="{
+                    scrollToBottom() {
+                        this.$el.scrollTop = this.$el.scrollHeight;
+                    }
+                }"
+                x-init="
+                    scrollToBottom();
+                    new MutationObserver(() => scrollToBottom()).observe($el, { childList: true, subtree: true });
+                "
+                x-on:scroll-to-bottom.window="
+                    $nextTick(() => scrollToBottom());
+                "
+                wire:poll.5s
+                class="flex-1 overflow-y-auto p-4 space-y-3"
+            >
                 @php($sellerUser = auth('seller')->user())
                 @foreach($conv->messages as $msg)
                     @php($isSeller = $msg->sender_type === 'seller' && $msg->sender_id === $sellerUser?->id)
@@ -149,14 +205,23 @@ new class extends Component
                     </div>
                 @endforeach
             </div>
-            <div class="p-3 border-t">
-                <textarea wire:model="replyBody" rows="2"
-                          class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          placeholder="Reply to customer..."></textarea>
+            <div class="p-3 border-t" x-data="{ body: '' }">
+                <textarea
+                    x-model="body"
+                    x-ref="messageInput"
+                    x-on:keydown.enter.prevent="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
+                    wire:loading.attr="disabled"
+                    wire:target="sendReply"
+                    rows="2"
+                    class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
+                    placeholder="Type your message... (Enter to send)"></textarea>
+                @error('replyBody') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
                 <button type="button"
-                        wire:click="sendReply"
-                        class="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
-                    Send
+                        x-on:click="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
+                        wire:loading.attr="disabled"
+                        class="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
+                    <span wire:loading.remove wire:target="sendReply">Send</span>
+                    <span wire:loading wire:target="sendReply">Sending...</span>
                 </button>
             </div>
         @else

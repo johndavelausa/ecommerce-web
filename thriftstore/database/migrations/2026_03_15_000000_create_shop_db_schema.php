@@ -178,7 +178,7 @@ return new class extends Migration
             $table->boolean('is_open')->default(true);
             $table->enum('status', ['pending', 'approved', 'rejected', 'suspended'])->default('pending');
             $table->date('subscription_due_date')->nullable();
-            $table->enum('subscription_status', ['active', 'grace_period', 'lapsed'])->default('active');
+            $table->enum('subscription_status', ['active', 'grace_period', 'lapsed'])->default('lapsed');
             $table->enum('delivery_option', ['free', 'flat_rate', 'per_product'])->default('free');
             $table->decimal('delivery_fee', 10, 2)->nullable();
             $table->boolean('is_verified')->default(false);

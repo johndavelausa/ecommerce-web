@@ -82,28 +82,30 @@ new class extends Component
 
         $seller = $payment->seller;
         if ($seller) {
-            // Base next period start on existing due date if in the future, otherwise from today.
-            $startDate = $seller->subscription_due_date && $seller->subscription_due_date->isFuture()
-                ? $seller->subscription_due_date
-                : $now->copy()->startOfDay();
-
-            $nextDue = $startDate->copy()->addMonth();
-
-            $updateData = [
-                'subscription_due_date' => $nextDue->toDateString(),
-                'subscription_status'   => 'active',
-            ];
+            $updateData = [];
 
             if ($payment->type === 'registration') {
                 $updateData['status'] = 'approved';
+            } elseif ($payment->type === 'subscription') {
+                // Base next period start on existing due date if in the future, otherwise from today.
+                $startDate = $seller->subscription_due_date && $seller->subscription_due_date->isFuture()
+                    ? $seller->subscription_due_date
+                    : $now->copy()->startOfDay();
+
+                $nextDue = $startDate->copy()->addMonth();
+
+                $updateData['subscription_due_date'] = $nextDue->toDateString();
+                $updateData['subscription_status']   = 'active';
+
+                // Reactivate store if it was closed due to lapsed subscription
+                if (! $seller->is_open && $seller->subscription_status === 'lapsed') {
+                    $updateData['is_open'] = true;
+                }
             }
 
-            // Reactivate store if it was closed due to lapsed subscription
-            if (! $seller->is_open && $seller->subscription_status === 'lapsed') {
-                $updateData['is_open'] = true;
+            if (!empty($updateData)) {
+                $seller->update($updateData);
             }
-
-            $seller->update($updateData);
         }
 
         $this->dispatch('payment-updated');

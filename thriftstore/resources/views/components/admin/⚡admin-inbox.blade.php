@@ -17,7 +17,7 @@ new class extends Component
     {
         $q = Conversation::query()
             ->whereIn('type', ['seller-admin', 'guest'])
-            ->with(['seller.user', 'messages' => fn ($q) => $q->orderBy('created_at')])
+            ->with(['seller.user', 'latestMessage'])
             ->withCount(['messages as unread_count' => fn ($q) => $q->where('is_read', false)->where('sender_type', '!=', 'admin')]);
 
         if ($this->search !== '') {
@@ -48,6 +48,7 @@ new class extends Component
         $this->selectedConversationId = $id;
         $this->replyBody = '';
         $this->markConversationRead($id);
+        $this->dispatch('scroll-to-bottom');
     }
 
     public function markConversationRead(int $conversationId): void
@@ -74,7 +75,7 @@ new class extends Component
             'is_read' => false,
         ]);
         $this->replyBody = '';
-        $this->dispatch('reply-sent');
+        $this->dispatch('scroll-to-bottom');
     }
 
     public function closeThread(): void
@@ -118,7 +119,14 @@ new class extends Component
                             <span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">{{ $conv->unread_count }}</span>
                         @endif
                     </div>
-                    <div class="text-xs text-gray-500 mt-0.5">{{ $conv->type === 'guest' ? 'Guest' : 'Seller' }}</div>
+                    <div class="flex items-center justify-between gap-2 mt-0.5">
+                        <div class="text-xs text-gray-400 truncate flex-1">
+                            {{ $conv->latestMessage?->body ?? 'No messages yet.' }}
+                        </div>
+                        <div class="text-[10px] text-gray-400 shrink-0">
+                            {{ optional($conv->latestMessage?->created_at)->diffForHumans(null, true) }}
+                        </div>
+                    </div>
                 </button>
             @empty
                 <div class="p-4 text-center text-gray-500 text-sm">No conversations yet.</div>
@@ -144,7 +152,22 @@ new class extends Component
                 </span>
                 <button type="button" wire:click="closeThread" class="text-gray-500 hover:text-gray-700">Close</button>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+            <div
+                x-data="{
+                    scrollToBottom() {
+                        this.$el.scrollTop = this.$el.scrollHeight;
+                    }
+                }"
+                x-init="
+                    scrollToBottom();
+                    new MutationObserver(() => scrollToBottom()).observe($el, { childList: true, subtree: true });
+                "
+                x-on:scroll-to-bottom.window="
+                    $nextTick(() => scrollToBottom());
+                "
+                wire:poll.5s
+                class="flex-1 overflow-y-auto p-4 space-y-3"
+            >
                 @foreach($conv->messages as $msg)
                     <div class="flex {{ $msg->sender_type === 'admin' ? 'justify-end' : 'justify-start' }}">
                         <div class="max-w-[80%] rounded-lg px-3 py-2 {{ $msg->sender_type === 'admin' ? 'bg-indigo-100' : 'bg-gray-100' }}">
@@ -155,9 +178,23 @@ new class extends Component
                 @endforeach
             </div>
             @if($conv->type === 'seller-admin')
-                <div class="p-3 border-t">
-                    <textarea wire:model="replyBody" rows="2" class="w-full rounded border-gray-300 text-sm" placeholder="Reply..."></textarea>
-                    <button type="button" wire:click="sendReply" class="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">Send</button>
+                <div class="p-3 border-t" x-data="{ body: '' }">
+                    <textarea
+                        x-model="body"
+                        x-ref="messageInput"
+                        x-on:keydown.enter.prevent="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
+                        wire:loading.attr="disabled"
+                        wire:target="sendReply"
+                        rows="2"
+                        class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
+                        placeholder="Reply... (Enter to send)"></textarea>
+                    <button type="button"
+                            x-on:click="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
+                            wire:loading.attr="disabled"
+                            class="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
+                        <span wire:loading.remove wire:target="sendReply">Send</span>
+                        <span wire:loading wire:target="sendReply">Sending...</span>
+                    </button>
                 </div>
             @else
                 <div class="p-3 border-t text-sm text-gray-500">Guest conversations are read-only. No reply.</div>

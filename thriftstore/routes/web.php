@@ -51,10 +51,7 @@ Route::post('/seller/register', [App\Http\Controllers\Auth\SellerRegisteredUserC
 Route::get('/seller/register/check-email', [App\Http\Controllers\Auth\SellerRegisteredUserController::class, 'checkEmail'])->name('seller.register.check-email');
 Route::get('/seller/register/check-store-name', [App\Http\Controllers\Auth\SellerRegisteredUserController::class, 'checkStoreName'])->name('seller.register.check-store-name');
 
-// B1 - v1.3: Seller verify new email (signed link from email; no auth required)
-Route::get('/seller/verify-new-email', [App\Http\Controllers\Auth\VerifyNewEmailController::class, '__invoke'])
-    ->middleware(['signed', 'throttle:6,1'])
-    ->name('seller.email.verify-new');
+
 
 // Admin routes (auth:admin — only admin guard)
 Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
@@ -84,11 +81,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
 // Seller routes (auth:seller). Approved routes also require verified email (B1 - v1.3).
 Route::middleware(['auth:seller'])->prefix('seller')->group(function () {
     Route::view('/status', 'seller.status')->name('seller.status');
-    Route::view('/dashboard', 'seller.dashboard')->middleware(['verified', 'seller.approved'])->name('seller.dashboard');
-    Route::view('/store', 'seller.store')->middleware(['verified', 'seller.approved'])->name('seller.store');
-    Route::view('/products', 'seller.products')->middleware(['verified', 'seller.approved'])->name('seller.products');
-    Route::view('/orders', 'seller.orders')->middleware(['verified', 'seller.approved'])->name('seller.orders');
-    Route::view('/reviews', 'seller.reviews')->middleware(['verified', 'seller.approved'])->name('seller.reviews');
+    Route::view('/dashboard', 'seller.dashboard')->middleware(['seller.approved'])->name('seller.dashboard');
+    Route::view('/store', 'seller.store')->middleware(['seller.approved'])->name('seller.store');
+    Route::view('/products', 'seller.products')->middleware(['seller.approved'])->name('seller.products');
+    Route::view('/orders', 'seller.orders')->middleware(['seller.approved'])->name('seller.orders');
+    Route::view('/reviews', 'seller.reviews')->middleware(['seller.approved'])->name('seller.reviews');
     Route::get('/orders/{order}/print', function (\App\Models\Order $order) {
         $sellerUser = auth('seller')->user();
         $seller = $sellerUser?->seller;
@@ -97,19 +94,18 @@ Route::middleware(['auth:seller'])->prefix('seller')->group(function () {
         }
         $order->load(['customer', 'items.product', 'seller']);
         return view('seller.packing-slip', ['order' => $order]);
-    })->middleware(['verified', 'seller.approved'])->name('seller.orders.print');
-    Route::view('/payments', 'seller.payments')->middleware(['verified', 'seller.approved'])->name('seller.payments');
-    Route::view('/reports', 'seller.reports')->middleware(['verified', 'seller.approved'])->name('seller.reports');
-    Route::view('/messages', 'seller.messages')->middleware(['verified', 'seller.approved'])->name('seller.messages');
+    })->middleware(['seller.approved'])->name('seller.orders.print');
+    Route::view('/payments', 'seller.payments')->middleware(['seller.approved'])->name('seller.payments');
+    Route::view('/reports', 'seller.reports')->middleware(['seller.approved'])->name('seller.reports');
+    Route::view('/messages', 'seller.messages')->name('seller.messages');
     Route::post('/notifications/read-all', function () {
         $user = auth('seller')->user();
         if ($user) {
             $user->unreadNotifications->markAsRead();
         }
         return back();
-    })->middleware(['verified', 'seller.approved'])->name('seller.notifications.read-all');
-    Route::get('/message-admin', [App\Http\Controllers\Seller\MessageAdminController::class, 'create'])->middleware(['verified', 'seller.approved'])->name('seller.message-admin');
-    Route::post('/message-admin', [App\Http\Controllers\Seller\MessageAdminController::class, 'store'])->middleware(['verified', 'seller.approved'])->name('seller.message-admin.store');
+    })->middleware(['seller.approved'])->name('seller.notifications.read-all');
+    Route::post('/subscription', [App\Http\Controllers\Seller\SubscriptionController::class, 'store'])->name('seller.subscription.store');
     Route::post('/logout', [SellerAuthenticatedSessionController::class, 'destroy'])->name('seller.logout');
 });
 
@@ -118,7 +114,7 @@ Route::middleware(['auth:web', 'role:customer'])->group(function () {
     Route::view('/products', 'customer.catalog')->name('customer.dashboard');
     Route::redirect('/dashboard', '/products');
     Route::view('/cart', 'customer.cart')->name('customer.cart');
-    Route::view('/checkout', 'customer.checkout')->middleware('verified')->name('customer.checkout');
+    Route::view('/checkout', 'customer.checkout')->name('customer.checkout');
     Route::view('/orders', 'customer.orders')->name('customer.orders');
     Route::get('/orders/{order}/receipt', [App\Http\Controllers\OrderReceiptController::class, 'download'])->name('customer.orders.receipt');
     Route::view('/reviews', 'customer.reviews')->name('customer.reviews');
