@@ -519,7 +519,7 @@ new class extends Component
                    class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Payment history
                 </a>
-                <a href="{{ route('seller.message-admin') }}"
+                <a href="{{ route('seller.messages') }}"
                    class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
                     Message admin
                 </a>
