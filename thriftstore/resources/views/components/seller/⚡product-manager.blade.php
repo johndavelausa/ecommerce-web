@@ -21,8 +21,9 @@ new class extends Component
     public string $filterCondition = ''; // '' | new | like_new | good | fair | poor
 
     // form state
-    public string $mode = 'list';       // list | create | edit
+    public string $mode = 'list';       // list | create | view | edit
     public ?int $editingId = null;
+    public ?int $viewingId = null;
 
     public string $name = '';
     public string $description = '';
@@ -140,6 +141,16 @@ new class extends Component
         $this->low_stock_threshold = '10';
         $this->is_active = true;
         $this->mode = 'create';
+    }
+
+    public function showView(int $id): void
+    {
+        $product = Product::query()
+            ->where('seller_id', $this->seller?->id)
+            ->findOrFail($id);
+
+        $this->viewingId = $product->id;
+        $this->mode = 'view';
     }
 
     public function showEdit(int $id): void
@@ -541,6 +552,7 @@ new class extends Component
     public function backToList(): void
     {
         $this->mode = 'list';
+        $this->viewingId = null;
         $this->image = null;
         $this->resetValidation();
     }
@@ -552,21 +564,21 @@ new class extends Component
          LIST VIEW
     ============================================================ --}}
     @if($mode === 'list')
-    <div class="space-y-4">
+    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
         {{-- Toolbar --}}
         <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <div class="flex gap-2 flex-wrap">
                 <input type="text" wire:model.live.debounce.300ms="search"
                        placeholder="Search products…"
-                       class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-56">
+                       class="w-56 rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] placeholder-[#9E9E9E] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
                 <select wire:model.live="filterStatus"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        class="rounded-md border border-[#E0E0E0] bg-white text-sm text-[#424242] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
                     <option value="">All status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
                 <select wire:model.live="filterCondition"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        class="rounded-md border border-[#E0E0E0] bg-white text-sm text-[#424242] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
                     <option value="">All conditions</option>
                     @foreach(\App\Models\Product::conditionOptions() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -576,45 +588,45 @@ new class extends Component
             <div class="flex gap-2">
                 <button type="button" wire:click="openBulkStockModal"
                         @disabled(count($selected) === 0)
-                        class="inline-flex items-center gap-1 px-3 py-2 border rounded-md text-xs font-semibold uppercase tracking-widest
-                               {{ count($selected ?? []) ? 'border-amber-600 text-amber-700 hover:bg-amber-50' : 'border-gray-300 text-gray-400 cursor-not-allowed' }}">
+                        class="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-widest
+                               {{ count($selected ?? []) ? 'border-[#F9C74F] bg-white text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]' : 'cursor-not-allowed border-[#E0E0E0] bg-white text-[#9E9E9E]' }}">
                     Bulk stock update
                 </button>
                 <button type="button" wire:click="showCreate"
-                        class="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        class="inline-flex items-center gap-1 rounded-md border-2 border-[#F9C74F] bg-[#2D9F4E] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-[0_2px_4px_rgba(45,159,78,0.2)] hover:bg-[#1B7A37] focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2">
                     + Add product
                 </button>
             </div>
         </div>
 
         {{-- Table --}}
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
+        <div class="overflow-hidden rounded-lg border border-[#E0E0E0] bg-white shadow-sm">
+            <table class="min-w-full text-sm">
+                <thead class="bg-[#FFFEF5]">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                            <button type="button" wire:click="selectPage" class="text-[11px] text-indigo-600 hover:underline">
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">
+                            <button type="button" wire:click="selectPage" class="text-[11px] text-[#F9C74F] hover:text-[#E6B340] hover:underline">
                                 Select page
                             </button>
                         </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Condition</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sale Price</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Views</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Image</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Name</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Condition</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Category</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Price</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Sale Price</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Stock</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Views</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Status</th>
+                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
+                <tbody class="bg-white">
                     @forelse($this->products as $product)
-                    <tr>
+                    <tr class="border-b border-[#F5F5F5] transition hover:bg-gradient-to-r hover:from-[#F8FDF9] hover:to-[#FFFEF5]">
                         <td class="px-4 py-3">
                             <input type="checkbox" wire:model="selected" value="{{ $product->id }}"
-                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                   class="rounded border-[#E0E0E0] text-[#2D9F4E] focus:ring-[#2D9F4E]">
                         </td>
                         <td class="px-4 py-3">
                             @if($product->image_path)
@@ -622,58 +634,50 @@ new class extends Component
                                      alt="{{ $product->name }}"
                                      class="h-12 w-12 object-cover rounded">
                             @else
-                                <div class="h-12 w-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No img</div>
+                                <div class="flex h-12 w-12 items-center justify-center rounded bg-[#FFF9E6] text-xs text-[#9E9E9E]">No img</div>
                             @endif
                         </td>
-                        <td class="px-4 py-3 font-medium text-gray-900">{{ $product->name }}</td>
+                        <td class="px-4 py-3 font-medium text-[#212121]">{{ $product->name }}</td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                            <span class="inline-flex items-center rounded border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-xs font-medium text-[#F57C00]">
                                 {{ \App\Models\Product::conditionOptions()[$product->condition] ?? $product->condition }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 text-xs">{{ $product->category ?? '—' }}</td>
-                        <td class="px-4 py-3 text-gray-600">₱{{ number_format($product->price, 2) }}</td>
-                        <td class="px-4 py-3 text-gray-600">
+                        <td class="px-4 py-3 text-xs text-[#9E9E9E]">{{ $product->category ?? '—' }}</td>
+                        <td class="px-4 py-3 font-medium text-[#2D9F4E]">₱{{ number_format($product->price, 2) }}</td>
+                        <td class="px-4 py-3 text-[#2D9F4E]">
                             {{ $product->sale_price ? '₱' . number_format($product->sale_price, 2) : '—' }}
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-1">
-                                <span class="{{ $product->stock === 0 ? 'text-red-600 font-semibold' : 'text-gray-700' }}">
-                                    {{ $product->stock }}
-                                </span>
-                                <button type="button" wire:click="openStockModal({{ $product->id }})"
-                                        class="text-xs text-indigo-600 hover:underline ml-1">adjust</button>
-                            </div>
+                            <span class="{{ $product->stock === 0 ? 'font-semibold text-[#EF5350]' : 'text-[#212121]' }}">
+                                {{ $product->stock }}
+                            </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 text-sm">{{ $product->views ?? 0 }}</td>
+                        <td class="px-4 py-3 text-sm text-[#424242]">{{ $product->views ?? 0 }}</td>
                         <td class="px-4 py-3">
-                            <button type="button" wire:click="toggleActive({{ $product->id }})"
-                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                           {{ $product->is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }}">
-                                {{ $product->is_active ? 'Active' : 'Inactive' }}
-                            </button>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap space-x-2">
-                            <button type="button" wire:click="showEdit({{ $product->id }})"
-                                    class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Edit</button>
-                            @if($product->stock > 0)
-                                <button type="button" wire:click="markSoldOut({{ $product->id }})"
-                                        class="text-xs font-medium text-amber-700 hover:text-amber-900">Mark as sold out</button>
+                            @if($product->stock === 0)
+                                <span class="inline-flex items-center rounded-full border border-[#EF5350] bg-[#FFEBEE] px-2 py-0.5 text-xs font-medium text-[#EF5350]">Sold out</span>
+                            @elseif($product->is_active)
+                                <span class="inline-flex items-center gap-1 rounded-full border border-[#2D9F4E] bg-[#E8F5E9] px-2 py-0.5 text-xs font-medium text-[#2D9F4E]">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-[#F9C74F]"></span> Active
+                                </span>
+                            @else
+                                <span class="inline-flex items-center rounded-full border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-xs font-medium text-[#F57C00]">Inactive</span>
                             @endif
-                            <button type="button" wire:click="confirmDelete({{ $product->id }})"
-                                    class="text-red-600 hover:text-red-800 text-xs font-medium">Delete</button>
-                            <button type="button" wire:click="showHistory({{ $product->id }})"
-                                    class="text-xs text-gray-500 hover:text-gray-700 font-medium">History</button>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <button type="button" wire:click="showView({{ $product->id }})"
+                                    class="text-xs font-semibold text-[#2D9F4E] hover:text-[#1B7A37] hover:underline">View</button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">No products found.</td>
+                        <td colspan="11" class="px-4 py-8 text-center text-[#9E9E9E]">No products found.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
-            <div class="px-4 py-3 border-t">
+            <div class="border-t border-[#E0E0E0] px-4 py-3">
                 {{ $this->products->links() }}
             </div>
         </div>
@@ -682,14 +686,14 @@ new class extends Component
     {{-- Delete confirm modal --}}
     @if($showDeleteConfirm)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-xl shadow-xl p-6 w-80">
-            <h3 class="font-semibold text-gray-900 mb-2">Delete product?</h3>
-            <p class="text-sm text-gray-600 mb-4">This cannot be undone. The product image and history will also be removed.</p>
+        <div class="w-80 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
+            <h3 class="mb-2 font-semibold text-[#212121]">Delete product?</h3>
+            <p class="mb-4 text-sm text-[#424242]">This cannot be undone. The product image and history will also be removed.</p>
             <div class="flex gap-3 justify-end">
                 <button type="button" wire:click="cancelDelete"
-                        class="px-3 py-1.5 border rounded text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
                 <button type="button" wire:click="deleteProduct"
-                        class="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700">Delete</button>
+                        class="rounded px-3 py-1.5 text-sm text-white bg-[#EF5350] hover:bg-[#C62828]">Delete</button>
             </div>
         </div>
     </div>
@@ -698,24 +702,24 @@ new class extends Component
     {{-- Stock adjust modal --}}
     @if($showStockModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-xl shadow-xl p-6 w-80 space-y-4">
-            <h3 class="font-semibold text-gray-900">Adjust stock</h3>
+        <div class="w-80 space-y-4 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
+            <h3 class="font-semibold text-[#212121]">Adjust stock</h3>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Change amount <span class="text-gray-500">(use − for removal)</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
                 <input type="number" wire:model.defer="stockDelta"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                 @error('stockDelta') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Note <span class="text-gray-400">(optional)</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Note <span class="text-[#9E9E9E]">(optional)</span></label>
                 <input type="text" wire:model.defer="stockNote"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" wire:click="closeStockModal"
-                        class="px-3 py-1.5 border rounded text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
                 <button type="button" wire:click="adjustStock"
-                        class="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">Save</button>
+                        class="rounded bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-3 py-1.5 text-sm text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95">Save</button>
             </div>
         </div>
     </div>
@@ -724,28 +728,28 @@ new class extends Component
     {{-- Bulk stock update modal --}}
     @if($showBulkStockModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-xl shadow-xl p-6 w-80 space-y-4">
-            <h3 class="font-semibold text-gray-900">Bulk stock update</h3>
-            <p class="text-xs text-gray-500">
+        <div class="w-80 space-y-4 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
+            <h3 class="font-semibold text-[#212121]">Bulk stock update</h3>
+            <p class="text-xs text-[#9E9E9E]">
                 Applying to {{ count($selected ?? []) }} selected product(s).
             </p>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Change amount <span class="text-gray-500">(use − for removal)</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
                 <input type="number" wire:model.defer="bulkStockDelta"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                 @error('bulkStockDelta') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Note <span class="text-gray-400">(optional)</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Note <span class="text-[#9E9E9E]">(optional)</span></label>
                 <input type="text" wire:model.defer="bulkStockNote"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                 @error('bulkStockNote') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
             <div class="flex gap-3 justify-end pt-2">
                 <button type="button" wire:click="closeBulkStockModal"
-                        class="px-3 py-1.5 border rounded text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
                 <button type="button" wire:click="applyBulkStock"
-                        class="px-3 py-1.5 bg-amber-600 text-white text-sm rounded hover:bg-amber-700">Apply</button>
+                        class="rounded bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-3 py-1.5 text-sm text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95">Apply</button>
             </div>
         </div>
     </div>
@@ -831,42 +835,90 @@ new class extends Component
     {{-- ============================================================
          CREATE / EDIT VIEW
     ============================================================ --}}
+    @elseif($mode === 'view')
+    @php($viewProduct = $viewingId ? \App\Models\Product::query()->where('seller_id', $this->seller?->id)->find($viewingId) : null)
+    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" wire:click="backToList" class="inline-flex items-center gap-1 text-sm text-[#2D9F4E] hover:text-[#1B7A37]">
+                <span class="text-[#F9C74F]">&larr;</span> Back to products
+            </button>
+            @if($viewProduct)
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" wire:click="showEdit({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#2D9F4E] hover:bg-[#E8F5E9] hover:text-[#1B7A37]">Edit</button>
+                    <button type="button" wire:click="openStockModal({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]">Adjust stock</button>
+                    <button type="button" wire:click="toggleActive({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F57C00] hover:bg-[#FFF3E0] hover:text-[#E65100]">{{ $viewProduct->is_active ? 'Set inactive' : 'Set active' }}</button>
+                    @if($viewProduct->stock > 0)
+                        <button type="button" wire:click="markSoldOut({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F57C00] hover:bg-[#FFF3E0] hover:text-[#E65100]">Mark as sold out</button>
+                    @endif
+                    <button type="button" wire:click="showHistory({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]">History</button>
+                    <button type="button" wire:click="confirmDelete({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#EF5350] hover:text-[#C62828]">Delete</button>
+                </div>
+            @endif
+        </div>
+
+        @if($viewProduct)
+            <div class="rounded-lg border border-[#E0E0E0] bg-white p-5">
+                <div>
+                    <h3 class="text-lg font-semibold text-[#212121]">{{ $viewProduct->name }}</h3>
+                    <p class="mt-1 text-xs text-[#9E9E9E]">Views: {{ $viewProduct->views ?? 0 }}</p>
+                    <div class="mt-2 h-[3px] w-40 rounded bg-gradient-to-r from-[#2D9F4E] to-[#F9C74F]"></div>
+                </div>
+                <div class="mt-4 grid grid-cols-1 gap-3 text-sm text-[#424242] sm:grid-cols-2">
+                    <p><span class="font-medium">Category:</span> {{ $viewProduct->category ?? '—' }}</p>
+                    <p><span class="font-medium">Condition:</span> {{ \App\Models\Product::conditionOptions()[$viewProduct->condition] ?? $viewProduct->condition }}</p>
+                    <p><span class="font-medium text-[#2D9F4E]">Price:</span> ₱{{ number_format($viewProduct->price, 2) }}</p>
+                    <p><span class="font-medium text-[#2D9F4E]">Sale Price:</span> {{ $viewProduct->sale_price ? '₱' . number_format($viewProduct->sale_price, 2) : '—' }}</p>
+                    <p><span class="font-medium">Stock:</span> {{ $viewProduct->stock }}</p>
+                    <p><span class="font-medium">Status:</span> {{ $viewProduct->stock === 0 ? 'Sold out' : ($viewProduct->is_active ? 'Active' : 'Inactive') }}</p>
+                </div>
+                <div class="mt-4">
+                    <p class="mb-1 text-xs font-medium uppercase tracking-widest text-[#9E9E9E]">Description</p>
+                    <p class="text-sm text-[#424242]">{{ $viewProduct->description }}</p>
+                </div>
+            </div>
+        @else
+            <div class="rounded-lg border border-[#E0E0E0] bg-white p-5 text-sm text-[#9E9E9E]">
+                Product not found.
+            </div>
+        @endif
+    </div>
     @else
-    <div class="space-y-4">
+    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
         <div class="flex items-center gap-3">
-            <button type="button" wire:click="backToList" class="text-indigo-600 text-sm hover:underline">&larr; Back to products</button>
+            <button type="button" wire:click="backToList" class="inline-flex items-center gap-1 text-sm text-[#2D9F4E] hover:text-[#1B7A37]"><span class="text-[#F9C74F]">&larr;</span> Back to products</button>
             <div>
-                <h3 class="font-semibold text-gray-900">{{ $mode === 'create' ? 'Add new product' : 'Edit product' }}</h3>
+                <h3 class="font-semibold text-[#212121]">{{ $mode === 'create' ? 'Add new product' : 'Edit product' }}</h3>
                 @if($mode === 'edit' && $editingId)
                     @php($editProduct = \App\Models\Product::find($editingId))
                     @if($editProduct)
-                        <p class="text-xs text-gray-500 mt-0.5">Views: {{ $editProduct->views ?? 0 }}</p>
+                        <p class="mt-0.5 text-xs text-[#9E9E9E]">Views: {{ $editProduct->views ?? 0 }}</p>
                     @endif
                 @endif
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6 space-y-5 max-w-2xl">
+        <div class="max-w-2xl space-y-5 rounded-lg border border-[#E0E0E0] bg-white p-6 shadow-sm">
+            <div class="h-[3px] w-44 rounded bg-gradient-to-r from-[#2D9F4E] to-[#F9C74F]"></div>
             <div>
-                <label class="block text-sm font-medium text-gray-700">Product name <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Product name <span class="text-[#F57C00]">*</span></label>
                 <input type="text" wire:model.defer="name"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                 @error('name') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Description <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Description <span class="text-[#F57C00]">*</span></label>
                 <textarea wire:model.defer="description" rows="4"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                          class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"></textarea>
                 @error('description') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-[#424242]">Category <span class="text-[#F57C00]">*</span></label>
                     <input type="text" wire:model.defer="category"
                            list="seller-categories"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
                            placeholder="e.g. Clothing, Bags, Gadgets">
                     <datalist id="seller-categories">
                         @foreach($this->sellerCategories as $cat)
@@ -879,7 +931,7 @@ new class extends Component
                             @foreach($this->sellerCategories as $cat)
                                 <button type="button"
                                         wire:click="$set('category', '{{ $cat }}')"
-                                        class="px-2 py-0.5 text-[11px] rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50">
+                                        class="rounded-full border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-[11px] text-[#F57C00] hover:border-[#2D9F4E]">
                                     {{ $cat }}
                                 </button>
                             @endforeach
@@ -887,18 +939,18 @@ new class extends Component
                     @endif
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Tags <span class="text-gray-400 text-xs">(optional, comma separated)</span></label>
+                    <label class="block text-sm font-medium text-[#424242]">Tags <span class="text-xs text-[#9E9E9E]">(optional, comma separated)</span></label>
                     <input type="text" wire:model.defer="tags"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
                            placeholder="e.g. vintage, denim, bundle">
                     @error('tags') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Condition <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Condition <span class="text-[#F57C00]">*</span></label>
                 <select wire:model.defer="condition"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                     @foreach(\App\Models\Product::conditionOptions() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
@@ -907,9 +959,9 @@ new class extends Component
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Size / variant <span class="text-gray-400 text-xs">optional</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Size / variant <span class="text-xs text-[#9E9E9E]">optional</span></label>
                 <select wire:model.defer="size_variant"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                     <option value="">— None —</option>
                     @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -918,7 +970,7 @@ new class extends Component
                 </select>
                 @if($size_variant === 'custom')
                     <input type="text" wire:model.defer="size_custom" maxlength="100"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
                            placeholder="e.g. One size, 28 waist">
                 @endif
                 @error('size_variant') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
@@ -926,53 +978,53 @@ new class extends Component
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Price (₱) <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-[#424242]">Price (₱) <span class="text-[#F57C00]">*</span></label>
                     <input type="number" step="0.01" min="0" wire:model.defer="price"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                     @error('price') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Sale price (₱) <span class="text-gray-400">optional</span></label>
+                    <label class="block text-sm font-medium text-[#424242]">Sale price (₱) <span class="text-[#9E9E9E]">optional</span></label>
                     <input type="number" step="0.01" min="0" wire:model.defer="sale_price"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                     @error('sale_price') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Delivery fee (₱) <span class="text-gray-400 text-xs">optional — used when your store uses "Per product" delivery</span></label>
+                <label class="block text-sm font-medium text-[#424242]">Delivery fee (₱) <span class="text-xs text-[#9E9E9E]">optional - used when your store uses "Per product" delivery</span></label>
                 <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
-                       class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                       class="mt-1 block w-full max-w-xs rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
                        placeholder="0">
                 @error('delivery_fee') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Stock quantity <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-[#424242]">Stock quantity <span class="text-[#F57C00]">*</span></label>
                     <input type="number" min="0" wire:model.defer="stock"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
                     @error('stock') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Low stock threshold</label>
+                    <label class="block text-sm font-medium text-[#424242]">Low stock threshold</label>
                     <input type="number" min="0" wire:model.defer="low_stock_threshold"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
                            placeholder="10">
-                    <p class="mt-0.5 text-xs text-gray-500">Wishlist notification when stock falls to this level or below.</p>
+                    <p class="mt-0.5 text-xs text-[#9E9E9E]">Wishlist notification when stock falls to this level or below.</p>
                     @error('low_stock_threshold') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" wire:model.defer="is_active"
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                    <span class="text-sm text-gray-700">Active (visible to customers)</span>
+                           class="rounded border-[#E0E0E0] text-[#2D9F4E] shadow-sm focus:ring-[#2D9F4E]">
+                    <span class="text-sm text-[#424242]">Active (visible to customers)</span>
                 </label>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">
+                <label class="block text-sm font-medium text-[#424242]">
                     Product image {{ $mode === 'create' ? '*' : '(leave blank to keep current)' }}
                 </label>
                 @if($mode === 'edit' && $editingId)
@@ -983,8 +1035,8 @@ new class extends Component
                     @endif
                 @endif
                 <input type="file" wire:model="image" accept="image/*"
-                       class="mt-2 block text-sm text-gray-500">
-                <div wire:loading wire:target="image" class="text-xs text-indigo-600 mt-1">Uploading…</div>
+                       class="mt-2 block rounded-md border border-[#F9C74F] bg-[#FFF9E6] px-3 py-2 text-sm text-[#F57C00] file:mr-3 file:rounded file:border-0 file:bg-white file:px-3 file:py-1 file:text-[#2D9F4E] hover:border-[#2D9F4E]">
+                <div wire:loading wire:target="image" class="mt-1 text-xs text-[#2D9F4E]">Uploading...</div>
                 @if($image)
                     <img src="{{ $image->temporaryUrl() }}" class="mt-2 h-24 w-24 object-cover rounded-md border" alt="Preview">
                 @endif
@@ -993,11 +1045,11 @@ new class extends Component
 
             <div class="flex gap-3 pt-2">
                 <button type="button" wire:click="save" wire:loading.attr="disabled"
-                        class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        class="inline-flex items-center rounded-md border-0 bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2">
                     {{ $mode === 'create' ? 'Create product' : 'Save changes' }}
                 </button>
                 <button type="button" wire:click="backToList"
-                        class="px-4 py-2 border rounded-md text-xs font-semibold text-gray-700 uppercase tracking-widest hover:bg-gray-50">
+                        class="rounded-md border border-[#F9C74F] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">
                     Cancel
                 </button>
             </div>
