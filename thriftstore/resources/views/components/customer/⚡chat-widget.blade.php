@@ -624,11 +624,17 @@ REMOVED STYLE BLOCK END --}}
                     @endphp
                     <div wire:click="openConversation({{ $conv->id }})"
                          class="fcw-conv-item {{ $activeConversationId === $conv->id ? 'active' : '' }}">
-                        <div class="fcw-conv-avatar">
-                            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
+                        @php
+                            $convImg = $conv->seller?->logo_path
+                                ?? $conv->seller?->user?->avatar
+                                ?? null;
+                        @endphp
+                        <div class="fcw-conv-avatar" style="{{ $convImg ? 'background:transparent;padding:0;overflow:hidden;' : '' }}">
+                            @if($convImg)
+                                <img src="{{ asset('storage/'.$convImg) }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:9999px;">
+                            @else
+                                <span style="font-size:11px;font-weight:700;color:#2D6A4F;line-height:1;">{{ strtoupper(substr($conv->seller?->store_name ?? '?', 0, 1)) }}</span>
+                            @endif
                         </div>
                         <div class="fcw-conv-info">
                             <div class="fcw-conv-row">
@@ -701,11 +707,17 @@ REMOVED STYLE BLOCK END --}}
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="fcw-chat-avatar">
-                        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
+                    @php
+                        $activeImg = $activeConv?->seller?->logo_path
+                            ?? $activeConv?->seller?->user?->avatar
+                            ?? null;
+                    @endphp
+                    <div class="fcw-chat-avatar" style="{{ $activeImg ? 'background:transparent;padding:0;overflow:hidden;' : '' }}">
+                        @if($activeImg)
+                            <img src="{{ asset('storage/'.$activeImg) }}" alt="{{ $sellerName }}" style="width:100%;height:100%;object-fit:cover;border-radius:9999px;">
+                        @else
+                            <span style="font-size:13px;font-weight:700;color:#2D6A4F;line-height:1;">{{ strtoupper(substr($sellerName, 0, 1)) }}</span>
+                        @endif
                     </div>
                     <div>
                         <p class="fcw-chat-name">{{ $sellerName }}</p>

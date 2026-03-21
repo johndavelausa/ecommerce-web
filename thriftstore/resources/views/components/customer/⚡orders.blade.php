@@ -554,10 +554,82 @@ new class extends Component
 };
 ?>
 
-<div class="min-h-screen bg-gray-100">
+<style>
+    /* ── Orders pagination ──────────────────────────────── */
+    .orders-pag nav {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 8px 0 !important;
+    }
+    /* hide the "Showing X to Y" text */
+    .orders-pag nav p { display: none !important; }
+    /* wrapper divs — reset any framework defaults */
+    .orders-pag nav > div { background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; display: flex !important; align-items: center !important; gap: 4px !important; }
+    .orders-pag nav > div > div { background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; display: flex !important; align-items: center !important; gap: 4px !important; }
+    /* prev/next and numbered links */
+    .orders-pag nav a,
+    .orders-pag nav button {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: #424242 !important;
+        background: #FFFFFF !important;
+        border: 1px solid #E0E0E0 !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+    }
+    .orders-pag nav a:hover,
+    .orders-pag nav button:hover {
+        background: #E8F5E9 !important;
+        color: #2D9F4E !important;
+        border-color: #2D9F4E !important;
+    }
+    /* active page */
+    .orders-pag nav [aria-current="page"] > span {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        background: #2D9F4E !important;
+        color: #FFFFFF !important;
+        border: 1px solid #2D9F4E !important;
+    }
+    /* disabled prev/next */
+    .orders-pag nav [aria-disabled="true"] > span {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 34px !important;
+        height: 34px !important;
+        padding: 0 10px !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        background: #F5F5F5 !important;
+        color: #BDBDBD !important;
+        border: 1px solid #E0E0E0 !important;
+        cursor: not-allowed !important;
+    }
+    /* mobile simple links */
+    .orders-pag nav .flex.justify-between { display: none !important; }
+</style>
+
+<div class="min-h-screen bg-[#F8F9FA]">
 
     {{-- Tab navigation --}}
-    <div class="bg-white border-b sticky top-0 z-20 shadow-sm">
+    <div class="bg-white sticky top-0 z-20" style="border-bottom: 1px solid #F5F5F5; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
         <div class="flex overflow-x-auto" style="scrollbar-width:none;-ms-overflow-style:none;">
             @php
             $tabs = [
@@ -571,10 +643,14 @@ new class extends Component
             @endphp
             @foreach($tabs as $tabVal => $tabLabel)
                 <button wire:click="$set('status', '{{ $tabVal }}')"
-                        class="flex-shrink-0 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2
-                               {{ $status === $tabVal
-                                  ? 'border-[#F9C74F] text-[#212121]'
-                                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300' }}">
+                        class="flex-shrink-0 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors"
+                        style="
+                            border-bottom: 3px solid {{ $status === $tabVal ? '#F9C74F' : 'transparent' }};
+                            color: {{ $status === $tabVal ? '#2D9F4E' : '#9E9E9E' }};
+                            background: #FFFFFF;
+                        "
+                        onmouseover="if('{{ $status }}' !== '{{ $tabVal }}') { this.style.color='#2D9F4E'; }"
+                        onmouseout="if('{{ $status }}' !== '{{ $tabVal }}') { this.style.color='#9E9E9E'; }">
                     {{ $tabLabel }}
                 </button>
             @endforeach
@@ -605,36 +681,36 @@ new class extends Component
                         default            => strtoupper(str_replace('_', ' ', $order->status)),
                     };
                     $badgeClass = match($order->status) {
-                        'awaiting_payment'          => 'text-orange-600',
-                        'paid'                      => 'text-cyan-600',
+                        'awaiting_payment'                    => 'text-[#FFA726] bg-[#FFF3E0] border border-[#FFA726]',
+                        'paid'                               => 'text-[#42A5F5] bg-[#E3F2FD] border border-[#42A5F5]',
                         'to_pack', 'ready_to_ship',
-                        'processing'                => 'text-blue-600',
-                        'shipped'                   => 'text-indigo-600',
-                        'out_for_delivery'          => 'text-violet-600',
-                        'delivered'                 => 'text-green-600',
-                        'received'                  => 'text-emerald-600',
-                        'completed'                 => 'text-emerald-600',
-                        'cancelled'                 => 'text-red-500',
-                        default                     => 'text-gray-600',
+                        'processing'                         => 'text-[#42A5F5] bg-[#E3F2FD] border border-[#42A5F5]',
+                        'shipped'                            => 'text-[#42A5F5] bg-[#E3F2FD] border border-[#42A5F5]',
+                        'out_for_delivery'                   => 'text-[#42A5F5] bg-[#E3F2FD] border border-[#42A5F5]',
+                        'delivered'                          => 'text-[#2D9F4E] bg-[#E8F5E9] border border-[#2D9F4E]',
+                        'received'                           => 'text-[#2D9F4E] bg-[#E8F5E9] border border-[#2D9F4E]',
+                        'completed'                          => 'text-[#2D9F4E] bg-[#E8F5E9] border border-[#2D9F4E]',
+                        'cancelled'                          => 'text-[#EF5350] bg-[#FFEBEE] border border-[#EF5350]',
+                        default                              => 'text-gray-600 bg-gray-100 border border-gray-300',
                     };
                 @endphp
 
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-[#F5F5F5]">
 
                     {{-- Store header --}}
-                    <div class="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+                    <div class="px-4 py-3 flex items-center justify-between border-b border-[#F5F5F5]">
                         <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style="background:#FF6F00">
+                                <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
                                     <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
-                            <span class="text-sm font-semibold text-gray-800">
+                            <span class="text-sm font-medium text-[#212121]">
                                 {{ $order->seller->store_name ?? 'Seller #'.$order->seller_id }}
                             </span>
                         </div>
-                        <span class="text-[11px] font-bold tracking-wide {{ $badgeClass }}">{{ $badgeText }}</span>
+                        <span class="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full {{ $badgeClass }}">{{ $badgeText }}</span>
                     </div>
 
                     {{-- Product items --}}
@@ -652,40 +728,40 @@ new class extends Component
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm text-gray-900 line-clamp-2 leading-snug">
+                                <p class="line-clamp-2 leading-snug" style="font-size:14px; color:#212121;">
                                     {{ $item->product->name ?? 'Product #'.$item->product_id }}
                                 </p>
-                                <p class="text-xs text-gray-400 mt-1">Qty: {{ $item->quantity }}</p>
+                                <p class="mt-1" style="font-size:13px; color:#9E9E9E;">Qty: {{ $item->quantity }}</p>
                             </div>
-                            <p class="text-sm font-semibold text-gray-800 flex-shrink-0">
+                            <p class="font-semibold flex-shrink-0" style="font-size:14px; color:#212121;">
                                 ₱{{ number_format($item->price_at_purchase * $item->quantity, 2) }}
                             </p>
                         </div>
                     @endforeach
 
                     {{-- Order total --}}
-                    <div class="px-4 py-2.5 border-t border-gray-100 flex items-center justify-end gap-2 bg-gray-50/50">
-                        <span class="text-xs text-gray-500">
+                    <div class="px-4 py-2.5 border-t border-[#E0E0E0] flex items-center justify-end gap-2" style="background:#FAFAFA;">
+                        <span class="text-xs" style="color:#9E9E9E;">
                             Order Total ({{ $order->items->sum('quantity') }} {{ \Illuminate\Support\Str::plural('item', $order->items->sum('quantity')) }}):
                         </span>
-                        <span class="text-base font-bold text-orange-600">₱{{ number_format($order->total_amount, 2) }}</span>
+                        <span class="font-bold" style="font-size:16px; color:#F57C00; font-weight:500;">₱{{ number_format($order->total_amount, 2) }}</span>
                     </div>
 
                     {{-- Courier / tracking summary --}}
                     @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'received', 'completed']) && $order->tracking_number)
-                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 bg-orange-50 rounded-xl border border-orange-100 flex items-center justify-between gap-3">
+                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-3" style="background:#FFF3E0; border:1px solid #FFE0B2;">
                             <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#FF6F00;">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"/>
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest" style="color:#F57C00;">
                                         {{ \App\Models\Order::COURIERS[$order->courier_name] ?? strtoupper($order->courier_name ?: 'Courier') }}
                                     </p>
-                                    <p class="text-xs font-mono font-semibold text-gray-800">{{ $order->tracking_number }}</p>
+                                    <p class="text-xs font-mono font-semibold" style="color:#212121;">{{ $order->tracking_number }}</p>
                                 </div>
                             </div>
                             @if($order->estimated_delivery_date)
@@ -717,27 +793,27 @@ new class extends Component
 
                     {{-- Store rating (if rated) --}}
                     @if($order->store_rating)
-                        <div class="mx-4 mb-2 mt-1 flex items-center gap-2 px-3.5 py-2 bg-amber-50 rounded-xl border border-amber-100">
+                        <div class="mx-4 mb-2 mt-1 flex items-center gap-2 px-3.5 py-2 rounded-xl" style="background:#FFFEF5; border:1px solid #FFF3CD;">
                             <div class="flex items-center gap-0.5">
                                 @for($i = 1; $i <= 5; $i++)
-                                    <svg class="w-3.5 h-3.5 {{ $i <= $order->store_rating ? 'text-amber-400' : 'text-gray-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-3.5 h-3.5" style="color: {{ $i <= $order->store_rating ? '#F9C74F' : '#E0E0E0' }};" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
                                 @endfor
                             </div>
                             @if($order->store_review)
-                                <p class="text-[11px] text-amber-700 line-clamp-1">{{ $order->store_review }}</p>
+                                <p class="text-[11px] line-clamp-1" style="color:#F57C00;">{{ $order->store_review }}</p>
                             @else
-                                <p class="text-[11px] text-amber-600 font-medium">Seller rated {{ $order->store_rating }}/5</p>
+                                <p class="text-[11px] font-medium" style="color:#F57C00;">Seller rated {{ $order->store_rating }}/5</p>
                             @endif
                         </div>
                     @endif
 
                     {{-- Action buttons --}}
-                    <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-end gap-2 flex-wrap">
+                    <div class="px-4 py-3 border-t border-[#E0E0E0] flex items-center justify-end gap-2 flex-wrap">
                         <button type="button"
                                 wire:click="openTrackingModal({{ $order->id }})"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition">
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #E0E0E0; color:#424242;" onmouseover="this.style.background='#F5F5F5';this.style.borderColor='#2D9F4E';" onmouseout="this.style.background='#FFFFFF';this.style.borderColor='#E0E0E0';">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
                             </svg>
@@ -747,7 +823,7 @@ new class extends Component
                         @if (in_array($order->status, ['awaiting_payment', 'paid', 'to_pack', 'ready_to_ship', 'processing'], true))
                             <button type="button"
                                     wire:click="cancel({{ $order->id }})"
-                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+                                    class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #E0E0E0; color:#424242;" onmouseover="this.style.background='#FFEBEE';this.style.borderColor='#EF5350';this.style.color='#EF5350';" onmouseout="this.style.background='#FFFFFF';this.style.borderColor='#E0E0E0';this.style.color='#424242';">
                                 Cancel Order
                             </button>
 
@@ -787,13 +863,13 @@ new class extends Component
 
                         @elseif (in_array($order->status, ['received', 'completed'], true))
                             <a href="{{ route('customer.orders.receipt', $order) }}"
-                               class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+                               class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #E0E0E0; color:#424242;" onmouseover="this.style.background='#F5F5F5';this.style.borderColor='#2D9F4E';" onmouseout="this.style.background='#FFFFFF';this.style.borderColor='#E0E0E0';"
                                target="_blank" rel="noopener">
                                 Receipt
                             </a>
                             <button type="button"
                                     wire:click="reorder({{ $order->id }})"
-                                    class="inline-flex items-center px-3.5 py-2 border border-[#2D9F4E] text-[#2D9F4E] rounded-lg text-xs font-semibold hover:bg-[#E8F5E9] transition">
+                                    class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #2D9F4E; color:#2D9F4E;" onmouseover="this.style.background='#E8F5E9';this.style.color='#1B7A37';" onmouseout="this.style.background='#FFFFFF';this.style.color='#2D9F4E';">
                                 Re-order
                             </button>
                             @php
@@ -830,7 +906,7 @@ new class extends Component
             @endforeach
 
             {{-- Pagination --}}
-            <div class="py-2">
+            <div class="py-2 orders-pag">
                 {{ $orders->links() }}
             </div>
 

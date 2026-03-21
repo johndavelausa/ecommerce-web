@@ -364,168 +364,156 @@ new class extends Component
         $this->placed = true;
         $this->createdOrders = $createdOrders;
         $this->dispatch('cart-updated', count: 0);
+        $this->dispatch('order-placed', count: count($createdOrders));
     }
 };
 ?>
 
-<div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-        <h3 class="text-lg font-medium text-gray-900">Checkout (Cash on Delivery)</h3>
-        <p class="mt-1 text-sm text-gray-500">
-            Confirm your shipping address and review your items. Payment is COD only.
+@php
+    $items = $this->items;
+    $subtotal = 0;
+    foreach ($items as $row) {
+        $subtotal += $row['price'] * $row['quantity'];
+    }
+    $sellerIds = array_unique(array_column($items, 'seller_id'));
+    $sellers = \App\Models\Seller::whereIn('id', $sellerIds)->get()->keyBy('id');
+    $productIds = array_unique(array_column($items, 'product_id'));
+    $productsForDelivery = $productIds ? \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id') : collect();
+    $deliveryTotal = 0.0;
+    $deliveryBySeller = [];
+    foreach ($sellerIds as $sid) {
+        $groupRows = array_values(array_filter($items, fn($r) => (int)$r['seller_id'] === (int)$sid));
+        $sellerModel = $sellers->get($sid);
+        if ($sellerModel && !empty($groupRows)) {
+            $fee = $sellerModel->computeDeliveryFee($groupRows, $productsForDelivery);
+            $deliveryBySeller[$sid] = ['seller' => $sellerModel, 'fee' => $fee];
+            $deliveryTotal += $fee;
+        }
+    }
+    $grandTotal = $subtotal + $deliveryTotal;
+    $sellerCount = count($sellerIds);
+    $itemsBySeller = [];
+    foreach ($sellerIds as $sid) {
+        $itemsBySeller[$sid] = array_values(array_filter($items, fn($r) => (int)$r['seller_id'] === (int)$sid));
+    }
+    /** @var \App\Models\User|null $checkoutUser */
+    $checkoutUser = \Illuminate\Support\Facades\Auth::guard('web')->user();
+    $savedAddresses = $checkoutUser
+        ? $checkoutUser->addresses()->orderByDesc('is_default')->orderBy('created_at')->get()
+        : collect();
+@endphp
+
+<div>
+
+{{-- ── Page header ── --}}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-xl font-bold" style="color:#212121;">Checkout</h1>
+        <p class="text-sm mt-0.5" style="color:#9E9E9E;">Cash on Delivery · Review and confirm your order</p>
+    </div>
+    <a href="{{ route('customer.cart') }}"
+       class="text-xs font-medium px-3 py-1.5 rounded-lg transition"
+       style="color:#2D9F4E; background:#E8F5E9; border:1px solid #C8E6C9;"
+       onmouseover="this.style.background='#C8E6C9';" onmouseout="this.style.background='#E8F5E9';">
+        ← Back to Cart
+    </a>
+</div>
+
+{{-- ── Order placed: success screen (hides entire form) ── --}}
+@if($this->placed)
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+        <div class="w-20 h-20 rounded-full flex items-center justify-center mb-6" style="background:#E8F5E9;">
+            <svg class="w-10 h-10" style="color:#2D9F4E;" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold mb-2" style="color:#212121;">
+            @if(count($this->createdOrders) > 1) {{ count($this->createdOrders) }} Orders Placed! @else Order Placed! @endif
+        </h2>
+        <p class="text-sm mb-8" style="color:#9E9E9E;">
+            @if(count($this->createdOrders) > 1)
+                {{ count($this->createdOrders) }} separate orders have been created — one per seller.
+            @else
+                Your order has been placed successfully. The seller will process it shortly.
+            @endif
         </p>
-        @if($snapshotMismatch)
-            <div class="mt-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-800">
-                Checkout pricing changed while you were reviewing. Please refresh snapshot and review totals before placing your order.
-                <button type="button" wire:click="refreshCheckoutSnapshotAction" class="ml-2 underline font-medium">Refresh snapshot</button>
-            </div>
-        @endif
-        @if(!empty($items) && $sellerCount > 1)
-            <div class="mt-3 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
-                <strong>Multi-seller cart:</strong> Your cart contains items from <strong>{{ $sellerCount }} sellers</strong>. This will create <strong>{{ $sellerCount }} separate orders</strong> with {{ $sellerCount }} separate deliveries. Each seller will ship their items independently.
-            </div>
-        @endif
+        <a href="{{ route('customer.orders') }}"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white"
+           style="background:#2D9F4E;"
+           onmouseover="this.style.background='#1B7A37';" onmouseout="this.style.background='#2D9F4E';">
+            View My Orders
+        </a>
     </div>
 
-    @php
-        $items = $this->items;
-        $subtotal = 0;
-        foreach ($items as $row) {
-            $subtotal += $row['price'] * $row['quantity'];
-        }
-        $sellerIds = array_unique(array_column($items, 'seller_id'));
-        $sellers = \App\Models\Seller::whereIn('id', $sellerIds)->get()->keyBy('id');
-        $productIds = array_unique(array_column($items, 'product_id'));
-        $productsForDelivery = $productIds ? \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id') : collect();
-        $deliveryTotal = 0.0;
-        $deliveryBySeller = [];
-        foreach ($sellerIds as $sid) {
-            $groupRows = array_values(array_filter($items, fn($r) => (int)$r['seller_id'] === (int)$sid));
-            $sellerModel = $sellers->get($sid);
-            if ($sellerModel && !empty($groupRows)) {
-                $fee = $sellerModel->computeDeliveryFee($groupRows, $productsForDelivery);
-                $deliveryBySeller[$sid] = ['seller' => $sellerModel, 'fee' => $fee];
-                $deliveryTotal += $fee;
-            }
-        }
-        $grandTotal = $subtotal + $deliveryTotal;
-        $sellerCount = count($sellerIds);
-        $itemsBySeller = [];
-        foreach ($sellerIds as $sid) {
-            $itemsBySeller[$sid] = array_values(array_filter($items, fn($r) => (int)$r['seller_id'] === (int)$sid));
-        }
-    @endphp
+@else
 
-    @if($this->placed)
-        <div class="bg-white rounded-lg shadow p-6 space-y-3">
-            <div class="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
-                @if(count($this->createdOrders) > 1)
-                    {{ count($this->createdOrders) }} separate orders have been placed (one per seller). You can track them in <a href="{{ route('customer.orders') }}" class="font-medium underline">My orders</a>.
-                @else
-                    Your order has been placed. You can track it in <a href="{{ route('customer.orders') }}" class="font-medium underline">My orders</a>.
-                @endif
-            </div>
-        </div>
-    @endif
+{{-- ── Alerts ── --}}
+@if($snapshotMismatch)
+    <div class="mb-4 flex items-start gap-3 px-4 py-3 rounded-xl text-sm" style="background:#FFEBEE; border:1px solid #FFCDD2; color:#EF5350;">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        Pricing changed while reviewing. <button type="button" wire:click="refreshCheckoutSnapshotAction" class="ml-1 font-bold underline">Refresh & review totals</button> before placing.
+    </div>
+@endif
+@if(!empty($items) && $sellerCount > 1)
+    <div class="mb-4 flex items-start gap-3 px-4 py-3 rounded-xl text-sm" style="background:#FFF3E0; border:1px solid #FFE0B2; color:#F57C00;">
+        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        Items from <strong class="mx-1">{{ $sellerCount }} sellers</strong> — this creates {{ $sellerCount }} separate orders with individual deliveries.
+    </div>
+@endif
 
-    <div class="grid gap-6 lg:grid-cols-3">
-        <div class="lg:col-span-2 bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
-            <h4 class="text-sm font-semibold text-gray-900">Shipping address</h4>
-            @php
-                /** @var \App\Models\User|null $checkoutUser */
-                $checkoutUser = \Illuminate\Support\Facades\Auth::guard('web')->user();
-                $savedAddresses = $checkoutUser
-                    ? $checkoutUser->addresses()->orderByDesc('is_default')->orderBy('created_at')->get()
-                    : collect();
-            @endphp
-            @if($savedAddresses->isNotEmpty())
-                <div class="space-y-2 mb-3">
-                    <p class="text-xs text-gray-600">
-                        Select one of your saved addresses or edit the text area below.
-                    </p>
-                    <div class="grid gap-2">
-                        @foreach($savedAddresses as $addr)
-                            @php
-                                $full = trim($addr->recipient_name ?: $checkoutUser->name)."\n"
-                                      . $addr->line1.($addr->line2 ? ', '.$addr->line2 : '')."\n"
-                                      . trim($addr->city.' '.$addr->region.' '.$addr->postal_code)."\n"
-                                      . ($addr->phone ? 'Phone: '.$addr->phone : '');
-                            @endphp
-                            <label class="flex items-start gap-2 text-xs cursor-pointer border rounded-md px-3 py-2 hover:border-[#2D9F4E]">
-                                <input type="radio"
-                                       name="selected_address"
-                                       value="{{ $full }}"
-                                       class="mt-1 h-3 w-3 text-[#2D9F4E] border-gray-300 focus:ring-[#2D9F4E]"
-                                       onclick="@this.set('shipping_address', '{{ str_replace(["\r", "\n"], [' ', ' '], addslashes($full)) }}')">
-                                <span>
-                                    <span class="font-semibold text-gray-900">
-                                        {{ $addr->label }}
-                                        @if($addr->is_default)
-                                            <span class="ml-1 text-[10px] text-green-700">(Default)</span>
-                                        @endif
-                                    </span>
-                                    <span class="block text-gray-700">
-                                        {{ $full }}
-                                    </span>
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
+{{-- ── TOP ROW: Order Items (left) | Order Summary/Place Order (right) ── --}}
+<div class="flex flex-col lg:flex-row gap-6 lg:items-stretch mb-6">
+
+    {{-- Order Items --}}
+    <div class="flex-1 min-w-0 flex flex-col">
+        <div class="bg-white rounded-2xl p-5 flex-1" style="border:1px solid #F5F5F5; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#FFF3E0;">
+                    <svg class="w-4 h-4" style="color:#FF6F00;" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
+                        <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
                 </div>
-            @endif
-            <div>
-                <textarea wire:model.defer="shipping_address" rows="4"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
-                          placeholder="Full address including barangay, city, and contact details"></textarea>
-                @error('shipping_address') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Order note <span class="text-gray-400">(optional)</span></label>
-                <textarea wire:model.defer="customer_note" rows="2"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
-                          placeholder="e.g. Please wrap fragile, Leave at the door"></textarea>
-                <p class="mt-0.5 text-xs text-gray-500">Visible to the seller when processing your order.</p>
-                @error('customer_note') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                <h4 class="font-bold text-sm" style="color:#212121;">Order Items</h4>
             </div>
 
-            <h4 class="text-sm font-semibold text-gray-900 mt-4">Items by seller</h4>
             @if(empty($items))
-                <div class="py-8 text-center text-gray-500 text-sm">
-                    Your cart is empty. Add items before checking out.
+                <div class="py-8 text-center text-sm" style="color:#9E9E9E;">
+                    Your cart is empty. <a href="{{ route('customer.cart') }}" class="font-medium underline" style="color:#2D9F4E;">Add items</a> before checking out.
                 </div>
             @else
-                <div class="space-y-4">
+                <div class="space-y-3">
                     @foreach($itemsBySeller as $sid => $sellerItems)
                         @php $sellerObj = $sellers->get($sid); @endphp
-                        <div class="rounded-lg border border-gray-200 overflow-hidden">
-                            <div class="bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                                Order from {{ $sellerObj ? $sellerObj->store_name : 'Seller' }} — {{ count($sellerItems) }} {{ count($sellerItems) === 1 ? 'item' : 'items' }}
+                        <div class="rounded-xl overflow-hidden" style="border:1px solid #F5F5F5;">
+                            <div class="flex items-center gap-2 px-3 py-2.5" style="background:#F8F9FA; border-bottom:1px solid #F5F5F5;">
+                                <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background:#FF6F00;">
+                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
+                                        <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-semibold" style="color:#212121;">{{ $sellerObj ? $sellerObj->store_name : 'Seller' }}</span>
+                                <span class="text-xs ml-auto" style="color:#9E9E9E;">{{ count($sellerItems) }} {{ count($sellerItems) === 1 ? 'item' : 'items' }}</span>
                             </div>
-                            <div class="divide-y divide-gray-100">
+                            <div class="divide-y" style="border-color:#F5F5F5;">
                                 @foreach($sellerItems as $row)
-                                    <div class="py-3 px-3 flex items-center justify-between gap-3">
-                                        <div class="flex items-center gap-3">
-                                            @if(!empty($row['image_path']))
-                                                <img src="{{ asset('storage/'.$row['image_path']) }}"
-                                                     alt="{{ $row['name'] }}"
-                                                     class="h-10 w-10 rounded object-cover">
-                                            @else
-                                                <div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-400">
-                                                    No img
-                                                </div>
-                                            @endif
-                                            <div>
-                                                <div class="text-sm font-medium text-gray-900">
-                                                    {{ $row['name'] }}
-                                                </div>
-                                                <div class="text-xs text-gray-500">
-                                                    Qty: {{ $row['quantity'] }} · ₱{{ number_format($row['price'], 2) }} each
-                                                </div>
+                                    <div class="flex items-center gap-3 px-3 py-3">
+                                        @if(!empty($row['image_path']))
+                                            <img src="{{ asset('storage/'.$row['image_path']) }}" alt="{{ $row['name'] }}"
+                                                 class="w-12 h-12 rounded-xl object-cover flex-shrink-0" style="border:1px solid #F5F5F5;">
+                                        @else
+                                            <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#F8F9FA; border:1px solid #F5F5F5;">
+                                                <svg class="w-6 h-6" style="color:#E0E0E0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
                                             </div>
+                                        @endif
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium line-clamp-1" style="color:#212121;">{{ $row['name'] }}</p>
+                                            <p class="text-xs mt-0.5" style="color:#9E9E9E;">Qty: {{ $row['quantity'] }} · ₱{{ number_format($row['price'], 2) }} each</p>
                                         </div>
-                                        <div class="text-sm font-medium text-gray-900">
-                                            ₱{{ number_format($row['price'] * $row['quantity'], 2) }}
-                                        </div>
+                                        <p class="text-sm font-bold flex-shrink-0" style="color:#212121;">₱{{ number_format($row['price'] * $row['quantity'], 2) }}</p>
                                     </div>
                                 @endforeach
                             </div>
@@ -534,56 +522,184 @@ new class extends Component
                 </div>
             @endif
         </div>
+    </div>
 
-        <div class="bg-white rounded-lg shadow p-4 sm:p-6 space-y-4">
-            <h4 class="text-sm font-semibold text-gray-900">Summary</h4>
-            @if(!empty($items) && $sellerCount > 1)
-                <p class="text-xs text-gray-600">You will place <strong>{{ $sellerCount }} separate orders</strong> (one per seller).</p>
-            @endif
-            <div class="space-y-1 text-sm text-gray-700">
-                <div class="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₱{{ number_format($subtotal, 2) }}</span>
+    {{-- Order Summary / Place Order --}}
+    <div class="w-full lg:w-80 flex-shrink-0 flex flex-col">
+        <div class="bg-white rounded-2xl p-5 flex-1" style="border:1px solid #F5F5F5; box-shadow:0 2px 8px rgba(0,0,0,0.04); border-top:3px solid #F9C74F;">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#FFFDE7;">
+                    <svg class="w-4 h-4" style="color:#F9C74F;" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                        <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                    </svg>
                 </div>
-                @if($deliveryTotal > 0)
-                    <div class="flex justify-between">
-                        <span>Delivery</span>
-                        <span>₱{{ number_format($deliveryTotal, 2) }}</span>
-                    </div>
+                <h3 class="font-bold text-base" style="color:#212121;">Order Summary</h3>
+            </div>
+
+            <div class="flex items-center gap-2 px-3 py-2 rounded-xl mb-4" style="background:#F8F9FA; border:1px solid #E0E0E0;">
+                <svg class="w-4 h-4" style="color:#2D9F4E;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span class="text-xs font-semibold" style="color:#212121;">Cash on Delivery (COD)</span>
+            </div>
+
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between" style="color:#616161;">
+                    <span>Subtotal</span>
+                    <span class="font-medium" style="color:#212121;">₱{{ number_format($subtotal, 2) }}</span>
+                </div>
+                <div class="flex justify-between" style="color:#616161;">
+                    <span>Delivery (est.)</span>
+                    @if($deliveryTotal > 0)
+                        <span class="font-medium" style="color:#212121;">₱{{ number_format($deliveryTotal, 2) }}</span>
+                    @else
+                        <span class="font-semibold" style="color:#2D9F4E;">Free</span>
+                    @endif
+                </div>
+                @if($deliveryTotal > 0 && count($deliveryBySeller) > 1)
                     @foreach($deliveryBySeller as $sid => $data)
                         @if($data['fee'] > 0)
-                            <div class="flex justify-between text-xs text-gray-500 pl-2">
+                            <div class="flex justify-between pl-3 text-xs" style="color:#9E9E9E;">
                                 <span>{{ $data['seller']->store_name }}</span>
                                 <span>₱{{ number_format($data['fee'], 2) }}</span>
                             </div>
                         @endif
                     @endforeach
-                @else
-                    <div class="flex justify-between text-gray-500 text-xs">
-                        <span>Delivery</span>
-                        <span>Free</span>
-                    </div>
                 @endif
             </div>
-            <div class="mt-3 text-xs text-gray-600 border-t pt-3">
-                Payment method: <span class="font-semibold text-gray-800">Cash on Delivery (COD)</span>
-            </div>
-            <div class="border-t pt-3 flex justify-between items-center">
-                <div class="text-sm text-gray-500">
-                    Total
-                </div>
-                <div class="text-xl font-semibold text-[#2D9F4E]">
-                    ₱{{ number_format($grandTotal, 2) }}
-                </div>
+
+            <div class="my-4" style="border-top:1px solid #F5F5F5;"></div>
+
+            <div class="flex justify-between items-center mb-5">
+                <span class="font-bold text-base" style="color:#212121;">Total</span>
+                <span class="font-bold text-xl" style="color:#F57C00;">₱{{ number_format($grandTotal, 2) }}</span>
             </div>
 
-            <button type="button"
-                    wire:click="placeOrder"
-                    wire:loading.attr="disabled"
-                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-[#2D9F4E] border border-[#2D9F4E] rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-[#1B7A37] focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2 transition-colors">
-                Place order (COD)
+            @if($sellerCount > 1)
+                <p class="text-xs mb-3" style="color:#9E9E9E;">{{ $sellerCount }} separate orders will be placed (one per seller).</p>
+            @endif
+
+            <button type="button" wire:click="placeOrder" wire:loading.attr="disabled"
+                    class="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-sm text-white transition"
+                    style="background:#2D9F4E;"
+                    onmouseover="this.style.background='#1B7A37';" onmouseout="this.style.background='#2D9F4E';">
+                <svg class="w-4 h-4" wire:loading.remove wire:target="placeOrder" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg class="w-4 h-4 animate-spin" wire:loading wire:target="placeOrder" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span wire:loading.remove wire:target="placeOrder">Place Order (COD)</span>
+                <span wire:loading wire:target="placeOrder">Placing order…</span>
             </button>
         </div>
     </div>
+
 </div>
+
+{{-- ── BOTTOM ROW: Shipping Address (left) | Order Note (right) ── --}}
+<div class="flex flex-col lg:flex-row gap-6 items-start">
+
+    {{-- Shipping address --}}
+    <div class="flex-1 min-w-0 bg-white rounded-2xl p-5" style="border:1px solid #F5F5F5; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#E8F5E9;">
+                <svg class="w-4 h-4" style="color:#2D9F4E;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </div>
+            <h4 class="font-bold text-sm" style="color:#212121;">Shipping Address</h4>
+        </div>
+
+        @if($savedAddresses->isNotEmpty())
+            <p class="text-xs mb-3" style="color:#9E9E9E;">Select a saved address or type one below.</p>
+            <div class="grid gap-2 mb-4">
+                @foreach($savedAddresses as $addr)
+                    @php
+                        $full = trim($addr->recipient_name ?: $checkoutUser->name)."\n"
+                              . $addr->line1.($addr->line2 ? ', '.$addr->line2 : '')."\n"
+                              . trim($addr->city.' '.$addr->region.' '.$addr->postal_code)."\n"
+                              . ($addr->phone ? 'Phone: '.$addr->phone : '');
+                    @endphp
+                    <label class="flex items-start gap-3 cursor-pointer rounded-xl px-3 py-2.5 transition"
+                           style="border:1px solid #E0E0E0;"
+                           onmouseover="this.style.borderColor='#2D9F4E';" onmouseout="this.style.borderColor='#E0E0E0';">
+                        <input type="radio"
+                               name="selected_address"
+                               value="{{ $full }}"
+                               class="mt-1 h-3.5 w-3.5 flex-shrink-0"
+                               style="accent-color:#2D9F4E;"
+                               onclick="(function(v){ document.getElementById('checkout_addr_input').value = v; @this.set('shipping_address', v); })({{ Illuminate\Support\Js::from($full) }})">
+                        <span class="text-xs">
+                            <span class="font-semibold" style="color:#212121;">
+                                {{ $addr->label }}
+                                @if($addr->is_default)
+                                    <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold" style="background:#E8F5E9; color:#2D9F4E;">Default</span>
+                                @endif
+                            </span>
+                            <span class="block mt-0.5 whitespace-pre-line" style="color:#616161;">{{ $full }}</span>
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        @endif
+
+        <textarea wire:model.defer="shipping_address" id="checkout_addr_input" rows="3"
+                  class="block w-full rounded-xl text-sm px-3 py-2.5 transition"
+                  style="border:1px solid #E0E0E0; color:#212121; outline:none; resize:none;"
+                  onfocus="this.style.borderColor='#F9C74F';" onblur="this.style.borderColor='#E0E0E0';"
+                  placeholder="Full address — barangay, city, province, contact number"></textarea>
+        @error('shipping_address') <p class="mt-1.5 text-xs font-medium" style="color:#EF5350;">{{ $message }}</p> @enderror
+    </div>
+
+    {{-- Order note --}}
+    <div class="w-full lg:w-80 flex-shrink-0 bg-white rounded-2xl p-5" style="border:1px solid #F5F5F5; box-shadow:0 2px 8px rgba(0,0,0,0.04); border-top:3px solid #2D9F4E;">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#FFF3E0;">
+                <svg class="w-4 h-4" style="color:#F57C00;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+            </div>
+            <h4 class="font-bold text-sm" style="color:#212121;">Order Note <span class="text-xs font-normal" style="color:#9E9E9E;">(optional)</span></h4>
+        </div>
+        <textarea wire:model.blur="customer_note" rows="4"
+                  class="block w-full rounded-xl text-sm px-3 py-2.5 transition"
+                  style="border:1px solid #E0E0E0; color:#212121; outline:none; resize:none;"
+                  onfocus="this.style.borderColor='#F9C74F';" onblur="this.style.borderColor='#E0E0E0';"
+                  placeholder="e.g. Please wrap fragile items, leave at the door…"></textarea>
+        <p class="mt-1.5 text-xs" style="color:#9E9E9E;">Visible to the seller when processing your order.</p>
+        @error('customer_note') <p class="mt-1 text-xs font-medium" style="color:#EF5350;">{{ $message }}</p> @enderror
+    </div>
+
+</div>
+
+@endif
+</div>
+
+@script
+<script>
+    $wire.on('order-placed', (event) => {
+        const count = event.count || 1;
+        Swal.fire({
+            icon: 'success',
+            title: count > 1 ? `${count} Orders Placed!` : 'Order Placed!',
+            text: count > 1
+                ? `${count} separate orders have been created — one per seller.`
+                : 'Your order has been placed successfully. The seller will process it shortly.',
+            confirmButtonText: 'View My Orders',
+            confirmButtonColor: '#2D9F4E',
+            showCancelButton: true,
+            cancelButtonText: 'Stay here',
+            cancelButtonColor: '#9E9E9E',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '{{ route('customer.orders') }}';
+            }
+        });
+    });
+</script>
+@endscript
 
