@@ -19,7 +19,7 @@ FROM php:8.2-apache
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev \
-    libcurl4-openssl-dev libssl-dev libexif-dev libintl-perl \
+    libcurl4-openssl-dev libssl-dev libexif-dev libintl-perl libicu-dev \
     && docker-php-ext-install \
         pdo pdo_mysql \
         gd mbstring xml zip bcmath curl exif intl tokenizer \
