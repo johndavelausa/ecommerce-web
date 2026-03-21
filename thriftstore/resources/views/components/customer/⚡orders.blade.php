@@ -3,6 +3,7 @@
 use App\Models\Order;
 use App\Models\OrderDispute;
 use App\Models\Product;
+use App\Models\Review;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -34,6 +35,10 @@ new class extends Component
     public string $storeReview = '';
 
     public ?int $trackingOrderId = null;
+
+    public ?int $rateProductsOrderId = null;
+    public array $productRatings = [];
+    public array $productReviews = [];
 
     public function updatingStatus(): void
     {
@@ -133,15 +138,6 @@ new class extends Component
             $sellerUser->notify(new OrderDisputeUpdated($dispute, 'opened'));
         }
 
-        User::query()
-            ->whereHas('roles', function ($q) {
-                $q->where('name', 'admin');
-            })
-            ->get()
-            ->each(function (User $admin) use ($dispute) {
-                $admin->notify(new OrderDisputeUpdated($dispute, 'opened'));
-            });
-
         $body = "Return / issue request for Order #{$order->id} (Tracking: ".($order->tracking_number ?? 'N/A')."):\n\n"
               . "Reason: " . (OrderDispute::REASON_CODES[$this->issueReason] ?? 'Issue')
               . "\n"
@@ -171,7 +167,7 @@ new class extends Component
 
         $order = Order::query()
             ->where('customer_id', $customer->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'received', 'completed'])
             ->whereNull('store_rating')
             ->findOrFail($orderId);
 
@@ -203,7 +199,7 @@ new class extends Component
 
         $order = Order::query()
             ->where('customer_id', $customer->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'received', 'completed'])
             ->whereNull('store_rating')
             ->findOrFail($this->rateOrderId);
 
@@ -222,7 +218,7 @@ new class extends Component
         $order = Order::query()
             ->with('items.product.seller')
             ->where('customer_id', $customer->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'received', 'completed'])
             ->findOrFail($id);
 
         $cart = Session::get('cart', []);
@@ -283,6 +279,7 @@ new class extends Component
                 'seller',
                 'trackingEvents',
                 'disputes' => fn ($dq) => $dq->latest(),
+                'statusHistory',
             ])
             ->where('customer_id', $customer->id)
             ->orderByDesc('created_at');
@@ -290,7 +287,7 @@ new class extends Component
         $statusGroups = [
             'to_ship'    => ['paid', 'to_pack', 'ready_to_ship', 'processing'],
             'in_transit' => ['shipped', 'out_for_delivery'],
-            'completed'  => ['delivered', 'completed'],
+            'completed'  => ['delivered', 'received', 'completed'],
         ];
 
         if ($this->status !== '') {
@@ -313,16 +310,17 @@ new class extends Component
             ->where('customer_id', $customer->id)
             ->findOrFail($id);
 
-        if (! $order->canTransitionTo(\App\Models\Order::STATUS_DELIVERED, 'customer')) {
+        // Customer can only mark as received when order is delivered
+        if (! $order->canTransitionTo(\App\Models\Order::STATUS_RECEIVED, 'customer')) {
             return;
         }
 
-        $order->status = \App\Models\Order::STATUS_DELIVERED;
-        $order->delivered_at = now();
+        $order->status = \App\Models\Order::STATUS_RECEIVED;
+        $order->received_at = now();
         $order->save();
     }
 
-    public function markNotReceived(int $id): void
+    public function reportNotReceived(int $id): void
     {
         $customer = Auth::guard('web')->user();
         if (! $customer) {
@@ -332,7 +330,7 @@ new class extends Component
         $order = Order::query()
             ->with('seller.user')
             ->where('customer_id', $customer->id)
-            ->where('status', Order::STATUS_OUT_FOR_DELIVERY)
+            ->whereIn('status', [Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_DELIVERED])
             ->findOrFail($id);
 
         $hasActiveDispute = $order->disputes()
@@ -369,15 +367,6 @@ new class extends Component
         if ($sellerUser) {
             $sellerUser->notify(new OrderDisputeUpdated($dispute, 'opened'));
         }
-
-        User::query()
-            ->whereHas('roles', function ($q) {
-                $q->where('name', 'admin');
-            })
-            ->get()
-            ->each(function (User $admin) use ($dispute) {
-                $admin->notify(new OrderDisputeUpdated($dispute, 'opened'));
-            });
 
         $body = "Delivery issue reported for Order #{$order->id} (Tracking: ".($order->tracking_number ?? 'N/A')."):\n\n"
               . "Reason: Parcel not received\n"
@@ -419,18 +408,18 @@ new class extends Component
             ];
         }
 
+        // Check if seller has responded
+        $hasSellerResponse = !empty($dispute->seller_response_note);
+        
         $map = [
-            OrderDispute::STATUS_OPEN                => ['Dispute submitted', 1, false],
-            OrderDispute::STATUS_SELLER_REVIEW       => ['Seller reviewing', 2, false],
-            OrderDispute::STATUS_UNDER_ADMIN_REVIEW  => ['Admin reviewing', 3, false],
-            OrderDispute::STATUS_RETURN_REQUESTED    => ['Return requested', 3, false],
-            OrderDispute::STATUS_RETURN_IN_TRANSIT   => ['Return in transit', 3, false],
-            OrderDispute::STATUS_RETURN_RECEIVED     => ['Return received', 3, false],
-            OrderDispute::STATUS_REFUND_PENDING      => ['Refund pending', 4, false],
-            OrderDispute::STATUS_REFUND_COMPLETED    => ['Refund completed', 4, true],
-            OrderDispute::STATUS_RESOLVED_APPROVED   => ['Resolved (approved)', 4, true],
-            OrderDispute::STATUS_RESOLVED_REJECTED   => ['Resolved (rejected)', 4, true],
-            OrderDispute::STATUS_CLOSED              => ['Resolved (closed)', 4, true],
+            OrderDispute::STATUS_OPEN                => [$hasSellerResponse ? 'Seller responded' : 'Dispute submitted', $hasSellerResponse ? 2 : 1, false],
+            OrderDispute::STATUS_SELLER_REVIEW       => ['Seller responded', 2, false],
+            OrderDispute::STATUS_RETURN_REQUESTED    => ['Return requested', 2, false],
+            OrderDispute::STATUS_RETURN_IN_TRANSIT   => ['Return in transit', 2, false],
+            OrderDispute::STATUS_RETURN_RECEIVED     => ['Return received', 2, false],
+            OrderDispute::STATUS_REFUND_PENDING      => ['Refund pending', 2, false],
+            OrderDispute::STATUS_REFUND_COMPLETED    => ['Refund completed', 3, true],
+            OrderDispute::STATUS_CLOSED              => ['Resolved', 3, true],
         ];
 
         [$label, $step, $isResolved] = $map[$dispute->status] ?? ['Dispute updated', 2, false];
@@ -469,6 +458,90 @@ new class extends Component
         $order->save();
     }
 
+    public function openRateProductsModal(int $orderId): void
+    {
+        $customer = Auth::guard('web')->user();
+        if (! $customer) {
+            return;
+        }
+
+        $order = Order::query()
+            ->with(['items.product'])
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', ['delivered', 'received', 'completed'])
+            ->findOrFail($orderId);
+
+        $this->rateProductsOrderId = $order->id;
+        $this->productRatings = [];
+        $this->productReviews = [];
+
+        foreach ($order->items as $item) {
+            if ($item->product) {
+                $this->productRatings[$item->product_id] = 5;
+                $this->productReviews[$item->product_id] = '';
+            }
+        }
+
+        $this->resetErrorBag();
+    }
+
+    public function closeRateProductsModal(): void
+    {
+        $this->rateProductsOrderId = null;
+        $this->productRatings = [];
+        $this->productReviews = [];
+        $this->resetErrorBag();
+    }
+
+    public function submitProductRatings(): void
+    {
+        $customer = Auth::guard('web')->user();
+        if (! $customer || ! $this->rateProductsOrderId) {
+            return;
+        }
+
+        $order = Order::query()
+            ->with(['items.product'])
+            ->where('customer_id', $customer->id)
+            ->whereIn('status', ['delivered', 'received', 'completed'])
+            ->findOrFail($this->rateProductsOrderId);
+
+        $rules = [];
+        foreach ($this->productRatings as $productId => $rating) {
+            $rules["productRatings.{$productId}"] = ['required', 'integer', 'min:1', 'max:5'];
+        }
+        foreach ($this->productReviews as $productId => $review) {
+            $rules["productReviews.{$productId}"] = ['nullable', 'string', 'max:2000'];
+        }
+        $this->validate($rules);
+
+        foreach ($order->items as $item) {
+            $productId = $item->product_id;
+            if (! $item->product || ! isset($this->productRatings[$productId])) {
+                continue;
+            }
+
+            $alreadyReviewed = Review::where('customer_id', $customer->id)
+                ->where('product_id', $productId)
+                ->where('order_id', $order->id)
+                ->exists();
+
+            if ($alreadyReviewed) {
+                continue;
+            }
+
+            Review::create([
+                'customer_id' => $customer->id,
+                'product_id'  => $productId,
+                'order_id'    => $order->id,
+                'rating'      => (int) $this->productRatings[$productId],
+                'body'        => trim($this->productReviews[$productId] ?? ''),
+            ]);
+        }
+
+        $this->closeRateProductsModal();
+    }
+
     public function openTrackingModal(int $orderId): void
     {
         $this->trackingOrderId = $orderId;
@@ -500,7 +573,7 @@ new class extends Component
                 <button wire:click="$set('status', '{{ $tabVal }}')"
                         class="flex-shrink-0 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2
                                {{ $status === $tabVal
-                                  ? 'border-orange-500 text-orange-600'
+                                  ? 'border-[#F9C74F] text-[#212121]'
                                   : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300' }}">
                     {{ $tabLabel }}
                 </button>
@@ -525,7 +598,8 @@ new class extends Component
                         'processing'       => 'PROCESSING',
                         'shipped'          => 'SHIPPED',
                         'out_for_delivery' => 'OUT FOR DELIVERY',
-                        'delivered'        => 'ORDER RECEIVED',
+                        'delivered'        => 'ORDER DELIVERED',
+                        'received'         => 'ORDER RECEIVED',
                         'completed'        => 'COMPLETED',
                         'cancelled'        => 'CANCELLED',
                         default            => strtoupper(str_replace('_', ' ', $order->status)),
@@ -538,6 +612,7 @@ new class extends Component
                         'shipped'                   => 'text-indigo-600',
                         'out_for_delivery'          => 'text-violet-600',
                         'delivered'                 => 'text-green-600',
+                        'received'                  => 'text-emerald-600',
                         'completed'                 => 'text-emerald-600',
                         'cancelled'                 => 'text-red-500',
                         default                     => 'text-gray-600',
@@ -597,7 +672,7 @@ new class extends Component
                     </div>
 
                     {{-- Courier / tracking summary --}}
-                    @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'completed']) && $order->tracking_number)
+                    @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'received', 'completed']) && $order->tracking_number)
                         <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 bg-orange-50 rounded-xl border border-orange-100 flex items-center justify-between gap-3">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -622,30 +697,6 @@ new class extends Component
                         </div>
                     @endif
 
-                    {{-- Dispute progress --}}
-                    @php $latestDispute = $order->disputes->first(); @endphp
-                    @if($latestDispute)
-                        @php $progress = $this->disputeProgressMeta($latestDispute); @endphp
-                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 bg-red-50 rounded-xl border border-red-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <p class="text-xs font-semibold text-red-700">
-                                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1 align-middle"></span>
-                                    Dispute: {{ $progress['label'] }}
-                                </p>
-                                @if($progress['isResolved'])
-                                    <span class="text-[10px] text-green-600 font-bold">Resolved</span>
-                                @endif
-                            </div>
-                            <div class="flex items-center gap-1">
-                                @for($i = 1; $i <= 4; $i++)
-                                    <div class="h-1 flex-1 rounded-full {{ $i <= $progress['step'] ? 'bg-red-400' : 'bg-red-100' }}"></div>
-                                @endfor
-                            </div>
-                            <div class="mt-1.5 flex justify-between text-[9px] text-red-300 font-medium">
-                                <span>Submitted</span><span>Seller</span><span>Admin</span><span>Resolved</span>
-                            </div>
-                        </div>
-                    @endif
 
                     {{-- Cancellation info --}}
                     @if($order->status === 'cancelled')
@@ -657,7 +708,7 @@ new class extends Component
                                 @endif
                             </p>
                             @if($order->refund_status && $order->refund_status !== \App\Models\Order::REFUND_STATUS_NOT_REQUIRED)
-                                <p class="text-xs text-indigo-600 mt-0.5">
+                                <p class="text-xs text-[#2D9F4E] mt-0.5">
                                     Refund: {{ \App\Models\Order::refundStatusLabel($order->refund_status) }}
                                 </p>
                             @endif
@@ -700,46 +751,72 @@ new class extends Component
                                 Cancel Order
                             </button>
 
-                        @elseif ($order->status === 'out_for_delivery')
-                            <button type="button"
-                                    wire:click="markNotReceived({{ $order->id }})"
-                                    wire:confirm="Report this order as not received? This will open a delivery dispute with the seller and notify admin."
-                                    class="inline-flex items-center px-3.5 py-2 border border-red-300 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 transition">
-                                Not Received
-                            </button>
-                            <button type="button"
-                                    wire:click="markReceived({{ $order->id }})"
-                                    class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
-                                Order Received
-                            </button>
+                        @elseif ($order->status === 'delivered')
+                            @php
+                                $hasActiveIssue = $order->disputes()
+                                    ->whereIn('status', \App\Models\OrderDispute::ACTIVE_STATUSES)
+                                    ->exists();
+                            @endphp
+                            
+                            @if($hasActiveIssue)
+                                <div class="inline-flex items-center px-3.5 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-medium text-amber-700">
+                                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Delivery issue reported - Check tracking for seller response
+                                </div>
+                            @else
+                                <button type="button"
+                                        wire:click="reportNotReceived({{ $order->id }})"
+                                        wire:confirm="Report that you didn't receive this parcel? Seller will be notified."
+                                        class="inline-flex items-center px-3.5 py-2 border border-red-300 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 transition">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    Item Didn't Receive
+                                </button>
+                                <button type="button"
+                                        wire:click="markReceived({{ $order->id }})"
+                                        class="inline-flex items-center px-4 py-2 bg-[#2D9F4E] text-white rounded-lg text-xs font-bold hover:bg-[#1B7A37] transition shadow-sm">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Order Received
+                                </button>
+                            @endif
 
-                        @elseif ($order->status === 'shipped')
-                            <button type="button"
-                                    wire:click="markReceived({{ $order->id }})"
-                                    class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
-                                Order Received
-                            </button>
-
-                        @elseif (in_array($order->status, ['delivered', 'completed'], true))
+                        @elseif (in_array($order->status, ['received', 'completed'], true))
                             <a href="{{ route('customer.orders.receipt', $order) }}"
                                class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
                                target="_blank" rel="noopener">
                                 Receipt
                             </a>
                             <button type="button"
-                                    wire:click="openIssueModal({{ $order->id }})"
-                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
-                                Return/Issue
-                            </button>
-                            <button type="button"
                                     wire:click="reorder({{ $order->id }})"
-                                    class="inline-flex items-center px-3.5 py-2 border border-orange-400 text-orange-600 rounded-lg text-xs font-semibold hover:bg-orange-50 transition">
+                                    class="inline-flex items-center px-3.5 py-2 border border-[#2D9F4E] text-[#2D9F4E] rounded-lg text-xs font-semibold hover:bg-[#E8F5E9] transition">
                                 Re-order
                             </button>
+                            @php
+                                $reviewedProductIds = \App\Models\Review::where('customer_id', Auth::guard('web')->id())
+                                    ->where('order_id', $order->id)
+                                    ->pluck('product_id')
+                                    ->all();
+                                $unreviewedItems = $order->items->filter(fn($i) => $i->product && !in_array($i->product_id, $reviewedProductIds));
+                            @endphp
+                            @if ($unreviewedItems->isNotEmpty())
+                                <button type="button"
+                                        wire:click="openRateProductsModal({{ $order->id }})"
+                                        class="inline-flex items-center gap-1 px-4 py-2 bg-[#F9C74F] text-[#212121] rounded-lg text-xs font-bold hover:bg-[#FFE17B] transition shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                    </svg>
+                                    Rate Products
+                                </button>
+                            @endif
                             @if (!$order->store_rating)
                                 <button type="button"
                                         wire:click="openRateModal({{ $order->id }})"
-                                        class="inline-flex items-center gap-1 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                                        class="inline-flex items-center gap-1 px-4 py-2 bg-[#F9C74F] text-[#212121] rounded-lg text-xs font-bold hover:bg-[#FFE17B] transition shadow-sm">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                     </svg>
@@ -788,7 +865,7 @@ new class extends Component
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Reason</label>
                         <select wire:model.defer="issueReason"
-                                class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400">
+                                class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]">
                             @foreach(\App\Models\OrderDispute::REASON_CODES as $code => $label)
                                 <option value="{{ $code }}">{{ $label }}</option>
                             @endforeach
@@ -798,14 +875,14 @@ new class extends Component
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
                         <textarea wire:model.defer="issueBody" rows="4"
-                                  class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400"
+                                  class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
                                   placeholder="Describe the issue (e.g. the shirt has a tear on the sleeve)…"></textarea>
                         @error('issueBody') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Evidence <span class="text-gray-400 font-normal">(optional photo or PDF)</span></label>
                         <input type="file" wire:model="issueEvidence"
-                               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#E8F5E9] file:text-[#2D9F4E] hover:file:bg-[#d4edda]"
                                accept=".jpg,.jpeg,.png,.webp,.pdf">
                         @error('issueEvidence') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -816,7 +893,7 @@ new class extends Component
                         Cancel
                     </button>
                     <button wire:click="submitIssue"
-                            class="px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                            class="px-4 py-2 bg-[#2D9F4E] text-white rounded-lg text-xs font-bold hover:bg-[#1B7A37] transition shadow-sm">
                         Submit Request
                     </button>
                 </div>
@@ -855,7 +932,7 @@ new class extends Component
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Comment <span class="text-gray-400 font-normal">(optional)</span></label>
                         <textarea wire:model.defer="storeReview" rows="3"
-                                  class="block w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400"
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
                                   placeholder="Share your experience with this seller…"></textarea>
                         @error('storeReview') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -866,12 +943,89 @@ new class extends Component
                         Cancel
                     </button>
                     <button wire:click="submitRating"
-                            class="px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                            class="px-4 py-2 bg-[#F9C74F] text-[#212121] rounded-lg text-xs font-bold hover:bg-[#FFE17B] transition shadow-sm">
                         Submit Rating
                     </button>
                 </div>
             </div>
         </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════════════════
+         RATE PRODUCTS MODAL
+    ══════════════════════════════════════════════════════════════ --}}
+    @if($rateProductsOrderId)
+        @php
+            $rateOrder = \App\Models\Order::with(['items.product'])->find($rateProductsOrderId);
+            $alreadyReviewedIds = $rateOrder
+                ? \App\Models\Review::where('customer_id', Auth::guard('web')->id())
+                    ->where('order_id', $rateOrder->id)
+                    ->pluck('product_id')
+                    ->all()
+                : [];
+            $itemsToRate = $rateOrder ? $rateOrder->items->filter(fn($i) => $i->product && !in_array($i->product_id, $alreadyReviewedIds)) : collect();
+        @endphp
+        @if($rateOrder && $itemsToRate->isNotEmpty())
+        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" style="max-height: min(90vh, 640px);">
+                <div class="px-6 py-4 border-b flex items-center justify-between flex-shrink-0">
+                    <h3 class="text-sm font-bold text-gray-900">Rate Products</h3>
+                    <button wire:click="closeRateProductsModal" class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 text-lg leading-none">&times;</button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                    @foreach($itemsToRate as $item)
+                        @php $pid = $item->product_id; @endphp
+                        <div class="pb-5 border-b border-gray-100 last:border-0 last:pb-0">
+                            <div class="flex items-start gap-3 mb-3">
+                                @if($item->product->image_path)
+                                    <img src="{{ asset('storage/'.$item->product->image_path) }}"
+                                         class="w-14 h-14 rounded-lg object-cover border border-gray-100 flex-shrink-0">
+                                @else
+                                    <div class="w-14 h-14 rounded-lg bg-gray-100 flex-shrink-0"></div>
+                                @endif
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900 line-clamp-2">{{ $item->product->name }}</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">Qty: {{ $item->quantity }}</p>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <p class="text-xs font-semibold text-gray-600 mb-1.5">Your Rating</p>
+                                <div class="flex items-center gap-1.5">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <button type="button"
+                                                wire:click="$set('productRatings.{{ $pid }}', {{ $i }})"
+                                                class="transition-transform hover:scale-110 focus:outline-none">
+                                            <svg class="w-7 h-7 {{ isset($productRatings[$pid]) && $productRatings[$pid] >= $i ? 'text-amber-400' : 'text-gray-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </button>
+                                    @endfor
+                                    <span class="text-sm font-bold text-amber-500 ml-1">{{ $productRatings[$pid] ?? 5 }}/5</span>
+                                </div>
+                                @error("productRatings.{$pid}") <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <textarea wire:model.defer="productReviews.{{ $pid }}" rows="2"
+                                          class="block w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
+                                          placeholder="Share your thoughts about this item (optional)…"></textarea>
+                                @error("productReviews.{$pid}") <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex gap-2 justify-end flex-shrink-0">
+                    <button wire:click="closeRateProductsModal"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition">
+                        Cancel
+                    </button>
+                    <button wire:click="submitProductRatings"
+                            class="px-4 py-2 bg-[#F9C74F] text-[#212121] rounded-lg text-xs font-bold hover:bg-[#FFE17B] transition shadow-sm">
+                        Submit Reviews
+                    </button>
+                </div>
+            </div>
+        </div>
+        @endif
     @endif
 
     {{-- ══════════════════════════════════════════════════════════════
@@ -889,7 +1043,8 @@ new class extends Component
                     'paid'                                   => 2,
                     'to_pack', 'ready_to_ship', 'processing' => 3,
                     'shipped', 'out_for_delivery'            => 4,
-                    'delivered', 'completed'                 => 5,
+                    'delivered'                              => 5,
+                    'received', 'completed'                  => 6,
                     default                                  => 1,
                 };
                 $isCancelled = $orderObj->status === 'cancelled';
@@ -899,6 +1054,7 @@ new class extends Component
                     3 => ['label' => 'Packed'],
                     4 => ['label' => 'Shipped'],
                     5 => ['label' => 'Delivered'],
+                    6 => ['label' => 'Received'],
                 ];
             @endphp
 
@@ -982,9 +1138,49 @@ new class extends Component
                         @endif
 
                         {{-- Timeline --}}
-                        @php $timeline = $orderObj->full_tracking_timeline; @endphp
+                        @php 
+                            $timeline = $orderObj->full_tracking_timeline;
+                            $latestIssue = $orderObj->disputes->first();
+                        @endphp
 
                         <div class="bg-white mx-3 mt-3 mb-4 rounded-xl overflow-hidden shadow-sm">
+                            {{-- Show delivery issue at top if exists --}}
+                            @if($latestIssue)
+                                <div class="flex items-stretch px-4 border-b border-gray-50">
+                                    <div class="w-16 flex-shrink-0 flex flex-col justify-start pt-4 pr-2 text-right">
+                                        <span class="text-xs font-semibold text-red-600">
+                                            {{ $latestIssue->created_at->isToday() ? 'Today' : $latestIssue->created_at->format('M j') }}
+                                        </span>
+                                        <span class="text-[11px] text-red-500 mt-0.5">
+                                            {{ $latestIssue->created_at->format('g:i A') }}
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-col items-center w-8 flex-shrink-0">
+                                        <div class="mt-4 flex-shrink-0">
+                                            <div class="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
+                                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 w-px bg-gray-200 mt-1.5 mb-0 min-h-[24px]"></div>
+                                    </div>
+                                    <div class="flex-1 min-w-0 py-4 pl-2">
+                                        <p class="text-sm leading-snug font-bold text-red-700">
+                                            Customer reported: Item not received
+                                        </p>
+                                        @if($latestIssue->seller_response_note)
+                                            <div class="mt-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                                                <p class="text-[10px] font-semibold text-blue-700 mb-1">Seller's Response:</p>
+                                                <p class="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{{ $latestIssue->seller_response_note }}</p>
+                                            </div>
+                                        @else
+                                            <p class="text-xs text-red-600 mt-1">Waiting for seller response...</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                            
                             @forelse($timeline as $index => $step)
                                 @php
                                     $occurredAt  = $step['occurred_at'] ? \Illuminate\Support\Carbon::parse($step['occurred_at']) : null;

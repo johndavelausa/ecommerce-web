@@ -25,6 +25,3 @@ Schedule::command('orders:watch-stale-shipments --in-transit-hours=72 --out-for-
 
 // Payout automation: release eligible seller payouts after completion/dispute checks.
 Schedule::command('orders:release-payouts --hours=0')->hourly();
-
-// Dispute SLA automation: escalate stale disputes to admin queue and alert parties.
-Schedule::command('orders:escalate-disputes --seller-hours=24 --admin-hours=24')->everyThirtyMinutes();

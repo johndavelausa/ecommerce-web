@@ -18,10 +18,11 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      * C3 v1.4: Pass purchase history stats for customers.
+     * Supports both web (customer) and seller guards.
      */
     public function edit(Request $request): View
     {
-        $user = $request->user();
+        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
         $purchaseStats = null;
 
         if ($user && $user->hasRole('customer')) {
@@ -65,7 +66,8 @@ class ProfileController extends Controller
      */
     public function requestDeletion(Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
+        
         if (! $user) {
             abort(403);
         }
@@ -87,10 +89,16 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
+        
+        if (!$user) {
+            abort(403);
+        }
+
+        $user->fill($request->validated());
 
         // B1 - v1.3: customers can change email freely; no re-verification required
-        $request->user()->save();
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -104,9 +112,18 @@ class ProfileController extends Controller
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
+        
+        if (!$user) {
+            abort(403);
+        }
 
-        Auth::logout();
+        // Logout from the appropriate guard
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+        } elseif (Auth::guard('seller')->check()) {
+            Auth::guard('seller')->logout();
+        }
 
         $user->delete();
 

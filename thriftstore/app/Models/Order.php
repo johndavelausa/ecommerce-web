@@ -20,6 +20,7 @@ class Order extends Model
     public const STATUS_SHIPPED = 'shipped';
     public const STATUS_OUT_FOR_DELIVERY = 'out_for_delivery';
     public const STATUS_DELIVERED = 'delivered';
+    public const STATUS_RECEIVED = 'received';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
@@ -56,6 +57,7 @@ class Order extends Model
         self::STATUS_SHIPPED,
         self::STATUS_OUT_FOR_DELIVERY,
         self::STATUS_DELIVERED,
+        self::STATUS_RECEIVED,
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
     ];
@@ -86,6 +88,7 @@ class Order extends Model
         'estimated_delivery_date',
         'shipped_at',
         'delivered_at',
+        'received_at',
         'completed_at',
         'status',
         'total_amount',
@@ -110,6 +113,7 @@ class Order extends Model
             'estimated_delivery_date' => 'date',
             'shipped_at' => 'datetime',
             'delivered_at' => 'datetime',
+            'received_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
@@ -237,15 +241,21 @@ class Order extends Model
                 self::STATUS_SHIPPED => ['seller', 'admin', 'system'],
                 self::STATUS_CANCELLED => ['customer', 'seller', 'admin', 'system'],
             ],
+            // Seller can track delivery progress
             self::STATUS_SHIPPED => [
-                self::STATUS_OUT_FOR_DELIVERY => ['seller', 'admin', 'system'],
-                self::STATUS_DELIVERED => ['customer', 'admin', 'system'],
+                self::STATUS_OUT_FOR_DELIVERY => ['seller', 'admin', 'system'], // Seller/courier/system/admin can update
+                self::STATUS_DELIVERED => ['seller', 'admin', 'system'], // Seller/system/admin can mark as delivered
             ],
             self::STATUS_OUT_FOR_DELIVERY => [
-                self::STATUS_DELIVERED => ['customer', 'admin', 'system'],
+                self::STATUS_DELIVERED => ['seller', 'admin', 'system'], // Seller/system/admin can mark as delivered
             ],
+            // CUSTOMER ACTIONS START HERE
             self::STATUS_DELIVERED => [
-                self::STATUS_COMPLETED => ['admin', 'system'],
+                self::STATUS_RECEIVED => ['customer', 'admin', 'system'], // Customer confirms receipt
+                self::STATUS_COMPLETED => ['admin', 'system'], // Auto-complete after X days
+            ],
+            self::STATUS_RECEIVED => [
+                self::STATUS_COMPLETED => ['admin', 'system'], // Auto-complete or admin
             ],
             self::STATUS_COMPLETED => [],
             self::STATUS_CANCELLED => [],
@@ -271,7 +281,7 @@ class Order extends Model
         });
     }
 
-    public function recordStatusHistory(?string $fromStatus, ?string $toStatus): void
+    public function recordStatusHistory(?string $fromStatus, ?string $toStatus, ?string $location = null, ?string $description = null): void
     {
         if (! Schema::hasTable('order_status_history')) {
             return;
@@ -283,6 +293,8 @@ class Order extends Model
             'order_id' => $this->id,
             'from_status' => $fromStatus,
             'to_status' => $toStatus,
+            'location' => $location,
+            'description' => $description,
             'actor_type' => $actorType,
             'actor_id' => $actorId,
             'created_at' => now(),
@@ -358,6 +370,7 @@ class Order extends Model
             self::STATUS_SHIPPED          => 'Parcel Handed to Courier',
             self::STATUS_OUT_FOR_DELIVERY => 'Out for Delivery',
             self::STATUS_DELIVERED        => 'Order Delivered',
+            self::STATUS_RECEIVED         => 'Customer Confirmed Receipt',
             self::STATUS_COMPLETED        => 'Order Completed',
             self::STATUS_CANCELLED        => 'Order Cancelled',
         ];
@@ -378,9 +391,14 @@ class Order extends Model
         }
 
         foreach ($this->trackingEvents as $event) {
+            $eventTitle = ucwords(str_replace('_', ' ', (string) $event->event_status));
+            if ($event->event_code === 'transit_update' && $event->location) {
+                $eventTitle = 'Parcel is at: ' . $event->location;
+            }
+
             $timeline[] = [
                 'type'        => 'courier',
-                'title'       => ucwords(str_replace('_', ' ', (string) $event->event_status)),
+                'title'       => $eventTitle,
                 'description' => $event->description,
                 'location'    => $event->location,
                 'occurred_at' => $event->occurred_at ?? $event->created_at,

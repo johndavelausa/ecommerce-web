@@ -69,7 +69,7 @@ new class extends Component
                     Clear cart
                 </button>
                 <a href="{{ route('customer.checkout') }}"
-                   class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500">
+                   class="inline-flex items-center px-3 py-1.5 bg-[#2D9F4E] border border-[#2D9F4E] rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-[#1B7A37] transition-colors">
                     Checkout
                 </a>
             @endif
@@ -190,7 +190,7 @@ new class extends Component
                 <div class="text-sm font-medium text-gray-900">
                     Total
                 </div>
-                <div class="text-lg font-semibold text-gray-900">
+                <div class="text-lg font-semibold text-[#2D9F4E]">
                     ₱{{ number_format($grandTotal, 2) }}
                 </div>
             </div>

@@ -27,7 +27,7 @@ class ProductReviewController extends Controller
         $order = Order::query()
             ->where('id', $request->order_id)
             ->where('customer_id', $user->id)
-            ->where('status', 'delivered')
+            ->whereIn('status', ['delivered', 'received', 'completed'])
             ->firstOrFail();
 
         if (! $order->items()->where('product_id', $productId)->exists()) {
@@ -51,25 +51,4 @@ class ProductReviewController extends Controller
         return redirect()->route('product.show', $productId)->with('status', 'review-submitted');
     }
 
-    public function update(Request $request, int $id): RedirectResponse
-    {
-        $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'body' => ['required', 'string', 'max:2000'],
-        ]);
-
-        $review = Review::where('id', $id)->where('customer_id', $request->user()->id)->firstOrFail();
-        $review->update(['rating' => $request->rating, 'body' => $request->body]);
-
-        return redirect()->route('product.show', $review->product_id)->with('status', 'review-updated');
-    }
-
-    public function destroy(Request $request, int $id): RedirectResponse
-    {
-        $review = Review::where('id', $id)->where('customer_id', $request->user()->id)->firstOrFail();
-        $productId = $review->product_id;
-        $review->delete();
-
-        return redirect()->route('product.show', $productId)->with('status', 'review-deleted');
-    }
 }

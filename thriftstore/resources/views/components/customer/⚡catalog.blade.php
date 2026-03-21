@@ -355,11 +355,11 @@ new class extends Component
 @endphp
 
 
-<div class="space-y-6 max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="space-y-6">
 
     {{-- Breadcrumb --}}
     <nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <a href="{{ route('catalog') }}" class="hover:text-[#2d6c50] transition-colors">Home</a>
+        <a href="{{ route('catalog') }}" class="hover:text-[#2D9F4E] transition-colors">Home</a>
         <span class="text-gray-300">›</span>
         <span class="font-semibold text-gray-800">All Products</span>
     </nav>
@@ -380,7 +380,7 @@ new class extends Component
                         </svg>
                         <h3 class="text-base font-bold text-gray-900">Filters</h3>
                     </div>
-                    <button type="button" wire:click="resetAllFilters" class="text-sm font-semibold text-[#2d6c50] hover:underline transition-colors">
+                    <button type="button" wire:click="resetAllFilters" class="text-sm font-semibold text-[#2D9F4E] hover:underline transition-colors">
                         Reset
                     </button>
                 </div>
@@ -396,7 +396,7 @@ new class extends Component
                             type="text"
                             wire:model.live.debounce.300ms="search"
                             placeholder="Search products…"
-                            class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm placeholder-gray-400 focus:border-[#2d6c50] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2d6c50]"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm placeholder-gray-400 focus:border-[#2D9F4E] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]"
                         >
                     </div>
 
@@ -435,8 +435,8 @@ new class extends Component
                                     wire:click="toggleCondition('{{ $value }}')"
                                     class="rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all
                                         {{ $condition === $value
-                                            ? 'border-[#2d6c50] bg-[#2d6c50] text-white shadow-sm'
-                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2d6c50] hover:text-[#2d6c50]' }}"
+                                            ? 'border-[#2D9F4E] bg-[#2D9F4E] text-white shadow-sm'
+                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2D9F4E] hover:text-[#2D9F4E]' }}"
                                 >
                                     {{ $label }}
                                 </button>
@@ -463,8 +463,8 @@ new class extends Component
                                 :max="maxLimit"
                                 step="50"
                                 @change="$wire.set('max_price', $event.target.value > 0 ? Number($event.target.value) : null)"
-                                class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-[#2d6c50]"
-                                style="background: linear-gradient(to right, #2d6c50 0%, #2d6c50 calc(var(--val, 50%) * 100%), #e5e7eb calc(var(--val, 50%) * 100%), #e5e7eb 100%)"
+                                class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-[#2D9F4E]"
+                                style="background: linear-gradient(to right, #2D9F4E 0%, #2D9F4E calc(var(--val, 50%) * 100%), #e5e7eb calc(var(--val, 50%) * 100%), #e5e7eb 100%)"
                                 x-init="$el.style.setProperty('--val', maxVal / maxLimit)"
                                 @input="$el.style.setProperty('--val', $event.target.value / maxLimit)"
                             >
@@ -480,7 +480,7 @@ new class extends Component
                                     @change="$wire.set('min_price', $event.target.value > 0 ? Number($event.target.value) : null)"
                                     min="0"
                                     placeholder="0"
-                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2d6c50] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2d6c50]"
+                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2D9F4E] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]"
                                 >
                             </div>
                             <span class="shrink-0 text-xs text-gray-400">to</span>
@@ -495,7 +495,7 @@ new class extends Component
                                     "
                                     min="0"
                                     placeholder="Max"
-                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2d6c50] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2d6c50]"
+                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2D9F4E] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]"
                                 >
                             </div>
                         </div>
@@ -511,8 +511,8 @@ new class extends Component
                                     wire:click="toggleSize('{{ $value }}')"
                                     class="min-w-[42px] rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all
                                         {{ $size_variant === $value
-                                            ? 'border-[#2d6c50] bg-[#2d6c50] text-white shadow-sm'
-                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2d6c50] hover:text-[#2d6c50]' }}"
+                                            ? 'border-[#2D9F4E] bg-[#2D9F4E] text-white shadow-sm'
+                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2D9F4E] hover:text-[#2D9F4E]' }}"
                                 >
                                     {{ $label }}
                                 </button>
@@ -524,7 +524,7 @@ new class extends Component
                     <label class="flex cursor-pointer items-center gap-2.5">
                         <div class="relative">
                             <input type="checkbox" wire:model.live="on_sale_only" class="peer sr-only">
-                            <div class="h-5 w-9 rounded-full border-2 border-gray-300 bg-white transition peer-checked:border-[#2d6c50] peer-checked:bg-[#2d6c50]"></div>
+                            <div class="h-5 w-9 rounded-full border-2 border-gray-300 bg-white transition peer-checked:border-[#2D9F4E] peer-checked:bg-[#2D9F4E]"></div>
                             <div class="absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-gray-400 shadow transition peer-checked:translate-x-4 peer-checked:bg-white"></div>
                         </div>
                         <span class="text-sm text-gray-700">On sale only</span>
@@ -534,7 +534,7 @@ new class extends Component
                     <button
                         type="button"
                         wire:click="applyFilters"
-                        class="w-full rounded-xl bg-[#2d6c50] py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#245840] active:scale-[0.98]"
+                        class="w-full rounded-xl bg-[#2D9F4E] py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#1B7A37] active:scale-[0.98]"
                     >
                         Apply Filters
                     </button>
@@ -556,7 +556,7 @@ new class extends Component
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-1.5">
                         <span class="text-sm text-gray-500">Sort by:</span>
-                        <select wire:model.live="sort" class="rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-2.5 pr-7 text-sm text-gray-700 focus:border-[#2d6c50] focus:outline-none focus:ring-1 focus:ring-[#2d6c50]">
+                        <select wire:model.live="sort" class="rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-2.5 pr-7 text-sm text-gray-700 focus:border-[#2D9F4E] focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]">
                             <option value="latest">Newest Arrival</option>
                             <option value="price_asc">Price: Low to High</option>
                             <option value="price_desc">Price: High to Low</option>
@@ -570,7 +570,7 @@ new class extends Component
                         <button
                             type="button"
                             wire:click="$set('viewMode', 'grid')"
-                            class="flex items-center justify-center p-2 transition-colors {{ $viewMode === 'grid' ? 'bg-[#2d6c50] text-white' : 'bg-white text-gray-400 hover:text-gray-600' }}"
+                            class="flex items-center justify-center p-2 transition-colors {{ $viewMode === 'grid' ? 'bg-[#2D9F4E] text-white' : 'bg-white text-gray-400 hover:text-gray-600' }}"
                             title="Grid view"
                         >
                             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 16 16">
@@ -581,7 +581,7 @@ new class extends Component
                         <button
                             type="button"
                             wire:click="$set('viewMode', 'list')"
-                            class="flex items-center justify-center p-2 transition-colors {{ $viewMode === 'list' ? 'bg-[#2d6c50] text-white' : 'bg-white text-gray-400 hover:text-gray-600' }}"
+                            class="flex items-center justify-center p-2 transition-colors {{ $viewMode === 'list' ? 'bg-[#2D9F4E] text-white' : 'bg-white text-gray-400 hover:text-gray-600' }}"
                             title="List view"
                         >
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -646,12 +646,12 @@ new class extends Component
                                 {{-- Top-left badges --}}
                                 <div class="absolute left-2.5 top-2.5 z-10 flex flex-col gap-1.5">
                                     @if($conditionLabel)
-                                        <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-[#2d6c50] text-white shadow-sm">
+                                        <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-[#2D9F4E] text-white shadow-sm">
                                             {{ $conditionLabel }}
                                         </span>
                                     @endif
                                     @if($product->sale_price && $discountPct > 0)
-                                        <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-amber-400 text-gray-900 shadow-sm">
+                                        <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-[#F9C74F] text-[#212121] shadow-sm">
                                             {{ $discountPct }}% OFF
                                         </span>
                                     @endif
@@ -679,10 +679,10 @@ new class extends Component
                                 <div class="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex items-end justify-between">
                                     @if($product->seller?->is_verified ?? false)
                                         <div class="flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 shadow-sm backdrop-blur-sm">
-                                            <svg class="h-3 w-3 text-[#2d6c50]" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg class="h-3 w-3 text-[#2D9F4E]" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                             </svg>
-                                            <span class="text-[9px] font-bold uppercase tracking-widest text-[#2d6c50]">Verified</span>
+                                            <span class="text-[9px] font-bold uppercase tracking-widest text-[#2D9F4E]">Verified</span>
                                         </div>
                                     @else
                                         <span></span>
@@ -700,7 +700,7 @@ new class extends Component
                                 </p>
                                 <a
                                     href="{{ route('product.show', $product->id) }}"
-                                    class="line-clamp-2 text-[13px] font-bold leading-snug text-gray-900 transition-colors group-hover:text-[#2d6c50]"
+                                    class="line-clamp-2 text-[13px] font-bold leading-snug text-gray-900 transition-colors group-hover:text-[#2D9F4E]"
                                 >
                                     {{ $product->name }}
                                 </a>
@@ -715,9 +715,9 @@ new class extends Component
                                     <div>
                                         @if($product->sale_price)
                                             <p class="text-[11px] text-gray-400 line-through">₱{{ number_format((float) $product->price, 0) }}</p>
-                                            <p class="text-lg font-extrabold leading-none text-[#2d6c50]">₱{{ number_format((float) $product->sale_price, 0) }}</p>
+                                            <p class="text-lg font-extrabold leading-none text-[#2D9F4E]">₱{{ number_format((float) $product->sale_price, 0) }}</p>
                                         @else
-                                            <p class="text-lg font-extrabold leading-none text-[#2d6c50]">₱{{ number_format((float) $product->price, 0) }}</p>
+                                            <p class="text-lg font-extrabold leading-none text-[#2D9F4E]">₱{{ number_format((float) $product->price, 0) }}</p>
                                         @endif
                                     </div>
 
@@ -725,7 +725,7 @@ new class extends Component
                                         <button
                                             type="button"
                                             wire:click="addToCart({{ $product->id }})"
-                                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2d6c50] text-white shadow-sm transition-all hover:bg-[#245840] active:scale-95"
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2D9F4E] text-white shadow-sm transition-all hover:bg-[#1B7A37] active:scale-95"
                                             aria-label="Add to cart"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -777,7 +777,7 @@ new class extends Component
                                     @endif
                                 </a>
                                 @if($conditionLabel)
-                                    <span class="absolute left-1 top-1 rounded px-1.5 py-0.5 text-[8px] font-bold uppercase bg-[#2d6c50] text-white">{{ $conditionLabel }}</span>
+                                    <span class="absolute left-1 top-1 rounded px-1.5 py-0.5 text-[8px] font-bold uppercase bg-[#2D9F4E] text-white">{{ $conditionLabel }}</span>
                                 @endif
                             </div>
 
@@ -785,16 +785,16 @@ new class extends Component
                             <div class="flex min-w-0 flex-1 items-center gap-4">
                                 <div class="min-w-0 flex-1">
                                     <p class="text-[10px] uppercase tracking-widest text-gray-400">{{ $product->seller?->store_name ?? 'Ukay Hub Seller' }}</p>
-                                    <a href="{{ route('product.show', $product->id) }}" class="line-clamp-1 text-sm font-bold text-gray-900 hover:text-[#2d6c50] transition-colors">{{ $product->name }}</a>
+                                    <a href="{{ route('product.show', $product->id) }}" class="line-clamp-1 text-sm font-bold text-gray-900 hover:text-[#2D9F4E] transition-colors">{{ $product->name }}</a>
                                     @if($product->size_variant)
                                         <p class="text-[11px] text-gray-400">Size: {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}</p>
                                     @endif
                                     @if($product->seller?->is_verified ?? false)
                                         <div class="mt-1 flex items-center gap-1">
-                                            <svg class="h-3 w-3 text-[#2d6c50]" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg class="h-3 w-3 text-[#2D9F4E]" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                             </svg>
-                                            <span class="text-[10px] font-semibold text-[#2d6c50]">Verified</span>
+                                            <span class="text-[10px] font-semibold text-[#2D9F4E]">Verified</span>
                                         </div>
                                     @endif
                                 </div>
@@ -803,9 +803,9 @@ new class extends Component
                                     <div class="text-right">
                                         @if($product->sale_price)
                                             <p class="text-xs text-gray-400 line-through">₱{{ number_format((float) $product->price, 0) }}</p>
-                                            <p class="text-base font-extrabold text-[#2d6c50]">₱{{ number_format((float) $product->sale_price, 0) }}</p>
+                                            <p class="text-base font-extrabold text-[#2D9F4E]">₱{{ number_format((float) $product->sale_price, 0) }}</p>
                                         @else
-                                            <p class="text-base font-extrabold text-[#2d6c50]">₱{{ number_format((float) $product->price, 0) }}</p>
+                                            <p class="text-base font-extrabold text-[#2D9F4E]">₱{{ number_format((float) $product->price, 0) }}</p>
                                         @endif
                                     </div>
 
@@ -825,7 +825,7 @@ new class extends Component
                                         <button
                                             type="button"
                                             wire:click="addToCart({{ $product->id }})"
-                                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2d6c50] text-white shadow-sm transition-all hover:bg-[#245840] active:scale-95"
+                                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2D9F4E] text-white shadow-sm transition-all hover:bg-[#1B7A37] active:scale-95"
                                         >
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -857,7 +857,7 @@ new class extends Component
                     </svg>
                     <p class="text-sm font-medium text-gray-500">No products found.</p>
                     <p class="mt-1 text-xs text-gray-400">Try adjusting your filters or search term.</p>
-                    <button type="button" wire:click="resetAllFilters" class="mt-4 rounded-lg bg-[#2d6c50] px-4 py-2 text-sm font-semibold text-white hover:bg-[#245840] transition-colors">
+                    <button type="button" wire:click="resetAllFilters" class="mt-4 rounded-lg bg-[#2D9F4E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1B7A37] transition-colors">
                         Clear Filters
                     </button>
                 </div>
@@ -897,8 +897,8 @@ new class extends Component
                             @endif
                         </div>
                         <div class="space-y-1 p-2.5">
-                            <p class="line-clamp-2 text-xs font-semibold text-gray-900 group-hover:text-[#2d6c50]">{{ $product->name }}</p>
-                            <p class="text-xs font-bold text-[#2d6c50]">
+                            <p class="line-clamp-2 text-xs font-semibold text-gray-900 group-hover:text-[#2D9F4E]">{{ $product->name }}</p>
+                            <p class="text-xs font-bold text-[#2D9F4E]">
                                 ₱{{ number_format((float) ($product->sale_price ?? $product->price), 0) }}
                             </p>
                         </div>

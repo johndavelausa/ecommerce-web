@@ -129,14 +129,14 @@ new class extends Component
                             </div>
                             <div class="mt-1 flex items-baseline gap-2">
                                 @if($product->sale_price)
-                                    <span class="text-base font-semibold text-rose-600">
+                                    <span class="text-base font-semibold text-[#2D9F4E]">
                                         ₱{{ number_format($product->sale_price, 2) }}
                                     </span>
                                     <span class="text-xs text-gray-400 line-through">
                                         ₱{{ number_format($product->price, 2) }}
                                     </span>
                                 @else
-                                    <span class="text-base font-semibold text-gray-900">
+                                    <span class="text-base font-semibold text-[#2D9F4E]">
                                         ₱{{ number_format($product->price, 2) }}
                                     </span>
                                 @endif
@@ -158,7 +158,7 @@ new class extends Component
                             @if($product->stock > 0)
                                 <button type="button"
                                         wire:click="addToCart({{ $product->id }})"
-                                        class="w-full inline-flex justify-center items-center px-3 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                        class="w-full inline-flex justify-center items-center px-3 py-2 bg-[#2D9F4E] border border-[#2D9F4E] rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-[#1B7A37] focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2 transition-colors">
                                     Move to cart
                                 </button>
                             @endif

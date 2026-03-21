@@ -117,7 +117,6 @@ new class extends Component
                 OrderDispute::STATUS_RETURN_RECEIVED,
                 OrderDispute::STATUS_REFUND_PENDING,
                 OrderDispute::STATUS_REFUND_COMPLETED,
-                OrderDispute::STATUS_RESOLVED_APPROVED,
             ])
             ->distinct('order_id')
             ->count('order_id');

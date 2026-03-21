@@ -451,11 +451,11 @@ new class extends Component
                                       . trim($addr->city.' '.$addr->region.' '.$addr->postal_code)."\n"
                                       . ($addr->phone ? 'Phone: '.$addr->phone : '');
                             @endphp
-                            <label class="flex items-start gap-2 text-xs cursor-pointer border rounded-md px-3 py-2 hover:border-indigo-400">
+                            <label class="flex items-start gap-2 text-xs cursor-pointer border rounded-md px-3 py-2 hover:border-[#2D9F4E]">
                                 <input type="radio"
                                        name="selected_address"
                                        value="{{ $full }}"
-                                       class="mt-1 h-3 w-3 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+                                       class="mt-1 h-3 w-3 text-[#2D9F4E] border-gray-300 focus:ring-[#2D9F4E]"
                                        onclick="@this.set('shipping_address', '{{ str_replace(["\r", "\n"], [' ', ' '], addslashes($full)) }}')">
                                 <span>
                                     <span class="font-semibold text-gray-900">
@@ -475,14 +475,14 @@ new class extends Component
             @endif
             <div>
                 <textarea wire:model.defer="shipping_address" rows="4"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
                           placeholder="Full address including barangay, city, and contact details"></textarea>
                 @error('shipping_address') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Order note <span class="text-gray-400">(optional)</span></label>
                 <textarea wire:model.defer="customer_note" rows="2"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-[#F9C74F] focus:ring-[#F9C74F]"
                           placeholder="e.g. Please wrap fragile, Leave at the door"></textarea>
                 <p class="mt-0.5 text-xs text-gray-500">Visible to the seller when processing your order.</p>
                 @error('customer_note') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
@@ -572,7 +572,7 @@ new class extends Component
                 <div class="text-sm text-gray-500">
                     Total
                 </div>
-                <div class="text-xl font-semibold text-gray-900">
+                <div class="text-xl font-semibold text-[#2D9F4E]">
                     ₱{{ number_format($grandTotal, 2) }}
                 </div>
             </div>
@@ -580,7 +580,7 @@ new class extends Component
             <button type="button"
                     wire:click="placeOrder"
                     wire:loading.attr="disabled"
-                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    class="w-full inline-flex justify-center items-center px-4 py-2 bg-[#2D9F4E] border border-[#2D9F4E] rounded-md text-xs font-semibold text-white uppercase tracking-widest shadow-sm hover:bg-[#1B7A37] focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2 transition-colors">
                 Place order (COD)
             </button>
         </div>

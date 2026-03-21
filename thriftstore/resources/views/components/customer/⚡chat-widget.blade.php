@@ -4,6 +4,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 new class extends Component
@@ -93,6 +94,7 @@ new class extends Component
             ->update(['is_read' => true]);
     }
 
+    #[On('open-chat-with-seller')]
     public function startWithSeller(int $sellerId): void
     {
         $customer = $this->customer;

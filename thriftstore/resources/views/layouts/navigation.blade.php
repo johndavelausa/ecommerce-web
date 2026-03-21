@@ -61,32 +61,24 @@
 
     /* ── Design Tokens ───────────────────────────────────────── */
     :root {
-        --c-primary:   #2D6A4F;
-        --c-secondary: #52B788;
-        --c-accent:    #B7E4C7;
-        --c-bg:        #F9FAFB;
+        --c-primary:   #2D9F4E;
+        --c-secondary: #F9C74F;
+        --c-accent:    #FFE17B;
+        --c-bg:        #FAFAFA;
         --c-surface:   #ffffff;
-        --c-text:      #1A1A2E;
-        --c-muted:     #4A5568;
-        --c-border:    #E2E8F0;
-        --c-danger:    #E53E3E;
+        --c-text:      #424242;
+        --c-muted:     #9E9E9E;
+        --c-border:    #F5F5F5;
+        --c-danger:    #EF5350;
     }
 
     /* ── Navbar shell ────────────────────────────────────────── */
     .ts-nav {
-        background-color: var(--c-primary);
-        box-shadow: 0 2px 10px rgba(45,106,79,0.3);
+        background: linear-gradient(to right, #FFFFFF, #F8FDF9);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-bottom: 2px solid #E8F5E9;
         font-family: 'Inter', sans-serif;
         position: relative;
-    }
-    /* subtle bottom accent line */
-    .ts-nav::after {
-        content: '';
-        position: absolute;
-        bottom: 0; left: 0; right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, transparent 0%, var(--c-accent) 30%, var(--c-secondary) 70%, transparent 100%);
-        opacity: 0.5;
     }
 
     /* ── Desktop nav links ───────────────────────────────────── */
@@ -98,7 +90,7 @@
         padding: 0 8px;
         font-size: 0.875rem;
         font-weight: 500;
-        color: rgba(255,255,255,0.78);
+        color: #424242;
         text-decoration: none;
         white-space: nowrap;
         transition: color 0.15s;
@@ -114,9 +106,9 @@
         transform-origin: center;
         transition: transform 0.2s ease;
     }
-    .ts-nav-link:hover            { color: #fff; }
+    .ts-nav-link:hover            { color: #212121; }
     .ts-nav-link:hover::after     { transform: scaleX(1); }
-    .ts-nav-link.ts-active        { color: #fff; font-weight: 600; }
+    .ts-nav-link.ts-active        { color: #212121; font-weight: 600; }
     .ts-nav-link.ts-active::after { transform: scaleX(1); }
 
     /* ── Categories trigger ──────────────────────────────────── */
@@ -128,14 +120,14 @@
         padding: 0 8px;
         font-size: 0.875rem;
         font-weight: 500;
-        color: rgba(255,255,255,0.78);
+        color: #424242;
         background: transparent;
         border: none;
         cursor: pointer;
         transition: color 0.15s;
         font-family: 'Inter', sans-serif;
     }
-    .ts-cat-btn:hover { color: #fff; }
+    .ts-cat-btn:hover { color: #212121; }
 
     /* ── Dropdown panel (white card) ─────────────────────────── */
     .ts-dropdown-panel {
@@ -179,15 +171,15 @@
         justify-content: center;
         width: 38px; height: 38px;
         border-radius: 8px;
-        color: rgba(255,255,255,0.78);
+        color: #424242;
         background: transparent;
         border: none;
         cursor: pointer;
         text-decoration: none;
         transition: background 0.15s, color 0.15s;
     }
-    .ts-icon-btn:hover         { background: rgba(255,255,255,0.13); color: #fff; }
-    .ts-icon-btn.ts-icon-on   { background: rgba(183,228,199,0.18); color: #fff; }
+    .ts-icon-btn:hover         { background: #F5F5F5; color: #212121; }
+    .ts-icon-btn.ts-icon-on   { background: #FFE17B; color: #424242; }
 
     /* ── Badges ──────────────────────────────────────────────── */
     .ts-badge {
@@ -201,11 +193,11 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid var(--c-primary);
+        border: 2px solid #FFFFFF;
         line-height: 1;
     }
     .ts-badge-red   { background: var(--c-danger); color: #fff; }
-    .ts-badge-green { background: var(--c-accent); color: #1A3C2E; }
+    .ts-badge-green { background: var(--c-accent); color: #424242; }
 
     /* ── Notifications panel ─────────────────────────────────── */
     .ts-notif-panel {
@@ -243,7 +235,7 @@
         transition: background 0.12s, color 0.12s;
         font-family: 'Inter', sans-serif;
     }
-    .ts-notif-mark:hover { background: var(--c-secondary); color: #fff; }
+    .ts-notif-mark:hover { background: var(--c-primary); color: #fff; }
     .ts-notif-row {
         padding: 10px 16px;
         border-bottom: 1px solid var(--c-border);
@@ -265,17 +257,17 @@
         border-radius: 8px;
         font-size: 0.875rem;
         font-weight: 500;
-        color: rgba(255,255,255,0.88);
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
+        color: #424242;
+        background: rgba(45,159,78,0.05);
+        border: 1px solid #E8F5E9;
         cursor: pointer;
         transition: background 0.15s, border-color 0.15s, color 0.15s;
         font-family: 'Inter', sans-serif;
     }
     .ts-user-btn:hover {
-        background: rgba(255,255,255,0.18);
-        border-color: rgba(255,255,255,0.35);
-        color: #fff;
+        background: #F5F5F5;
+        border-color: #9E9E9E;
+        color: #212121;
     }
 
     /* ── User dropdown menu ──────────────────────────────────── */
@@ -314,28 +306,28 @@
     .ts-btn-ghost {
         font-size: 0.875rem;
         font-weight: 500;
-        color: rgba(255,255,255,0.85);
+        color: #424242;
         text-decoration: none;
         padding: 7px 14px;
         border-radius: 7px;
-        border: 1px solid rgba(255,255,255,0.25);
+        border: 1px solid #9E9E9E;
         transition: background 0.15s, color 0.15s, border-color 0.15s;
         font-family: 'Inter', sans-serif;
     }
-    .ts-btn-ghost:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.4); }
+    .ts-btn-ghost:hover { background: #F5F5F5; color: #212121; border-color: #424242; }
     .ts-btn-solid {
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--c-primary);
-        background: #fff;
+        color: #212121;
+        background: #F9C74F;
         text-decoration: none;
         padding: 7px 16px;
         border-radius: 7px;
-        border: 1px solid #fff;
+        border: 1px solid #F9C74F;
         transition: background 0.15s, border-color 0.15s;
         font-family: 'Inter', sans-serif;
     }
-    .ts-btn-solid:hover { background: var(--c-accent); border-color: var(--c-accent); }
+    .ts-btn-solid:hover { background: #FFE17B; border-color: #FFE17B; }
 
     /* ── Hamburger ───────────────────────────────────────────── */
     .ts-hamburger {
@@ -344,13 +336,13 @@
         justify-content: center;
         padding: 8px;
         border-radius: 8px;
-        color: rgba(255,255,255,0.85);
+        color: #424242;
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.22);
+        border: 1px solid #F5F5F5;
         cursor: pointer;
         transition: background 0.15s, color 0.15s;
     }
-    .ts-hamburger:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .ts-hamburger:hover { background: #F5F5F5; color: #212121; }
 
     /* ── Mobile menu ─────────────────────────────────────────── */
     .ts-mobile-wrap {
@@ -378,7 +370,7 @@
         font-family: 'Inter', sans-serif;
     }
     .ts-mob-link:hover         { background: var(--c-bg); color: var(--c-primary); border-left-color: var(--c-secondary); }
-    .ts-mob-link.ts-active     { background: #F0FFF4; color: var(--c-primary); border-left-color: var(--c-primary); font-weight: 600; }
+    .ts-mob-link.ts-active     { background: #FFF9E3; color: #212121; border-left-color: #F9C74F; font-weight: 600; }
     .ts-mob-link.ts-mob-danger { color: var(--c-danger); }
     .ts-mob-link.ts-mob-danger:hover { background: #FFF5F5; border-left-color: var(--c-danger); }
     .ts-mob-user {
@@ -391,7 +383,7 @@
     .ts-mob-user-email { font-size: 12px; color: var(--c-muted); margin-top: 2px; }
 
     /* misc */
-    .ts-vdivider { width:1px; height:22px; background:rgba(255,255,255,0.18); margin:0 4px; }
+    .ts-vdivider { width:1px; height:22px; background:#F5F5F5; margin:0 4px; }
     .ts-logo { display:flex; align-items:center; transition: opacity 0.15s; }
     .ts-logo:hover { opacity: 0.85; }
 </style>
@@ -408,7 +400,7 @@
             <div class="flex items-center gap-6">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route($logoRoute) }}" class="ts-logo">
-                        <x-application-logo class="block h-9 w-auto" style="filter:brightness(0) invert(1);" />
+                        <x-application-logo class="block h-9 w-auto" />
                     </a>
                 </div>
 
@@ -503,7 +495,8 @@
                 }
             }" class="w-full relative">
                 <input type="text"
-                    class="block w-full rounded-full border border-gray-300 px-5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"
+                    class="block w-full rounded-full px-5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F9C74F]"
+                    style="background:rgba(45,159,78,0.06); border:0.5px solid rgba(0,0,0,0.08); height:38px; min-height:38px;"
                     placeholder="Search products, sellers..."
                     x-model="query"
                     @input.debounce.250ms="fetchSuggestions()"
@@ -513,7 +506,6 @@
                     @keydown.enter.prevent="select(highlight >= 0 ? highlight : 0)"
                     @keydown.esc="show = false"
                     autocomplete="off"
-                    style="height:38px; min-height:38px;"
                 >
                 <!-- Suggestions Dropdown -->
                 <div x-show="show" x-cloak 
@@ -528,7 +520,7 @@
                     <template x-for="(item, idx) in suggestions" :key="item.url">
                         <div @mousedown.prevent="select(idx)"
                              @mouseenter="highlight = idx"
-                             :class="'flex items-center gap-2 px-4 py-2 cursor-pointer transition-all text-sm ' + (highlight === idx ? 'bg-green-50' : 'hover:bg-gray-50')">
+                             :class="'flex items-center gap-2 px-4 py-2 cursor-pointer transition-all text-sm ' + (highlight === idx ? 'bg-[#FFF9E3]' : 'hover:bg-gray-50')">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-full overflow-hidden flex-shrink-0"
                                   :style="item.type === 'seller' && !item.logo_path ? 'background:#B7E4C7;' : 'background:#f3f4f6;'">
                                 {{-- Product: show image or green shopping-bag icon --}}
@@ -548,12 +540,12 @@
                                          x-on:error="$el.style.display='none'">
                                 </template>
                                 <template x-if="item.type === 'seller' && !item.logo_path">
-                                    <span style="font-size:10px;font-weight:700;color:#2D6A4F;line-height:1;"
+                                    <span style="font-size:10px;font-weight:700;color:#2D9F4E;line-height:1;"
                                           x-text="item.name.charAt(0).toUpperCase()"></span>
                                 </template>
                             </span>
                         <span class="font-semibold text-gray-900" x-text="item.prefix"></span><span class="text-gray-400" x-text="item.suffix"></span>
-                        <span class="ml-auto text-xs px-2 py-0.5 rounded-full" :class="item.type === 'product' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'" x-text="item.type === 'product' ? 'Product' : 'Seller'"></span>
+                        <span class="ml-auto text-xs px-2 py-0.5 rounded-full" :class="item.type === 'product' ? 'bg-[#E8F5E9] text-[#2D9F4E]' : 'bg-blue-100 text-blue-700'" x-text="item.type === 'product' ? 'Product' : 'Seller'"></span>
                     </div>
                     </template>
                 </div>
@@ -785,7 +777,7 @@
                 <a href="{{ route('customer.cart') }}"     class="ts-mob-link {{ request()->routeIs('customer.cart')     ? 'ts-active' : '' }}">
                     {{ __('Cart') }}
                     <span x-cloak x-show="cartCount > 0"
-                          style="margin-left:8px;font-size:10px;font-weight:700;background:#B7E4C7;color:#1A3C2E;padding:1px 7px;border-radius:9999px;"
+                          style="margin-left:8px;font-size:10px;font-weight:700;background:#FFE17B;color:#424242;padding:1px 7px;border-radius:9999px;"
                           x-text="cartCount"></span>
                 </a>
             @endif
@@ -810,8 +802,8 @@
         @else
             @if(!request()->is('admin/*') && !request()->is('seller/*') && !$isSellerContext)
                 <div style="padding:12px 20px;border-top:1px solid #E2E8F0;display:flex;gap:10px;">
-                    <a href="{{ route('login') }}"    class="ts-btn-ghost" style="color:#2D6A4F;border-color:#2D6A4F;">{{ __('Log in') }}</a>
-                    <a href="{{ route('register') }}" class="ts-btn-solid" style="background:#2D6A4F;color:#fff;border-color:#2D6A4F;">{{ __('Register') }}</a>
+                    <a href="{{ route('login') }}"    class="ts-btn-ghost" style="color:#2D9F4E;border-color:#9E9E9E;">{{ __('Log in') }}</a>
+                    <a href="{{ route('register') }}" class="ts-btn-solid" style="background:#F9C74F;color:#212121;border-color:#F9C74F;">{{ __('Register') }}</a>
                 </div>
             @endif
         @endif

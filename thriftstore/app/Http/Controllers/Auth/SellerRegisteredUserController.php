@@ -111,7 +111,7 @@ class SellerRegisteredUserController extends Controller
         Payment::create([
             'seller_id' => $seller->id,
             'type' => 'registration',
-            'amount' => 200.00,
+            'amount' => 700.00,
             'gcash_number' => $request->gcash_number,
             'reference_number' => $request->reference_number,
             'screenshot_path' => $screenshotPath,

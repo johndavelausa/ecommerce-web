@@ -34,7 +34,7 @@
                     style="color: #2d6a4f;">
                     Browse Items
                 </a>
-                <a href="#"
+                <a href="{{ route('seller.login') }}"
                     class="px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 font-bold rounded-2xl hover:bg-white/20 transition-all text-lg"
                     style="color: #2d6a4f;">
                     Become a Seller

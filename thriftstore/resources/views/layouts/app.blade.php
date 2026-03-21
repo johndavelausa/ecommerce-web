@@ -33,6 +33,15 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
         @stack('styles')
+        <style>
+            .user-bg {
+                background-image: url('/background_img/userbg1.jpeg');
+                background-size: cover;
+                background-position: center top;
+                background-attachment: fixed;
+                background-repeat: no-repeat;
+            }
+        </style>
 
         @if($showChatWidget)
         <style>
@@ -40,13 +49,13 @@
             .fcw-fab {
                 position: fixed; bottom: 24px; right: 24px; z-index: 9999;
                 width: 50px; height: 50px; border-radius: 50%;
-                background: #2D6A4F; border: none; cursor: pointer;
+                background: #2D9F4E; border: none; cursor: pointer;
                 display: flex; align-items: center; justify-content: center;
-                box-shadow: 0 4px 18px rgba(45,106,79,0.5);
+                box-shadow: 0 4px 18px rgba(45,159,78,0.45);
                 transition: background .18s, transform .18s, box-shadow .18s;
                 color: #fff; font-family: 'Inter', sans-serif;
             }
-            .fcw-fab:hover { background: #1B4332; transform: scale(1.07); box-shadow: 0 6px 24px rgba(45,106,79,0.6); }
+            .fcw-fab:hover { background: #1B7A37; transform: scale(1.07); box-shadow: 0 6px 24px rgba(45,159,78,0.55); }
             .fcw-fab-badge {
                 position: absolute; top: -3px; right: -3px;
                 min-width: 17px; height: 17px; padding: 0 4px;
@@ -68,7 +77,7 @@
             @@media (max-width: 640px) { .fcw-panel { width: calc(100vw - 24px); height: 380px; right: 12px; } }
             /* ── Header ── */
             .fcw-header {
-                background: linear-gradient(135deg, #2D6A4F 0%, #1B4332 100%);
+                background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
                 padding: 11px 14px; display: flex; align-items: center; justify-content: space-between;
                 flex-shrink: 0; border-radius: 14px 14px 0 0;
             }
@@ -104,7 +113,7 @@
                 font-family: 'Inter', sans-serif; transition: border-color .13s, box-shadow .13s;
                 box-sizing: border-box;
             }
-            .fcw-search:focus { border-color: #52B788; box-shadow: 0 0 0 3px rgba(82,183,136,.12); }
+            .fcw-search:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,.12); }
             .fcw-search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: #aab; pointer-events: none; }
             .fcw-conv-list { flex: 1; overflow-y: auto; }
             .fcw-conv-list::-webkit-scrollbar { width: 4px; }
@@ -117,20 +126,20 @@
                 transition: background .12s, border-color .12s;
                 border-bottom: 1px solid #f1f3f5;
             }
-            .fcw-conv-item:hover { background: #f0fdf4; border-left-color: #74c69d; }
-            .fcw-conv-item.active { background: #d1fae5; border-left-color: #2D6A4F; }
+            .fcw-conv-item:hover { background: #FFF9E3; border-left-color: #FFE17B; }
+            .fcw-conv-item.active { background: #E8F5E9; border-left-color: #2D9F4E; }
             .fcw-conv-avatar {
                 width: 34px; height: 34px; border-radius: 50%;
-                background: linear-gradient(135deg, #b7e4c7, #74c69d);
+                background: linear-gradient(135deg, #FFE17B, #F9C74F);
                 display: flex; align-items: center; justify-content: center;
-                flex-shrink: 0; color: #1B4332;
+                flex-shrink: 0; color: #424242;
             }
             .fcw-conv-info { flex: 1; min-width: 0; }
             .fcw-conv-row { display: flex; justify-content: space-between; align-items: baseline; gap: 4px; }
             .fcw-conv-name { font-size: .8rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .fcw-conv-time { font-size: .65rem; color: #9ca3af; flex-shrink: 0; }
             .fcw-conv-preview { font-size: .7rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-            .fcw-conv-dot { width: 7px; height: 7px; border-radius: 50%; background: #2D6A4F; flex-shrink: 0; }
+            .fcw-conv-dot { width: 7px; height: 7px; border-radius: 50%; background: #2D9F4E; flex-shrink: 0; }
             /* ── New chat section ── */
             .fcw-new-section { border-top: 1px solid #eef0f3; background: #fff; flex-shrink: 0; }
             .fcw-new-toggle {
@@ -146,16 +155,16 @@
             .fcw-seller-btn {
                 display: flex; align-items: center; gap: 8px;
                 padding: 7px 12px; width: 100%;
-                font-size: .78rem; font-weight: 500; color: #2D6A4F;
+                font-size: .78rem; font-weight: 500; color: #2D9F4E;
                 background: transparent; border: none;
                 cursor: pointer; text-align: left; font-family: 'Inter', sans-serif;
                 transition: background .12s;
             }
-            .fcw-seller-btn:hover { background: #f0fdf4; }
+            .fcw-seller-btn:hover { background: #FFF9E3; }
             .fcw-seller-icon {
                 width: 26px; height: 26px; border-radius: 50%;
-                background: #dcfce7; display: flex; align-items: center; justify-content: center;
-                flex-shrink: 0; color: #2D6A4F;
+                background: #E8F5E9; display: flex; align-items: center; justify-content: center;
+                flex-shrink: 0; color: #2D9F4E;
             }
             /* ── Chat area ── */
             .fcw-chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
@@ -168,9 +177,9 @@
             @@media (max-width: 480px) { .fcw-back-btn { display: flex; } }
             .fcw-chat-avatar {
                 width: 30px; height: 30px; border-radius: 50%;
-                background: linear-gradient(135deg, #b7e4c7, #74c69d);
+                background: linear-gradient(135deg, #FFE17B, #F9C74F);
                 display: flex; align-items: center; justify-content: center;
-                flex-shrink: 0; color: #1B4332;
+                flex-shrink: 0; color: #424242;
             }
             .fcw-chat-name { font-size: .875rem; font-weight: 600; color: #111827; line-height: 1.2; }
             .fcw-chat-sub  { font-size: .68rem; color: #9ca3af; }
@@ -197,7 +206,7 @@
                 font-size: .8125rem; line-height: 1.5; word-break: break-word;
             }
             .fcw-bubble-row.me .fcw-bubble {
-                background: #2D6A4F; color: #fff;
+                background: #2D9F4E; color: #fff;
                 border-bottom-right-radius: 4px;
             }
             .fcw-bubble-row.them .fcw-bubble {
@@ -217,8 +226,8 @@
             }
             .fcw-placeholder-icon {
                 width: 48px; height: 48px; border-radius: 50%;
-                background: #dcfce7; display: flex; align-items: center; justify-content: center;
-                color: #2D6A4F;
+                background: #E8F5E9; display: flex; align-items: center; justify-content: center;
+                color: #2D9F4E;
             }
             .fcw-placeholder-text { font-size: .8rem; color: #9ca3af; text-align: center; margin: 0; line-height: 1.5; }
             /* ── Input ── */
@@ -231,15 +240,15 @@
                 background: #f3f4f6; border: 1px solid transparent; border-radius: 20px;
                 outline: none; font-family: 'Inter', sans-serif; transition: border-color .13s, background .13s;
             }
-            .fcw-input:focus { border-color: #74c69d; background: #fff; }
+            .fcw-input:focus { border-color: #F9C74F; background: #fff; }
             .fcw-input::placeholder { color: #9ca3af; }
             .fcw-send-btn {
                 width: 33px; height: 33px; border-radius: 50%;
-                background: #2D6A4F; border: none; cursor: pointer;
+                background: #2D9F4E; border: none; cursor: pointer;
                 display: flex; align-items: center; justify-content: center;
                 color: #fff; flex-shrink: 0; transition: background .13s, transform .13s;
             }
-            .fcw-send-btn:hover    { background: #1B4332; transform: scale(1.05); }
+            .fcw-send-btn:hover    { background: #1B7A37; transform: scale(1.05); }
             .fcw-send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
             /* ── Empty ── */
             .fcw-empty-state { padding: 20px 12px; font-size: .75rem; color: #9ca3af; text-align: center; line-height: 1.6; }

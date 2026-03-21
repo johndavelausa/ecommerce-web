@@ -21,9 +21,6 @@
         <a href="{{ route('admin.reports') }}" class="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('admin.reports*') ? 'bg-indigo-600 text-white font-medium' : 'text-gray-700 hover:bg-gray-200' }}">
             <span class="text-sm">Revenue Reports</span>
         </a>
-        <a href="{{ route('admin.disputes') }}" class="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('admin.disputes*') ? 'bg-indigo-600 text-white font-medium' : 'text-gray-700 hover:bg-gray-200' }}">
-            <span class="text-sm">Dispute Handling</span>
-        </a>
         <a href="{{ route('admin.payments') }}" class="flex items-center space-x-2 px-3 py-2 rounded-md transition-colors {{ request()->routeIs('admin.payments*') ? 'bg-indigo-600 text-white font-medium' : 'text-gray-700 hover:bg-gray-200' }}">
             <span class="text-sm">Platform Payments</span>
         </a>

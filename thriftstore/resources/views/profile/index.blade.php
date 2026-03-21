@@ -84,61 +84,61 @@
                 <main class="flex-1 min-w-0">
                     <div class="animate-fade-in-up" style="animation-delay: 0.2s">
                         {{-- Personal Section --}}
-                        <div x-show="section === 'personal'" 
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-cloak class="space-y-6">
-                            <div class="profile-glass-card p-6 md:p-8">
-                                <div class="mb-6">
-                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Personal Information</h3>
-                                    <p class="text-sm text-gray-500 mt-2">Update your primary identity settings.</p>
+                        <template x-if="section === 'personal'">
+                            <div x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-4"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="space-y-6">
+                                <div class="profile-glass-card p-6 md:p-8">
+                                    <div class="mb-6">
+                                        <h3 class="text-xl font-bold text-gray-900 leading-none">Personal Information</h3>
+                                        <p class="text-sm text-gray-500 mt-2">Update your primary identity settings.</p>
+                                    </div>
+                                    <div class="profile-content-form">
+                                        @include('profile.partials.update-profile-information-form')
+                                    </div>
                                 </div>
-                                <div class="profile-content-form">
-                                    @include('profile.partials.update-profile-information-form')
+                                <div class="profile-glass-card p-6 md:p-8">
+                                    <div class="profile-content-form">
+                                        @include('profile.partials.addresses')
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div class="profile-glass-card p-6 md:p-8">
-                                <div class="profile-content-form">
-                                    @include('profile.partials.addresses')
-                                </div>
-                            </div>
-                        </div>
+                        </template>
 
                         {{-- Security Section --}}
-                        <div x-show="section === 'security'" 
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-cloak>
-                            <div class="profile-glass-card p-6 md:p-8">
-                                <div class="mb-6">
-                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Security Details</h3>
-                                    <p class="text-sm text-gray-500 mt-2">Protect your account with a strong password.</p>
-                                </div>
-                                <div class="profile-content-form">
-                                    @include('profile.partials.update-password-form')
+                        <template x-if="section === 'security'">
+                            <div x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-4"
+                                 x-transition:enter-end="opacity-100 translate-y-0">
+                                <div class="profile-glass-card p-6 md:p-8">
+                                    <div class="mb-6">
+                                        <h3 class="text-xl font-bold text-gray-900 leading-none">Security Details</h3>
+                                        <p class="text-sm text-gray-500 mt-2">Protect your account with a strong password.</p>
+                                    </div>
+                                    <div class="profile-content-form">
+                                        @include('profile.partials.update-password-form')
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </template>
 
                         {{-- Deletion Section --}}
-                        <div x-show="section === 'deletion'" 
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-cloak>
-                            <div class="profile-glass-card p-6 md:p-8 border-red-50">
-                                <div class="mb-6">
-                                    <h3 class="text-xl font-bold text-red-600 leading-none">Termination</h3>
-                                    <p class="text-sm text-gray-500 mt-2">Remove your account data permanently.</p>
-                                </div>
-                                <div class="profile-content-form pt-4">
-                                    @include('profile.partials.delete-user-form')
+                        <template x-if="section === 'deletion'">
+                            <div x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-4"
+                                 x-transition:enter-end="opacity-100 translate-y-0">
+                                <div class="profile-glass-card p-6 md:p-8 border-red-50">
+                                    <div class="mb-6">
+                                        <h3 class="text-xl font-bold text-red-600 leading-none">Termination</h3>
+                                        <p class="text-sm text-gray-500 mt-2">Remove your account data permanently.</p>
+                                    </div>
+                                    <div class="profile-content-form pt-4">
+                                        @include('profile.partials.delete-user-form')
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </template>
                     </div>
                 </main>
             </div>

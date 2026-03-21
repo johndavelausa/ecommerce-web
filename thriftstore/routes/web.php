@@ -24,8 +24,6 @@ Route::get('/product/{id}', [App\Http\Controllers\ProductController::class, 'sho
 Route::post('/cart/add/{id}', [App\Http\Controllers\CartController::class, 'add'])->middleware(['auth:web', 'role:customer'])->name('cart.add');
 Route::post('/product/{id}/report', [App\Http\Controllers\ProductReportController::class, 'store'])->middleware(['auth:web', 'role:customer'])->name('product.report.store');
 Route::post('/product/{id}/review', [App\Http\Controllers\ProductReviewController::class, 'store'])->middleware(['auth:web', 'role:customer'])->name('product.review.store');
-Route::patch('/review/{id}', [App\Http\Controllers\ProductReviewController::class, 'update'])->middleware(['auth:web', 'role:customer'])->name('product.review.update');
-Route::delete('/review/{id}', [App\Http\Controllers\ProductReviewController::class, 'destroy'])->middleware(['auth:web', 'role:customer'])->name('product.review.destroy');
 
 // B2 v1.4 — Public store profile (verified badge, business hours)
 Route::get('/store/{store_name}', [App\Http\Controllers\StoreController::class, 'show'])->name('store.show');
@@ -63,7 +61,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/reports/export', [ReportsController::class, 'exportAll'])->name('admin.reports.export-all');
     Route::get('/reports/payments/export', [ReportsController::class, 'exportPayments'])->name('admin.reports.payments.export');
     Route::view('/orders', 'admin.orders')->name('admin.orders');
-    Route::view('/disputes', 'admin.disputes')->name('admin.disputes');
     Route::view('/product-reports', 'admin.product-reports')->name('admin.product-reports');
     Route::view('/deletion-requests', 'admin.deletion-requests')->name('admin.deletion-requests');
     Route::view('/payments', 'admin.payments')->name('admin.payments');
@@ -154,8 +151,8 @@ Route::middleware(['auth:web', 'role:customer'])->group(function () {
     })->name('customer.notifications.read-all');
 });
 
-// Profile (any authenticated user via web guard; customers use /login)
-Route::middleware('auth:web')->group(function () {
+// Profile (any authenticated user via web or seller guard)
+Route::middleware('auth:web,seller')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/deletion-request', [ProfileController::class, 'requestDeletion'])->name('profile.deletion-request');

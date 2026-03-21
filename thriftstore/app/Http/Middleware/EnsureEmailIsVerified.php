@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Redirect unverified users to the verification notice (B1 - v1.3).
- * Works with both web (customer) and seller guards.
+ * Redirect unverified users to the verification notice.
+ * ONLY enforces email verification for sellers, NOT for customers.
  */
 class EnsureEmailIsVerified
 {
@@ -25,6 +25,12 @@ class EnsureEmailIsVerified
             return redirect()->route('login');
         }
 
+        // Skip email verification for customers (web guard)
+        if (Auth::guard('web')->check()) {
+            return $next($request);
+        }
+
+        // Only enforce email verification for sellers
         if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Your email address is not verified.'], 403);

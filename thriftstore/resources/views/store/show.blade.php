@@ -56,7 +56,7 @@
                         @if($memberSince)
                             <span>Member since {{ $memberSince->format('F Y') }}</span>
                         @endif
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $seller->is_open ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }}">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $seller->is_open ? 'bg-[#E8F5E9] text-[#1B7A37]' : 'bg-gray-100 text-gray-600' }}">
                             {{ $seller->is_open ? 'Open' : 'Closed' }}
                         </span>
                     </div>
@@ -71,7 +71,7 @@
                                 <div x-show="expanded" x-transition x-cloak>
                                     <p class="text-sm text-gray-600 whitespace-pre-wrap">{{ $seller->store_description }}</p>
                                 </div>
-                                <button type="button" @click="expanded = ! expanded" class="mt-1 text-sm text-indigo-600 hover:underline">
+                                <button type="button" @click="expanded = ! expanded" class="mt-1 text-sm text-[#2D9F4E] hover:underline">
                                     <span x-text="expanded ? 'Show less' : 'Show more'">Show more</span>
                                 </button>
                             @endif
@@ -83,13 +83,13 @@
                         @auth
                             @if(auth()->user()->hasRole('customer'))
                                 <a href="{{ route('customer.messages', ['seller' => $seller->id]) }}"
-                                   class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">
+                                   class="inline-flex items-center px-4 py-2 bg-[#2D9F4E] text-white rounded-md text-sm font-medium hover:bg-[#1B7A37] transition-colors">
                                     Contact Seller
                                 </a>
                             @endif
                         @else
                             <a href="{{ route('login') }}?intended={{ urlencode(route('customer.messages', ['seller' => $seller->id])) }}"
-                               class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">
+                               class="inline-flex items-center px-4 py-2 bg-[#2D9F4E] text-white rounded-md text-sm font-medium hover:bg-[#1B7A37] transition-colors">
                                 Log in to contact seller
                             </a>
                         @endauth

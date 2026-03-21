@@ -183,14 +183,14 @@
 }
 
 .customer-auth-tab:hover {
-	color: #2f6d52;
-	background: #eef6f1;
+	color: #2D9F4E;
+	background: #E8F5E9;
 }
 
 .customer-auth-tab.is-active {
-	color: #2b6a4f;
+	color: #212121;
 	background: #ffffff;
-	border-bottom-color: #2d6c50;
+	border-bottom-color: #F9C74F;
 }
 
 .customer-auth-title {
@@ -252,8 +252,8 @@
 .customer-auth-input:focus,
 .customer-auth-textarea:focus {
 	outline: none;
-	border-color: #2d6c50;
-	box-shadow: 0 0 0 1px #2d6c50;
+	border-color: #F9C74F;
+	box-shadow: 0 0 0 1px #F9C74F;
 	background: #ffffff;
 }
 
@@ -281,32 +281,32 @@
 .customer-auth-remember input {
 	border-radius: 0.35rem;
 	border-color: #b7cbd8;
-	color: #2d6c50;
+	color: #2D9F4E;
 	box-shadow: none;
 }
 
 .customer-auth-remember input:focus {
 	outline: none;
-	border-color: #2d6c50;
-	box-shadow: 0 0 0 2px rgba(45, 108, 80, 0.18);
+	border-color: #2D9F4E;
+	box-shadow: 0 0 0 2px rgba(45, 159, 78, 0.18);
 }
 
 .customer-auth-submit {
 	margin-top: 0.25rem;
 	width: 100%;
-	border: 1px solid #2d6c50;
+	border: 1px solid #2D9F4E;
 	border-radius: 0.74rem;
-	background: linear-gradient(180deg, #2f7758 0%, #28684d 100%);
+	background: linear-gradient(180deg, #2D9F4E 0%, #1B7A37 100%);
 	color: #ffffff;
 	font-size: 0.94rem;
 	font-weight: 800;
 	padding: 0.8rem 1rem;
-	box-shadow: 0 9px 20px rgba(45, 108, 80, 0.2);
+	box-shadow: 0 9px 20px rgba(45, 159, 78, 0.2);
 	transition: transform 0.12s ease, background 0.2s ease;
 }
 
 .customer-auth-submit:hover {
-	background: #24553f;
+	background: #1B7A37;
 	transform: translateY(-1px);
 }
 
@@ -378,7 +378,7 @@
 .customer-auth-bottom-link a {
 	margin-left: 0.25rem;
 	font-weight: 800;
-	color: #2d6c50;
+	color: #2D9F4E;
 	text-decoration: none;
 }
 
@@ -1469,14 +1469,14 @@
 
 .profile-sidebar-item.is-active {
     background: #ffffff;
-    color: #2d6c50;
-    border-color: rgba(45, 108, 80, 0.1);
-    box-shadow: 0 4px 12px rgba(45, 108, 80, 0.08);
+    color: #2D9F4E;
+    border-color: rgba(45, 159, 78, 0.1);
+    box-shadow: 0 4px 12px rgba(45, 159, 78, 0.08);
 }
 
 .profile-sidebar-item.is-active svg {
-    color: #2d6c50;
-    filter: drop-shadow(0 0 8px rgba(45, 108, 80, 0.15));
+    color: #2D9F4E;
+    filter: drop-shadow(0 0 8px rgba(45, 159, 78, 0.15));
 }
 
 .profile-sidebar-item svg {
@@ -1511,8 +1511,8 @@
 
 .profile-content-form input:focus {
     background: #ffffff !important;
-    border-color: #2d6c50 !important;
-    box-shadow: 0 0 0 4px rgba(45, 108, 80, 0.1) !important;
+    border-color: #F9C74F !important;
+    box-shadow: 0 0 0 4px rgba(249, 199, 79, 0.15) !important;
 }
 
 .profile-stats-grid {
@@ -1563,21 +1563,21 @@
     align-items: center;
     justify-content: center;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(180deg, #2d6c50 0%, #245840 100%);
+    background: linear-gradient(180deg, #2D9F4E 0%, #1B7A37 100%);
     color: #ffffff;
     font-size: 0.875rem;
     font-weight: 700;
     border-radius: 0.5rem;
-    border: 1px solid #2d6c50;
-    box-shadow: 0 4px 12px rgba(45, 108, 80, 0.2);
+    border: 1px solid #2D9F4E;
+    box-shadow: 0 4px 12px rgba(45, 159, 78, 0.2);
     transition: all 0.2s ease;
     cursor: pointer;
 }
 
 .profile-primary-button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(45, 108, 80, 0.25);
-    background: #245840;
+    box-shadow: 0 6px 16px rgba(45, 159, 78, 0.25);
+    background: #1B7A37;
 }
 
 .profile-secondary-button {
@@ -1602,4 +1602,13 @@
 
 .animate-fade-in-up {
     animation: fadeInUp 0.4s ease forwards;
+}
+
+/* ── Customer page background ─────────────────────────── */
+.user-bg {
+    background-image: url('/background_img/sellerLogin_background.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
 }
