@@ -29,6 +29,7 @@ class SearchController extends Controller
 
         // Sellers: store name
         $sellers = Seller::query()
+            ->with('user')
             ->where('status', 'approved')
             ->where('is_open', true)
             ->where('store_name', 'like', "%$q%")
@@ -48,7 +49,7 @@ class SearchController extends Controller
                 'prefix' => $prefix,
                 'suffix' => $suffix,
                 'url' => route('product.show', $product->id),
-                'image_path' => $product->image_path ? asset('storage/' . $product->image_path) : null,
+                'image_path' => !empty($product->image_path) ? asset('storage/' . $product->image_path) : null,
             ];
         }
         // Seller suggestions
@@ -63,7 +64,9 @@ class SearchController extends Controller
                 'prefix' => $prefix,
                 'suffix' => $suffix,
                 'url' => route('store.show', $seller->store_name),
-                'logo_path' => $seller->logo_path ? asset('storage/' . $seller->logo_path) : null,
+                'logo_path' => !empty($seller->logo_path)
+                    ? asset('storage/' . $seller->logo_path)
+                    : (!empty($seller->user?->avatar) ? asset('storage/' . $seller->user->avatar) : null),
             ];
         }
         return response()->json($results);

@@ -18,7 +18,7 @@ new class extends Component
     use WithFileUploads;
     use WithPagination;
 
-    public string $status = ''; // '', awaiting_payment, paid, to_pack, ready_to_ship, processing, shipped, out_for_delivery, delivered, completed, cancelled
+    public string $status = '';
 
     protected $queryString = [
         'status' => ['except' => ''],
@@ -29,10 +29,11 @@ new class extends Component
     public string $issueBody = '';
     public $issueEvidence = null;
 
-    // Store rating modal state
     public ?int $rateOrderId = null;
     public int $storeRating = 5;
     public string $storeReview = '';
+
+    public ?int $trackingOrderId = null;
 
     public function updatingStatus(): void
     {
@@ -75,8 +76,8 @@ new class extends Component
         }
 
         $this->validate([
-            'issueReason' => ['required', 'string', 'in:item_not_as_described,damaged_item,wrong_item,missing_items,other'],
-            'issueBody' => ['required', 'string', 'max:2000'],
+            'issueReason'   => ['required', 'string', 'in:item_not_as_described,damaged_item,wrong_item,missing_items,other'],
+            'issueBody'     => ['required', 'string', 'max:2000'],
             'issueEvidence' => ['nullable', 'file', 'max:4096', 'mimes:jpg,jpeg,png,webp,pdf'],
         ]);
 
@@ -118,13 +119,13 @@ new class extends Component
         }
 
         $dispute = OrderDispute::create([
-            'order_id' => $order->id,
-            'customer_id' => $customer->id,
-            'seller_id' => $order->seller_id,
-            'reason_code' => $this->issueReason,
-            'description' => trim($this->issueBody),
+            'order_id'      => $order->id,
+            'customer_id'   => $customer->id,
+            'seller_id'     => $order->seller_id,
+            'reason_code'   => $this->issueReason,
+            'description'   => trim($this->issueBody),
             'evidence_path' => $evidencePath,
-            'status' => OrderDispute::STATUS_OPEN,
+            'status'        => OrderDispute::STATUS_OPEN,
         ]);
 
         $sellerUser = $order->seller->user;
@@ -286,8 +287,18 @@ new class extends Component
             ->where('customer_id', $customer->id)
             ->orderByDesc('created_at');
 
+        $statusGroups = [
+            'to_ship'    => ['paid', 'to_pack', 'ready_to_ship', 'processing'],
+            'in_transit' => ['shipped', 'out_for_delivery'],
+            'completed'  => ['delivered', 'completed'],
+        ];
+
         if ($this->status !== '') {
-            $q->where('status', $this->status);
+            if (isset($statusGroups[$this->status])) {
+                $q->whereIn('status', $statusGroups[$this->status]);
+            } else {
+                $q->where('status', $this->status);
+            }
         }
 
         return $q->paginate(10);
@@ -346,12 +357,12 @@ new class extends Component
         }
 
         $dispute = OrderDispute::create([
-            'order_id' => $order->id,
+            'order_id'    => $order->id,
             'customer_id' => $customer->id,
-            'seller_id' => $order->seller_id,
+            'seller_id'   => $order->seller_id,
             'reason_code' => 'parcel_not_received',
             'description' => 'Customer reported that the parcel was not received while the order is marked out for delivery.',
-            'status' => OrderDispute::STATUS_OPEN,
+            'status'      => OrderDispute::STATUS_OPEN,
         ]);
 
         $sellerUser = $order->seller->user;
@@ -383,7 +394,6 @@ new class extends Component
 
         $conv->update(['updated_at' => now()]);
 
-        // Basic risk flag for repeated parcel-not-received disputes.
         $recentNotReceivedCount = OrderDispute::query()
             ->where('customer_id', $customer->id)
             ->where('reason_code', 'parcel_not_received')
@@ -392,9 +402,9 @@ new class extends Component
 
         if ($recentNotReceivedCount >= 3) {
             $customer->update([
-                'is_suspicious' => true,
-                'suspicious_reason' => 'Repeated parcel-not-received claims in 30 days',
-                'suspicious_flagged_at' => now(),
+                'is_suspicious'          => true,
+                'suspicious_reason'      => 'Repeated parcel-not-received claims in 30 days',
+                'suspicious_flagged_at'  => now(),
             ]);
         }
     }
@@ -403,31 +413,31 @@ new class extends Component
     {
         if (! $dispute) {
             return [
-                'label' => 'No dispute',
-                'step' => 0,
+                'label'      => 'No dispute',
+                'step'       => 0,
                 'isResolved' => false,
             ];
         }
 
         $map = [
-            OrderDispute::STATUS_OPEN => ['Dispute submitted', 1, false],
-            OrderDispute::STATUS_SELLER_REVIEW => ['Seller reviewing', 2, false],
-            OrderDispute::STATUS_UNDER_ADMIN_REVIEW => ['Admin reviewing', 3, false],
-            OrderDispute::STATUS_RETURN_REQUESTED => ['Return requested', 3, false],
-            OrderDispute::STATUS_RETURN_IN_TRANSIT => ['Return in transit', 3, false],
-            OrderDispute::STATUS_RETURN_RECEIVED => ['Return received', 3, false],
-            OrderDispute::STATUS_REFUND_PENDING => ['Refund pending', 4, false],
-            OrderDispute::STATUS_REFUND_COMPLETED => ['Refund completed', 4, true],
-            OrderDispute::STATUS_RESOLVED_APPROVED => ['Resolved (approved)', 4, true],
-            OrderDispute::STATUS_RESOLVED_REJECTED => ['Resolved (rejected)', 4, true],
-            OrderDispute::STATUS_CLOSED => ['Resolved (closed)', 4, true],
+            OrderDispute::STATUS_OPEN                => ['Dispute submitted', 1, false],
+            OrderDispute::STATUS_SELLER_REVIEW       => ['Seller reviewing', 2, false],
+            OrderDispute::STATUS_UNDER_ADMIN_REVIEW  => ['Admin reviewing', 3, false],
+            OrderDispute::STATUS_RETURN_REQUESTED    => ['Return requested', 3, false],
+            OrderDispute::STATUS_RETURN_IN_TRANSIT   => ['Return in transit', 3, false],
+            OrderDispute::STATUS_RETURN_RECEIVED     => ['Return received', 3, false],
+            OrderDispute::STATUS_REFUND_PENDING      => ['Refund pending', 4, false],
+            OrderDispute::STATUS_REFUND_COMPLETED    => ['Refund completed', 4, true],
+            OrderDispute::STATUS_RESOLVED_APPROVED   => ['Resolved (approved)', 4, true],
+            OrderDispute::STATUS_RESOLVED_REJECTED   => ['Resolved (rejected)', 4, true],
+            OrderDispute::STATUS_CLOSED              => ['Resolved (closed)', 4, true],
         ];
 
         [$label, $step, $isResolved] = $map[$dispute->status] ?? ['Dispute updated', 2, false];
 
         return [
-            'label' => $label,
-            'step' => $step,
+            'label'      => $label,
+            'step'       => $step,
             'isResolved' => $isResolved,
         ];
     }
@@ -445,7 +455,6 @@ new class extends Component
             return;
         }
 
-        // Enforce 30-minute cancellation window
         if ($order->created_at && now()->diffInMinutes($order->created_at) > 30) {
             return;
         }
@@ -459,327 +468,596 @@ new class extends Component
         $order->applyCancellationRefundDecision($fromStatus);
         $order->save();
     }
+
+    public function openTrackingModal(int $orderId): void
+    {
+        $this->trackingOrderId = $orderId;
+    }
+
+    public function closeTrackingModal(): void
+    {
+        $this->trackingOrderId = null;
+    }
 };
 ?>
 
-<div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-            <h3 class="text-lg font-medium text-gray-900">My Orders</h3>
-            <p class="text-sm text-gray-500 mt-1">
-                Track your orders and confirm when you have received them.
-            </p>
-        </div>
-        <div>
-            <select wire:model.live="status"
-                    class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                <option value="">All statuses</option>
-                <option value="awaiting_payment">Awaiting payment</option>
-                <option value="paid">Paid</option>
-                <option value="to_pack">To pack</option>
-                <option value="ready_to_ship">Ready to ship</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="out_for_delivery">Out for delivery</option>
-                <option value="delivered">Delivered</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-            </select>
+<div class="min-h-screen bg-gray-100">
+
+    {{-- Tab navigation --}}
+    <div class="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div class="flex overflow-x-auto" style="scrollbar-width:none;-ms-overflow-style:none;">
+            @php
+            $tabs = [
+                ''           => 'All',
+                'awaiting_payment' => 'To Pay',
+                'to_ship'    => 'To Ship',
+                'in_transit' => 'Shipping',
+                'completed'  => 'Completed',
+                'cancelled'  => 'Cancelled',
+            ];
+            @endphp
+            @foreach($tabs as $tabVal => $tabLabel)
+                <button wire:click="$set('status', '{{ $tabVal }}')"
+                        class="flex-shrink-0 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2
+                               {{ $status === $tabVal
+                                  ? 'border-orange-500 text-orange-600'
+                                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300' }}">
+                    {{ $tabLabel }}
+                </button>
+            @endforeach
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    {{-- Orders list --}}
+    <div class="max-w-2xl mx-auto px-3 sm:px-4 py-4 space-y-3">
+
         @php $orders = $this->orders; @endphp
+
         @if ($orders instanceof \Illuminate\Pagination\LengthAwarePaginator && $orders->count())
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Store rating</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
-                    @foreach ($orders as $order)
-                        <tr>
-                            <td class="px-4 py-3 text-xs text-gray-500 align-top">
-                                {{ optional($order->created_at)->format('Y-m-d H:i') }}
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-900 align-top">
+
+            @foreach ($orders as $order)
+                @php
+                    $badgeText = match($order->status) {
+                        'awaiting_payment' => 'WAITING FOR PAYMENT',
+                        'paid'             => 'PAYMENT CONFIRMED',
+                        'to_pack'          => 'PREPARING ORDER',
+                        'ready_to_ship'    => 'READY TO SHIP',
+                        'processing'       => 'PROCESSING',
+                        'shipped'          => 'SHIPPED',
+                        'out_for_delivery' => 'OUT FOR DELIVERY',
+                        'delivered'        => 'ORDER RECEIVED',
+                        'completed'        => 'COMPLETED',
+                        'cancelled'        => 'CANCELLED',
+                        default            => strtoupper(str_replace('_', ' ', $order->status)),
+                    };
+                    $badgeClass = match($order->status) {
+                        'awaiting_payment'          => 'text-orange-600',
+                        'paid'                      => 'text-cyan-600',
+                        'to_pack', 'ready_to_ship',
+                        'processing'                => 'text-blue-600',
+                        'shipped'                   => 'text-indigo-600',
+                        'out_for_delivery'          => 'text-violet-600',
+                        'delivered'                 => 'text-green-600',
+                        'completed'                 => 'text-emerald-600',
+                        'cancelled'                 => 'text-red-500',
+                        default                     => 'text-gray-600',
+                    };
+                @endphp
+
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+
+                    {{-- Store header --}}
+                    <div class="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
+                                    <path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-800">
                                 {{ $order->seller->store_name ?? 'Seller #'.$order->seller_id }}
-                            </td>
-                            <td class="px-4 py-3 text-xs text-gray-700 align-top">
-                                <ul class="space-y-1">
-                                    @foreach ($order->items as $item)
-                                        <li>
-                                            {{ $item->quantity }} × {{ $item->product->name ?? 'Product #'.$item->product_id }}
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </td>
-                            <td class="px-4 py-3 align-top">
-                                <?php
-                                    $badge = match($order->status) {
-                                        'awaiting_payment' => 'bg-orange-100 text-orange-800',
-                                        'paid' => 'bg-cyan-100 text-cyan-800',
-                                        'to_pack' => 'bg-sky-100 text-sky-800',
-                                        'ready_to_ship' => 'bg-violet-100 text-violet-800',
-                                        'processing' => 'bg-amber-100 text-amber-800',
-                                        'shipped' => 'bg-blue-100 text-blue-800',
-                                        'out_for_delivery' => 'bg-indigo-100 text-indigo-800',
-                                        'delivered' => 'bg-green-100 text-green-800',
-                                        'completed' => 'bg-emerald-100 text-emerald-800',
-                                        'cancelled' => 'bg-red-100 text-red-800',
-                                        default => 'bg-gray-100 text-gray-700',
-                                    };
-                                ?>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
-                                    {{ ucwords(str_replace('_', ' ', $order->status)) }}
-                                </span>
-                                @if($order->status === 'cancelled')
-                                    <div class="mt-1 text-xs text-gray-600">
-                                        Cancelled by: {{ ucfirst((string) ($order->cancelled_by_type ?? 'system')) }}
-                                    </div>
-                                    <div class="mt-0.5 text-xs text-gray-600">
-                                        Reason: {{ \App\Models\Order::CANCELLATION_REASONS[$order->cancellation_reason_code] ?? ucfirst(str_replace('_', ' ', (string) ($order->cancellation_reason_code ?? 'unspecified'))) }}
-                                    </div>
-                                @endif
-                                @if($order->refund_status)
-                                    <div class="mt-1 text-xs text-gray-600">
-                                        Refund: {{ \App\Models\Order::refundStatusLabel($order->refund_status) }}
-                                    </div>
-                                    <div class="mt-0.5 text-xs text-gray-600">
-                                        Refund reason: {{ \App\Models\Order::refundReasonLabel($order->refund_reason_code) }}
-                                    </div>
-                                    @if($order->refunded_at)
-                                        <div class="mt-0.5 text-xs text-gray-600">
-                                            Refunded at: {{ $order->refunded_at->format('M j, Y g:i A') }}
-                                        </div>
-                                    @endif
-                                @endif
-                                @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'completed']) && $order->tracking_number)
-                                    <div class="mt-1 text-xs text-gray-600">
-                                        Courier: {{ \App\Models\Order::COURIERS[$order->courier_name] ?? strtoupper((string) $order->courier_name ?: 'OTHER') }}
-                                    </div>
-                                    <div class="mt-1 text-xs text-gray-600">Tracking: {{ $order->tracking_number }}</div>
-                                    @if($order->trackingEvents->isNotEmpty())
-                                        <div class="mt-1 text-xs text-gray-500">Latest tracking events:</div>
-                                        <ul class="mt-1 space-y-0.5">
-                                            @foreach($order->trackingEvents->take(3) as $event)
-                                                <li class="text-[11px] text-gray-600">
-                                                    {{ optional($event->occurred_at ?? $event->created_at)->format('M j, g:i A') }} · {{ ucwords(str_replace('_', ' ', (string) $event->event_status)) }}
-                                                    @if($event->location)
-                                                        · {{ $event->location }}
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-                                @endif
-                                @if($order->status === 'out_for_delivery')
-                                    <div class="mt-1 text-xs text-gray-600">
-                                        If the parcel arrives, click "Mark received". If it does not arrive, click "Did not receive parcel" to open a delivery dispute for seller/admin review.
-                                    </div>
-                                @endif
-                                @if($order->shipped_at)
-                                    <div class="mt-0.5 text-xs text-gray-600">Shipped at: {{ $order->shipped_at->format('M j, Y g:i A') }}</div>
-                                @endif
-                                @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'completed']) && $order->estimated_delivery_date)
-                                    <div class="mt-0.5 text-xs text-gray-600">Est. delivery: {{ $order->estimated_delivery_date->format('M j, Y') }}</div>
-                                @endif
-                                @if($order->delivered_at)
-                                    <div class="mt-0.5 text-xs text-gray-600">Delivered at: {{ $order->delivered_at->format('M j, Y g:i A') }}</div>
-                                @endif
-                                @if($order->completed_at)
-                                    <div class="mt-0.5 text-xs text-gray-600">Completed at: {{ $order->completed_at->format('M j, Y g:i A') }}</div>
-                                @endif
-                                @php
-                                    $latestDispute = $order->disputes->first();
-                                @endphp
-                                @if($latestDispute)
-                                    @php($progress = $this->disputeProgressMeta($latestDispute))
-                                    <div class="mt-2 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5">
-                                        <div class="text-[11px] font-medium text-gray-700">
-                                            Delivery dispute: {{ $progress['label'] }}
-                                        </div>
-                                        <div class="mt-1 flex items-center gap-1">
-                                            @for($i = 1; $i <= 4; $i++)
-                                                <span class="h-1.5 flex-1 rounded {{ $i <= $progress['step'] ? 'bg-indigo-500' : 'bg-gray-200' }}"></span>
-                                            @endfor
-                                        </div>
-                                        <div class="mt-1 text-[10px] text-gray-500">
-                                            Submitted → Seller review → Admin review → Resolution
-                                        </div>
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 align-top text-xs text-gray-700">
-                                @if ($order->store_rating)
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-yellow-400">
-                                            {{ str_repeat('★', $order->store_rating) }}{{ str_repeat('☆', 5 - $order->store_rating) }}
-                                        </span>
-                                        <span>{{ $order->store_rating }}/5</span>
-                                    </div>
-                                    @if ($order->store_review)
-                                        <div class="mt-1 text-[11px] text-gray-500 line-clamp-2">
-                                            {{ $order->store_review }}
-                                        </div>
-                                    @endif
-                                @else
-                                    <span class="text-gray-400">Not rated</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right text-gray-900 font-medium align-top">
-                                ₱{{ number_format($order->total_amount, 2) }}
-                            </td>
-                            <td class="px-4 py-3 text-right text-xs align-top space-y-1">
-                                @if (in_array($order->status, ['awaiting_payment', 'paid', 'to_pack', 'ready_to_ship', 'processing'], true))
-                                    <button type="button"
-                                            wire:click="cancel({{ $order->id }})"
-                                            class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50">
-                                        Cancel
-                                    </button>
-                                @elseif ($order->status === 'out_for_delivery')
-                                    <button type="button"
-                                            wire:click="markReceived({{ $order->id }})"
-                                            class="inline-flex items-center px-2 py-1 border border-emerald-500 text-emerald-700 rounded-md text-xs hover:bg-emerald-50">
-                                        Mark received
-                                    </button>
-                                    <button type="button"
-                                            wire:click="markNotReceived({{ $order->id }})"
-                                            wire:confirm="Report this order as not received? This will open a delivery dispute with the seller and notify admin."
-                                            class="inline-flex items-center px-2 py-1 border border-red-500 text-red-700 rounded-md text-xs hover:bg-red-50">
-                                        Did not receive parcel
-                                    </button>
-                                @elseif ($order->status === 'shipped')
-                                    <button type="button"
-                                            wire:click="markReceived({{ $order->id }})"
-                                            class="inline-flex items-center px-2 py-1 border border-indigo-500 text-indigo-600 rounded-md text-xs hover:bg-indigo-50">
-                                        Mark received
-                                    </button>
-                                @elseif (in_array($order->status, ['delivered', 'completed'], true))
-                                    <a href="{{ route('customer.orders.receipt', $order) }}"
-                                       class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50"
-                                       target="_blank" rel="noopener">
-                                        Download receipt
-                                    </a>
-                                    <button type="button"
-                                            wire:click="openIssueModal({{ $order->id }})"
-                                            class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-gray-50">
-                                        Return / issue
-                                    </button>
-                                    <button type="button"
-                                            wire:click="reorder({{ $order->id }})"
-                                            class="inline-flex items-center px-2 py-1 border border-indigo-500 text-indigo-600 rounded-md text-xs hover:bg-indigo-50">
-                                        Re-order
-                                    </button>
-                                    @if (!$order->store_rating)
-                                        <button type="button"
-                                                wire:click="openRateModal({{ $order->id }})"
-                                                class="inline-flex items-center px-2 py-1 border border-amber-500 text-amber-700 rounded-md text-xs hover:bg-amber-50">
-                                            Rate seller
-                                        </button>
-                                    @endif
-                                @endif
-                            </td>
-                        </tr>
+                            </span>
+                        </div>
+                        <span class="text-[11px] font-bold tracking-wide {{ $badgeClass }}">{{ $badgeText }}</span>
+                    </div>
+
+                    {{-- Product items --}}
+                    @foreach ($order->items as $item)
+                        <div class="px-4 py-3 flex items-start gap-3 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+                            @if($item->product?->image_path)
+                                <img src="{{ asset('storage/'.$item->product->image_path) }}"
+                                     alt="{{ $item->product->name }}"
+                                     class="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-100">
+                            @else
+                                <div class="w-16 h-16 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-900 line-clamp-2 leading-snug">
+                                    {{ $item->product->name ?? 'Product #'.$item->product_id }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">Qty: {{ $item->quantity }}</p>
+                            </div>
+                            <p class="text-sm font-semibold text-gray-800 flex-shrink-0">
+                                ₱{{ number_format($item->price_at_purchase * $item->quantity, 2) }}
+                            </p>
+                        </div>
                     @endforeach
-                </tbody>
-            </table>
-            <div class="px-4 py-3 border-t">
+
+                    {{-- Order total --}}
+                    <div class="px-4 py-2.5 border-t border-gray-100 flex items-center justify-end gap-2 bg-gray-50/50">
+                        <span class="text-xs text-gray-500">
+                            Order Total ({{ $order->items->sum('quantity') }} {{ \Illuminate\Support\Str::plural('item', $order->items->sum('quantity')) }}):
+                        </span>
+                        <span class="text-base font-bold text-orange-600">₱{{ number_format($order->total_amount, 2) }}</span>
+                    </div>
+
+                    {{-- Courier / tracking summary --}}
+                    @if(in_array($order->status, ['shipped', 'out_for_delivery', 'delivered', 'completed']) && $order->tracking_number)
+                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 bg-orange-50 rounded-xl border border-orange-100 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest">
+                                        {{ \App\Models\Order::COURIERS[$order->courier_name] ?? strtoupper($order->courier_name ?: 'Courier') }}
+                                    </p>
+                                    <p class="text-xs font-mono font-semibold text-gray-800">{{ $order->tracking_number }}</p>
+                                </div>
+                            </div>
+                            @if($order->estimated_delivery_date)
+                                <div class="text-right">
+                                    <p class="text-[10px] text-gray-400">Est. Delivery</p>
+                                    <p class="text-xs font-bold text-gray-700">{{ $order->estimated_delivery_date->format('M j, Y') }}</p>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Dispute progress --}}
+                    @php $latestDispute = $order->disputes->first(); @endphp
+                    @if($latestDispute)
+                        @php $progress = $this->disputeProgressMeta($latestDispute); @endphp
+                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2.5 bg-red-50 rounded-xl border border-red-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs font-semibold text-red-700">
+                                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 mr-1 align-middle"></span>
+                                    Dispute: {{ $progress['label'] }}
+                                </p>
+                                @if($progress['isResolved'])
+                                    <span class="text-[10px] text-green-600 font-bold">Resolved</span>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-1">
+                                @for($i = 1; $i <= 4; $i++)
+                                    <div class="h-1 flex-1 rounded-full {{ $i <= $progress['step'] ? 'bg-red-400' : 'bg-red-100' }}"></div>
+                                @endfor
+                            </div>
+                            <div class="mt-1.5 flex justify-between text-[9px] text-red-300 font-medium">
+                                <span>Submitted</span><span>Seller</span><span>Admin</span><span>Resolved</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- Cancellation info --}}
+                    @if($order->status === 'cancelled')
+                        <div class="mx-4 mb-2 mt-1 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-100">
+                            <p class="text-xs text-gray-500">
+                                Cancelled by <span class="font-semibold text-gray-700">{{ ucfirst($order->cancelled_by_type ?? 'system') }}</span>
+                                @if($order->cancellation_reason_code)
+                                    · {{ \App\Models\Order::CANCELLATION_REASONS[$order->cancellation_reason_code] ?? ucfirst(str_replace('_', ' ', $order->cancellation_reason_code)) }}
+                                @endif
+                            </p>
+                            @if($order->refund_status && $order->refund_status !== \App\Models\Order::REFUND_STATUS_NOT_REQUIRED)
+                                <p class="text-xs text-indigo-600 mt-0.5">
+                                    Refund: {{ \App\Models\Order::refundStatusLabel($order->refund_status) }}
+                                </p>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Store rating (if rated) --}}
+                    @if($order->store_rating)
+                        <div class="mx-4 mb-2 mt-1 flex items-center gap-2 px-3.5 py-2 bg-amber-50 rounded-xl border border-amber-100">
+                            <div class="flex items-center gap-0.5">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <svg class="w-3.5 h-3.5 {{ $i <= $order->store_rating ? 'text-amber-400' : 'text-gray-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                @endfor
+                            </div>
+                            @if($order->store_review)
+                                <p class="text-[11px] text-amber-700 line-clamp-1">{{ $order->store_review }}</p>
+                            @else
+                                <p class="text-[11px] text-amber-600 font-medium">Seller rated {{ $order->store_rating }}/5</p>
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Action buttons --}}
+                    <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-end gap-2 flex-wrap">
+                        <button type="button"
+                                wire:click="openTrackingModal({{ $order->id }})"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                            </svg>
+                            Track Package
+                        </button>
+
+                        @if (in_array($order->status, ['awaiting_payment', 'paid', 'to_pack', 'ready_to_ship', 'processing'], true))
+                            <button type="button"
+                                    wire:click="cancel({{ $order->id }})"
+                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+                                Cancel Order
+                            </button>
+
+                        @elseif ($order->status === 'out_for_delivery')
+                            <button type="button"
+                                    wire:click="markNotReceived({{ $order->id }})"
+                                    wire:confirm="Report this order as not received? This will open a delivery dispute with the seller and notify admin."
+                                    class="inline-flex items-center px-3.5 py-2 border border-red-300 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 transition">
+                                Not Received
+                            </button>
+                            <button type="button"
+                                    wire:click="markReceived({{ $order->id }})"
+                                    class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                                Order Received
+                            </button>
+
+                        @elseif ($order->status === 'shipped')
+                            <button type="button"
+                                    wire:click="markReceived({{ $order->id }})"
+                                    class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                                Order Received
+                            </button>
+
+                        @elseif (in_array($order->status, ['delivered', 'completed'], true))
+                            <a href="{{ route('customer.orders.receipt', $order) }}"
+                               class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+                               target="_blank" rel="noopener">
+                                Receipt
+                            </a>
+                            <button type="button"
+                                    wire:click="openIssueModal({{ $order->id }})"
+                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 transition">
+                                Return/Issue
+                            </button>
+                            <button type="button"
+                                    wire:click="reorder({{ $order->id }})"
+                                    class="inline-flex items-center px-3.5 py-2 border border-orange-400 text-orange-600 rounded-lg text-xs font-semibold hover:bg-orange-50 transition">
+                                Re-order
+                            </button>
+                            @if (!$order->store_rating)
+                                <button type="button"
+                                        wire:click="openRateModal({{ $order->id }})"
+                                        class="inline-flex items-center gap-1 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                    Rate Seller
+                                </button>
+                            @endif
+                        @endif
+                    </div>
+
+                </div>
+            @endforeach
+
+            {{-- Pagination --}}
+            <div class="py-2">
                 {{ $orders->links() }}
             </div>
+
         @else
-            <div class="py-12 text-center text-gray-500 text-sm">
-                You have no orders yet.
+            <div class="py-20 flex flex-col items-center text-center">
+                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600 font-semibold text-sm">No orders yet</p>
+                <p class="text-gray-400 text-xs mt-1">Orders you place will appear here</p>
             </div>
         @endif
+
     </div>
+
+    {{-- ══════════════════════════════════════════════════════════════
+         ISSUE / RETURN MODAL
+    ══════════════════════════════════════════════════════════════ --}}
     @if($issueOrderId)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-                <h3 class="text-sm font-semibold text-gray-900">Return / Issue request</h3>
-                <p class="text-xs text-gray-500">
-                    This message will be sent to the seller of your order. Describe the problem (wrong item, damaged, missing pieces, etc.).
-                </p>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 uppercase tracking-wide">Reason</label>
-                    <select wire:model.defer="issueReason"
-                            class="mt-1 w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        @foreach(\App\Models\OrderDispute::REASON_CODES as $code => $label)
-                            <option value="{{ $code }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('issueReason') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-gray-900">Return / Issue Request</h3>
+                    <button wire:click="closeIssueModal" class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 text-lg leading-none">×</button>
                 </div>
-                <textarea wire:model.defer="issueBody" rows="4"
-                          class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          placeholder="Example: The shirt has a tear on the sleeve."></textarea>
-                @error('issueBody') <div class="text-xs text-red-600">{{ $message }}</div> @enderror
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 uppercase tracking-wide">Evidence (optional)</label>
-                    <input type="file" wire:model="issueEvidence" class="mt-1 block w-full text-xs text-gray-600" accept=".jpg,.jpeg,.png,.webp,.pdf">
-                    @error('issueEvidence') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" wire:click="closeIssueModal"
-                            class="px-3 py-1.5 border rounded-md text-xs text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="button" wire:click="submitIssue"
-                            class="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs hover:bg-indigo-700">
-                        Send request
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    @if($rateOrderId)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-                <h3 class="text-sm font-semibold text-gray-900">Rate this seller / store</h3>
-                <p class="text-xs text-gray-500">
-                    This rating is for the overall store experience (communication, speed, packaging), not a specific product.
-                </p>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 uppercase tracking-wide">Rating</label>
-                    <div class="mt-1 flex items-center gap-1">
-                        @for($i = 1; $i <= 5; $i++)
-                            <button type="button"
-                                    wire:click="$set('storeRating', {{ $i }})"
-                                    class="{{ $storeRating >= $i ? 'text-yellow-400' : 'text-gray-300' }}">
-                                ★
-                            </button>
-                        @endfor
-                        <span class="ml-1 text-xs text-gray-500">{{ $storeRating }}/5</span>
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-gray-500 leading-relaxed">
+                        Describe the issue with your order. This message will be sent to the seller for review.
+                    </p>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Reason</label>
+                        <select wire:model.defer="issueReason"
+                                class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400">
+                            @foreach(\App\Models\OrderDispute::REASON_CODES as $code => $label)
+                                <option value="{{ $code }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('issueReason') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
-                    @error('storeRating') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
+                        <textarea wire:model.defer="issueBody" rows="4"
+                                  class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400"
+                                  placeholder="Describe the issue (e.g. the shirt has a tear on the sleeve)…"></textarea>
+                        @error('issueBody') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Evidence <span class="text-gray-400 font-normal">(optional photo or PDF)</span></label>
+                        <input type="file" wire:model="issueEvidence"
+                               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                               accept=".jpg,.jpeg,.png,.webp,.pdf">
+                        @error('issueEvidence') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 uppercase tracking-wide">Comment <span class="text-gray-400">(optional)</span></label>
-                    <textarea wire:model.defer="storeReview" rows="3"
-                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                              placeholder="Example: Seller was very responsive and items were well packed."></textarea>
-                    @error('storeReview') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" wire:click="closeRateModal"
-                            class="px-3 py-1.5 border rounded-md text-xs text-gray-700 hover:bg-gray-50">
+                <div class="px-6 py-4 border-t bg-gray-50 flex gap-2 justify-end">
+                    <button wire:click="closeIssueModal"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition">
                         Cancel
                     </button>
-                    <button type="button" wire:click="submitRating"
-                            class="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs hover:bg-indigo-700">
-                        Save rating
+                    <button wire:click="submitIssue"
+                            class="px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                        Submit Request
                     </button>
                 </div>
             </div>
         </div>
     @endif
-</div>
 
+    {{-- ══════════════════════════════════════════════════════════════
+         RATE SELLER MODAL
+    ══════════════════════════════════════════════════════════════ --}}
+    @if($rateOrderId)
+        <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-gray-900">Rate this Seller</h3>
+                    <button wire:click="closeRateModal" class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 text-lg leading-none">×</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-gray-500">Rate your overall store experience — communication, packaging, and delivery speed.</p>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-2">Your Rating</label>
+                        <div class="flex items-center gap-2">
+                            @for($i = 1; $i <= 5; $i++)
+                                <button type="button"
+                                        wire:click="$set('storeRating', {{ $i }})"
+                                        class="transition-transform hover:scale-110">
+                                    <svg class="w-8 h-8 {{ $storeRating >= $i ? 'text-amber-400' : 'text-gray-200' }}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                </button>
+                            @endfor
+                            <span class="text-sm font-bold text-amber-500 ml-1">{{ $storeRating }}/5</span>
+                        </div>
+                        @error('storeRating') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Comment <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <textarea wire:model.defer="storeReview" rows="3"
+                                  class="block w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-400 focus:ring-orange-400"
+                                  placeholder="Share your experience with this seller…"></textarea>
+                        @error('storeReview') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t bg-gray-50 flex gap-2 justify-end">
+                    <button wire:click="closeRateModal"
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-100 transition">
+                        Cancel
+                    </button>
+                    <button wire:click="submitRating"
+                            class="px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600 transition shadow-sm">
+                        Submit Rating
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════════════════
+         SHOPEE-STYLE TRACKING MODAL
+    ══════════════════════════════════════════════════════════════ --}}
+    @if($trackingOrderId)
+        @php
+            $orderObj = \App\Models\Order::with(['statusHistory', 'trackingEvents'])->find($trackingOrderId);
+        @endphp
+
+        @if($orderObj)
+            @php
+                $trackingStep = match($orderObj->status) {
+                    'awaiting_payment'                       => 1,
+                    'paid'                                   => 2,
+                    'to_pack', 'ready_to_ship', 'processing' => 3,
+                    'shipped', 'out_for_delivery'            => 4,
+                    'delivered', 'completed'                 => 5,
+                    default                                  => 1,
+                };
+                $isCancelled = $orderObj->status === 'cancelled';
+                $trackingSteps = [
+                    1 => ['label' => 'Placed'],
+                    2 => ['label' => 'Confirmed'],
+                    3 => ['label' => 'Packed'],
+                    4 => ['label' => 'Shipped'],
+                    5 => ['label' => 'Delivered'],
+                ];
+            @endphp
+
+            <div class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+                 x-data
+                 x-on:keydown.escape.window="$wire.closeTrackingModal()">
+                <div class="bg-gray-100 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden"
+                     style="max-height: min(94vh, 720px);">
+
+                    {{-- Header --}}
+                    <div class="bg-white flex items-center gap-3 px-4 py-3.5 flex-shrink-0 border-b border-gray-100">
+                        <button wire:click="closeTrackingModal"
+                                class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 transition -ml-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <h3 class="flex-1 text-center text-base font-bold text-gray-900 -ml-8">Track package</h3>
+                        <div class="w-8 h-8 flex items-center justify-center text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    {{-- Scrollable body --}}
+                    <div class="flex-1 overflow-y-auto">
+
+                        {{-- Estimated delivery + cancel banner --}}
+                        @if($isCancelled)
+                            <div class="bg-white mx-3 mt-3 rounded-xl px-4 py-3 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-red-600">Order Cancelled</p>
+                                    @if($orderObj->cancelled_at)
+                                        <p class="text-xs text-gray-400 mt-0.5">{{ $orderObj->cancelled_at->format('M j, Y · g:i A') }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                        @elseif($orderObj->estimated_delivery_date)
+                            <div class="bg-white px-4 py-3 flex-shrink-0">
+                                <p class="text-sm text-gray-700">
+                                    Estimated delivery:
+                                    <span class="font-bold text-teal-600">
+                                        {{ $orderObj->estimated_delivery_date->subDays(2)->format('M j') }}
+                                        –
+                                        {{ $orderObj->estimated_delivery_date->format('M j') }}
+                                    </span>
+                                </p>
+                            </div>
+                        @endif
+
+                        {{-- Courier card --}}
+                        @if($orderObj->tracking_number)
+                            <div class="bg-white mx-3 mt-3 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-gray-900">
+                                        {{ \App\Models\Order::COURIERS[$orderObj->courier_name] ?? ucwords(str_replace('_', ' ', $orderObj->courier_name ?: 'Courier')) }}
+                                    </p>
+                                    <p class="text-xs text-gray-400 mt-0.5">Standard shipping</p>
+                                    <p class="text-xs font-mono text-gray-600 mt-0.5">{{ $orderObj->tracking_number }}</p>
+                                </div>
+                                <button onclick="navigator.clipboard.writeText('{{ $orderObj->tracking_number }}')"
+                                        class="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition flex-shrink-0"
+                                        title="Copy tracking number">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        @endif
+
+                        {{-- Timeline --}}
+                        @php $timeline = $orderObj->full_tracking_timeline; @endphp
+
+                        <div class="bg-white mx-3 mt-3 mb-4 rounded-xl overflow-hidden shadow-sm">
+                            @forelse($timeline as $index => $step)
+                                @php
+                                    $occurredAt  = $step['occurred_at'] ? \Illuminate\Support\Carbon::parse($step['occurred_at']) : null;
+                                    $isToday     = $occurredAt && $occurredAt->isToday();
+                                    $dateLabel   = $occurredAt ? ($isToday ? 'Today' : $occurredAt->format('M j')) : '';
+                                    $timeLabel   = $occurredAt ? $occurredAt->format('g:i A') : '';
+                                    $isLatest    = $index === 0;
+                                @endphp
+                                <div class="flex items-stretch px-4 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
+
+                                    {{-- Left: date/time --}}
+                                    <div class="w-16 flex-shrink-0 flex flex-col justify-start pt-4 pr-2 text-right">
+                                        <span class="text-xs font-semibold {{ $isLatest ? 'text-gray-800' : 'text-gray-400' }}">
+                                            {{ $dateLabel }}
+                                        </span>
+                                        <span class="text-[11px] {{ $isLatest ? 'text-gray-500' : 'text-gray-400' }} mt-0.5">
+                                            {{ $timeLabel }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Centre: dot + line --}}
+                                    <div class="flex flex-col items-center w-8 flex-shrink-0">
+                                        <div class="mt-4 flex-shrink-0">
+                                            @if($isLatest)
+                                                <div class="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shadow-sm">
+                                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </div>
+                                            @else
+                                                <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 bg-white"></div>
+                                            @endif
+                                        </div>
+                                        @if(!$loop->last)
+                                            <div class="flex-1 w-px bg-gray-200 mt-1.5 mb-0 min-h-[24px]"></div>
+                                        @endif
+                                    </div>
+
+                                    {{-- Right: event content --}}
+                                    <div class="flex-1 min-w-0 py-4 pl-2">
+                                        <p class="text-sm leading-snug {{ $isLatest ? 'font-bold text-gray-900' : 'text-gray-500' }}">
+                                            {{ $step['title'] }}
+                                        </p>
+                                        @if(!empty($step['description']))
+                                            <p class="text-xs text-gray-500 mt-1 leading-relaxed">{{ $step['description'] }}</p>
+                                        @endif
+                                        @if(!empty($step['location']) && $isLatest)
+                                            <div class="mt-2 px-3 py-2 bg-teal-50 rounded-lg border border-teal-100">
+                                                <p class="text-xs text-teal-600 leading-relaxed">{{ $step['location'] }}</p>
+                                            </div>
+                                        @elseif(!empty($step['location']))
+                                            <p class="text-xs text-gray-400 mt-1">{{ $step['location'] }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="py-12 flex flex-col items-center text-center">
+                                    <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                                        <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                        </svg>
+                                    </div>
+                                    <p class="text-sm font-semibold text-gray-500">No tracking info yet</p>
+                                    <p class="text-xs text-gray-400 mt-1">Updates will appear here once the seller ships your order</p>
+                                </div>
+                            @endforelse
+                        </div>
+
+                    </div>{{-- end scrollable body --}}
+
+                </div>
+            </div>
+        @endif
+    @endif
+
+</div>

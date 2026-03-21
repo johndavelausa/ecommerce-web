@@ -217,6 +217,7 @@ class Order extends Model
         $allowed = [
             self::STATUS_AWAITING_PAYMENT => [
                 self::STATUS_PAID => ['customer', 'admin', 'system'],
+                self::STATUS_TO_PACK => ['seller', 'admin', 'system'],
                 self::STATUS_CANCELLED => ['customer', 'admin', 'system'],
             ],
             self::STATUS_PAID => [
@@ -338,6 +339,62 @@ class Order extends Model
         return $this->hasMany(\App\Models\OrderTrackingEvent::class)
             ->orderByDesc('occurred_at')
             ->orderByDesc('id');
+    }
+
+    public function statusHistory()
+    {
+        return $this->hasMany(\App\Models\OrderStatusHistory::class)
+            ->orderByDesc('created_at');
+    }
+
+    public function getFullTrackingTimelineAttribute(): array
+    {
+        $statusTitles = [
+            self::STATUS_AWAITING_PAYMENT => 'Order Placed',
+            self::STATUS_PAID             => 'Payment Confirmed',
+            self::STATUS_TO_PACK          => 'Seller Preparing Order',
+            self::STATUS_READY_TO_SHIP    => 'Ready to Ship',
+            self::STATUS_PROCESSING       => 'Processing',
+            self::STATUS_SHIPPED          => 'Parcel Handed to Courier',
+            self::STATUS_OUT_FOR_DELIVERY => 'Out for Delivery',
+            self::STATUS_DELIVERED        => 'Order Delivered',
+            self::STATUS_COMPLETED        => 'Order Completed',
+            self::STATUS_CANCELLED        => 'Order Cancelled',
+        ];
+
+        $timeline = [];
+
+        foreach ($this->statusHistory as $history) {
+            $toStatus = $history->to_status;
+            if ($toStatus) {
+                $timeline[] = [
+                    'type'        => 'status',
+                    'title'       => $statusTitles[$toStatus] ?? ucwords(str_replace('_', ' ', $toStatus)),
+                    'description' => null,
+                    'location'    => null,
+                    'occurred_at' => $history->created_at,
+                ];
+            }
+        }
+
+        foreach ($this->trackingEvents as $event) {
+            $timeline[] = [
+                'type'        => 'courier',
+                'title'       => ucwords(str_replace('_', ' ', (string) $event->event_status)),
+                'description' => $event->description,
+                'location'    => $event->location,
+                'occurred_at' => $event->occurred_at ?? $event->created_at,
+            ];
+        }
+
+        usort($timeline, function (array $a, array $b): int {
+            $timeA = $a['occurred_at'] ? \Illuminate\Support\Carbon::parse($a['occurred_at'])->timestamp : 0;
+            $timeB = $b['occurred_at'] ? \Illuminate\Support\Carbon::parse($b['occurred_at'])->timestamp : 0;
+
+            return $timeB <=> $timeA;
+        });
+
+        return $timeline;
     }
 
     public function payout()

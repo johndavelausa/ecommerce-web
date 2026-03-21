@@ -490,7 +490,7 @@ new class extends Component
                                 Print slip
                             </a>
 
-                            @if($order->status === 'paid')
+                            @if(in_array($order->status, ['awaiting_payment', 'paid'], true))
                                 <button type="button" wire:click="updateStatus({{ $order->id }}, 'to_pack')"
                                         class="text-xs text-cyan-700 hover:text-cyan-900 font-medium">
                                     Accept order

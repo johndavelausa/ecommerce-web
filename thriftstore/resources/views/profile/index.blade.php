@@ -11,16 +11,6 @@
             'desc' => 'Keep your account secure with a strong password',
             'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>'
         ],
-        'orders' => [
-            'label' => 'My Orders',
-            'desc' => 'Track your purchases and view order history',
-            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>'
-        ],
-        'messages' => [
-            'label' => 'Messages',
-            'desc' => 'Communication with sellers and support',
-            'icon' => '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>'
-        ],
         'deletion' => [
             'label' => 'Account Settings',
             'desc' => 'Privacy and account deletion requests',
@@ -130,44 +120,6 @@
                                 <div class="profile-content-form">
                                     @include('profile.partials.update-password-form')
                                 </div>
-                            </div>
-                        </div>
-
-                        {{-- Orders Section --}}
-                        <div x-show="section === 'orders'" 
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-cloak>
-                            <div class="profile-glass-card p-6 md:p-8">
-                                <div class="mb-8">
-                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Order Repository</h3>
-                                    <p class="text-sm text-gray-500 mt-2">Monitor your transaction history.</p>
-                                </div>
-                                <div class="space-y-10">
-                                    <div>
-                                        @livewire('customer.orders')
-                                    </div>
-                                    <div class="pt-10 border-t border-gray-100">
-                                        <h4 class="text-lg font-bold text-gray-900 mb-6">Product Feedback</h4>
-                                        @livewire('customer.reviews')
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Messages Section --}}
-                        <div x-show="section === 'messages'" 
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 translate-y-4"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             x-cloak>
-                            <div class="profile-glass-card p-6 md:p-8">
-                                <div class="mb-6">
-                                    <h3 class="text-xl font-bold text-gray-900 leading-none">Communications</h3>
-                                    <p class="text-sm text-gray-500 mt-2">Direct messaging with vendors.</p>
-                                </div>
-                                @livewire('customer.messages')
                             </div>
                         </div>
 

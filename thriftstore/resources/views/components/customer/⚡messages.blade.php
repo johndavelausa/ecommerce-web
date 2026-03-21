@@ -127,6 +127,8 @@ new class extends Component
 };
 ?>
 
+@push('styles')
+@verbatim
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -403,6 +405,8 @@ new class extends Component
     .msg-send-btn:hover { background: #52B788; }
     .msg-send-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 </style>
+@endverbatim
+@endpush
 
 <div class="msg-wrap space-y-4">
 

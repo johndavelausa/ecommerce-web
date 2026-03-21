@@ -1,7 +1,9 @@
 <section class="space-y-6">
+    @if(\Illuminate\Support\Facades\Route::has('verification.send'))
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
+    @endif
 
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
         @csrf

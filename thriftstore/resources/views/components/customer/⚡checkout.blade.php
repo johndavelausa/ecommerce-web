@@ -301,7 +301,7 @@ new class extends Component
                         'customer_id'      => $customer->id,
                         'seller_id'        => $sellerId,
                         'tracking_number'  => null,
-                        'status'           => Order::STATUS_PAID,
+                        'status'           => Order::STATUS_AWAITING_PAYMENT,
                         'total_amount'     => $orderTotal,
                         'shipping_address' => $this->shipping_address,
                         'customer_note'    => $this->customer_note !== '' ? trim($this->customer_note) : null,

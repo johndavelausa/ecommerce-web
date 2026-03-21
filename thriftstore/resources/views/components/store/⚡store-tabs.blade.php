@@ -179,12 +179,7 @@ new class extends Component {
         $cart = Session::get("cart", []);
         $key = (string) $product->id;
         if (!isset($cart[$key]) && count($cart) >= 50) {
-            $this->addError(
-                "cart",
-                __(
-                    "Cart is full (max 50 items). Remove an item or checkout first."
-                )
-            );
+            $this->dispatch('toast', type: 'error', message: 'Cart is full (max 50 items). Remove an item or checkout first.');
             return;
         }
         $currentQty = $cart[$key]["quantity"] ?? 0;
@@ -198,7 +193,9 @@ new class extends Component {
             "quantity" => $newQty,
         ];
         Session::put("cart", $cart);
-        $this->dispatch("cart-updated");
+        $count = array_sum(array_map(fn($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
+        $this->dispatch('toast', type: 'success', message: 'Added to Cart');
     }
 
     public function toggleWishlist(int $productId): void
@@ -213,13 +210,17 @@ new class extends Component {
             ->first();
         if ($existing) {
             $existing->delete();
+            $this->dispatch('toast', type: 'info', message: 'Removed from Wishlist');
         } else {
             Wishlist::create([
                 "customer_id" => $customer->id,
                 "product_id" => $productId,
             ]);
+            $this->dispatch('toast', type: 'success', message: 'Added to Wishlist');
         }
-        $this->dispatch("cart-updated");
+        $cart = Session::get('cart', []);
+        $count = array_sum(array_map(fn($row) => (int) ($row['quantity'] ?? 0), $cart));
+        $this->dispatch('cart-updated', count: $count);
         unset($this->wishlistIds);
     }
 

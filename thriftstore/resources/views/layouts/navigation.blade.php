@@ -141,7 +141,7 @@
     .ts-dropdown-panel {
         background: var(--c-surface);
         border: 1px solid var(--c-border);
-        border-radius: 10px;
+        border-radius: 5px;
         box-shadow: 0 10px 36px rgba(0,0,0,0.11), 0 2px 8px rgba(0,0,0,0.06);
         overflow: hidden;
     }
@@ -454,7 +454,6 @@
                                             <a href="{{ route('customer.dashboard') }}?category={{ urlencode((string) $cat->category) }}"
                                                class="ts-dropdown-item">
                                                 <span>{{ $cat->category }}</span>
-                                                <span class="ts-cat-pill">{{ (int) $cat->product_count }}</span>
                                             </a>
                                         @empty
                                             <div style="padding:14px 16px;font-size:12px;color:#4A5568;text-align:center;">No categories available.</div>
@@ -530,12 +529,27 @@
                         <div @mousedown.prevent="select(idx)"
                              @mouseenter="highlight = idx"
                              :class="'flex items-center gap-2 px-4 py-2 cursor-pointer transition-all text-sm ' + (highlight === idx ? 'bg-green-50' : 'hover:bg-gray-50')">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 overflow-hidden">
-                                <template x-if="item.type === 'product'">
-                                    <img :src="item.image_path ? item.image_path : '/images/no-image.png'" alt="Product" class="object-cover w-6 h-6" loading="lazy">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full overflow-hidden flex-shrink-0"
+                                  :style="item.type === 'seller' && !item.logo_path ? 'background:#B7E4C7;' : 'background:#f3f4f6;'">
+                                {{-- Product: show image or green shopping-bag icon --}}
+                                <template x-if="item.type === 'product' && item.image_path">
+                                    <img :src="item.image_path" alt="Product" class="object-cover w-6 h-6" loading="lazy"
+                                         x-on:error="$el.style.display='none'">
                                 </template>
-                                <template x-if="item.type === 'seller'">
-                                    <img :src="item.logo_path ? item.logo_path : '/images/no-logo.png'" alt="Seller" class="object-cover w-6 h-6" loading="lazy">
+                                <template x-if="item.type === 'product' && !item.image_path">
+                                    <svg style="width:13px;height:13px;color:#9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                    </svg>
+                                </template>
+                                {{-- Seller: show logo image or letter initial --}}
+                                <template x-if="item.type === 'seller' && item.logo_path">
+                                    <img :src="item.logo_path" alt="Seller" class="object-cover w-6 h-6" loading="lazy"
+                                         x-on:error="$el.style.display='none'">
+                                </template>
+                                <template x-if="item.type === 'seller' && !item.logo_path">
+                                    <span style="font-size:10px;font-weight:700;color:#2D6A4F;line-height:1;"
+                                          x-text="item.name.charAt(0).toUpperCase()"></span>
                                 </template>
                             </span>
                         <span class="font-semibold text-gray-900" x-text="item.prefix"></span><span class="text-gray-400" x-text="item.suffix"></span>
@@ -694,6 +708,20 @@
                                         {{ __('Profile') }}
                                     </a>
                                 @endif
+                                <a href="{{ route('customer.orders') }}" class="ts-user-menu-item">
+                                    <svg class="h-4 w-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                    </svg>
+                                    {{ __('My Orders') }}
+                                </a>
+                                <a href="{{ route('customer.messages') }}" class="ts-user-menu-item">
+                                    <svg class="h-4 w-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                    </svg>
+                                    {{ __('Messages') }}
+                                </a>
                                 <form method="POST" action="{{ route($logoutRoute) }}">
                                     @csrf
                                     <button type="submit" class="ts-user-menu-item ts-logout">
@@ -739,8 +767,10 @@
                 {{ $dashboardLabel }}
             </a>
 
-            @if($user && (request()->is('admin/*') || request()->is('seller/*')))
-                {{-- Admin/Seller: Links moved to sidebar --}}
+            @if($user && request()->is('admin/*'))
+                {{-- Admin: Links moved to sidebar --}}
+            @elseif($user && request()->is('seller/*'))
+                <a href="{{ route('customer.orders') }}" class="ts-mob-link {{ request()->routeIs('customer.orders') ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
 
             @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
                 <a href="{{ route('customer.orders') }}"   class="ts-mob-link {{ request()->routeIs('customer.orders')   ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
@@ -770,6 +800,8 @@
                 @if($logoutRoute === 'logout')
                     <a href="{{ route('profile.edit') }}" class="ts-mob-link">{{ __('Profile') }}</a>
                 @endif
+                <a href="{{ route('customer.orders') }}" class="ts-mob-link {{ request()->routeIs('customer.orders') ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
+                <a href="{{ route('customer.messages') }}" class="ts-mob-link {{ request()->routeIs('customer.messages') ? 'ts-active' : '' }}">{{ __('Messages') }}</a>
                 <form method="POST" action="{{ route($logoutRoute) }}">
                     @csrf
                     <button type="submit" class="ts-mob-link ts-mob-danger">{{ __('Log Out') }}</button>
