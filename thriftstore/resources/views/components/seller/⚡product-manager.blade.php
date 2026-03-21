@@ -556,29 +556,448 @@ new class extends Component
         $this->image = null;
         $this->resetValidation();
     }
+
+    public function formatHistoryValue(ProductHistory $row): array
+    {
+        $labels = [
+            'is_active'  => 'Status',
+            'stock'      => 'Stock',
+            'price'      => 'Price',
+            'sale_price' => 'Sale price',
+            'name'       => 'Name',
+        ];
+
+        $render = function (?string $json) use ($labels): string {
+            $decoded = json_decode((string) $json, true);
+            $items   = is_array($decoded) ? $decoded : ($json ? ['value' => $json] : []);
+            $parts   = [];
+            foreach ($items as $key => $value) {
+                $label = $labels[$key] ?? ucwords(str_replace('_', ' ', (string) $key));
+                if ($key === 'is_active') {
+                    $val = $value ? 'Active' : 'Inactive';
+                } elseif (in_array($key, ['price', 'sale_price'], true) && is_numeric($value)) {
+                    $val = '₱' . number_format((float) $value, 2);
+                } elseif ($value === null || $value === '') {
+                    $val = '—';
+                } else {
+                    $val = (string) $value;
+                }
+                $parts[] = "{$label}: {$val}";
+            }
+            return implode(' · ', $parts);
+        };
+
+        return [
+            'old' => $render($row->old_value),
+            'new' => $render($row->new_value),
+        ];
+    }
 };
 ?>
+
+@push('styles')
+@verbatim
+<style>
+    /* Brand-styled Product Manager CSS */
+    .prod-container {
+        background: linear-gradient(135deg, #FFFEF5 0%, #F8FDF9 100%);
+        border: 1px solid #E0E0E0;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+    .prod-header {
+        background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 16px rgba(45,159,78,0.25);
+    }
+    .prod-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+    .prod-header p {
+        font-size: 0.875rem;
+        color: rgba(255,255,255,0.85);
+        margin: 4px 0 0;
+    }
+    .prod-search {
+        border: 1px solid #E0E0E0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        background: #fff;
+        color: #212121;
+        transition: all 0.2s;
+    }
+    .prod-search:focus {
+        outline: none;
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.15);
+    }
+    .prod-select {
+        border: 1px solid #E0E0E0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        background: #fff;
+        color: #424242;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .prod-select:focus {
+        outline: none;
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.15);
+    }
+    .prod-btn-primary {
+        background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: all 0.15s;
+        box-shadow: 0 2px 8px rgba(45,159,78,0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .prod-btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(45,159,78,0.35);
+    }
+    .prod-btn-secondary {
+        background: linear-gradient(135deg, #F9C74F 0%, #F5A623 100%);
+        color: #212121;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: all 0.15s;
+        box-shadow: 0 2px 8px rgba(249,199,79,0.25);
+    }
+    .prod-btn-secondary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(249,199,79,0.35);
+    }
+    .prod-btn-ghost {
+        background: #fff;
+        color: #F57C00;
+        border: 1px solid #F9C74F;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .prod-btn-ghost:hover {
+        background: #FFF9E6;
+        border-color: #F5A623;
+    }
+    .prod-btn-ghost:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .prod-table-wrap {
+        background: #fff;
+        border: 1px solid #E0E0E0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .prod-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8125rem;
+    }
+    .prod-table thead {
+        background: #FFFEF5;
+    }
+    .prod-table th {
+        padding: 14px 16px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.6875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #424242;
+        border-bottom: 2px solid #FFE17B;
+    }
+    .prod-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #F5F5F5;
+        color: #424242;
+    }
+    .prod-table tr:last-child td {
+        border-bottom: none;
+    }
+    .prod-table tr:hover {
+        background: linear-gradient(90deg, #F8FDF9 0%, #FFFEF5 100%);
+    }
+    .prod-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+    }
+    .prod-badge.active {
+        background: #E8F5E9;
+        color: #2D9F4E;
+        border: 1px solid #2D9F4E;
+    }
+    .prod-badge.inactive {
+        background: #FFF9E6;
+        color: #F57C00;
+        border: 1px solid #F9C74F;
+    }
+    .prod-badge.soldout {
+        background: #FFEBEE;
+        color: #E53935;
+        border: 1px solid #EF5350;
+    }
+    .prod-badge.condition {
+        background: #FFF9E6;
+        color: #F57C00;
+        border: 1px solid #F9C74F;
+    }
+    .prod-btn-view {
+        color: #2D9F4E;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.15s;
+    }
+    .prod-btn-view:hover {
+        color: #1B7A37;
+        text-decoration: underline;
+    }
+    .prod-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+    }
+    .prod-modal {
+        background: #fff;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 520px;
+        max-height: 85vh;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .prod-modal-header {
+        background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
+        padding: 20px 24px;
+        position: relative;
+    }
+    .prod-modal-header h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+    .prod-modal-header p {
+        font-size: 0.8125rem;
+        color: rgba(255,255,255,0.85);
+        margin: 4px 0 0;
+    }
+    .prod-modal-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: #fff;
+        font-size: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+    }
+    .prod-modal-close:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    .prod-modal-body {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: calc(85vh - 80px);
+    }
+    .prod-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #F0F0F0;
+        background: #FAFAFA;
+    }
+    .prod-form-group {
+        margin-bottom: 20px;
+    }
+    .prod-label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #424242;
+        margin-bottom: 6px;
+    }
+    .prod-input {
+        width: 100%;
+        border: 1px solid #E0E0E0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        color: #212121;
+        background: #fff;
+        transition: all 0.2s;
+    }
+    .prod-input:focus {
+        outline: none;
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.15);
+    }
+    .prod-textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+    .prod-section-box {
+        background: #fff;
+        border: 1px solid #E0E0E0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    .prod-section-title {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #9E9E9E;
+        margin-bottom: 8px;
+    }
+    .prod-price {
+        font-weight: 700;
+        color: #2D9F4E;
+    }
+    .prod-stock-low {
+        color: #E53935;
+        font-weight: 600;
+    }
+    .prod-gradient-line {
+        height: 3px;
+        width: 120px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, #2D9F4E, #F9C74F);
+    }
+    .prod-btn-cancel {
+        background: #fff;
+        color: #F57C00;
+        border: 1px solid #F9C74F;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .prod-btn-cancel:hover {
+        background: #FFF9E6;
+        border-color: #F5A623;
+    }
+    .prod-btn-danger {
+        background: #EF5350;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .prod-btn-danger:hover {
+        background: #C62828;
+    }
+    .prod-empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        color: #9E9E9E;
+    }
+    .prod-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.6875rem;
+        background: #FFF9E6;
+        color: #F57C00;
+        border: 1px solid #F9C74F;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .prod-tag:hover {
+        background: #E8F5E9;
+        border-color: #2D9F4E;
+        color: #2D9F4E;
+    }
+</style>
+@endverbatim
+@endpush
 
 <div>
     {{-- ============================================================
          LIST VIEW
     ============================================================ --}}
     @if($mode === 'list')
-    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
+    <div class="prod-container">
+        {{-- Header --}}
+        <div class="prod-header">
+            <h2>Products</h2>
+            <p>Manage your product listings and inventory</p>
+        </div>
+
         {{-- Toolbar --}}
-        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-5">
             <div class="flex gap-2 flex-wrap">
                 <input type="text" wire:model.live.debounce.300ms="search"
                        placeholder="Search products…"
-                       class="w-56 rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] placeholder-[#9E9E9E] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
-                <select wire:model.live="filterStatus"
-                        class="rounded-md border border-[#E0E0E0] bg-white text-sm text-[#424242] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
+                       class="prod-search w-56">
+                <select wire:model.live="filterStatus" class="prod-select">
                     <option value="">All status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
-                <select wire:model.live="filterCondition"
-                        class="rounded-md border border-[#E0E0E0] bg-white text-sm text-[#424242] shadow-sm focus:border-[#2D9F4E] focus:ring-[#2D9F4E]">
+                <select wire:model.live="filterCondition" class="prod-select">
                     <option value="">All conditions</option>
                     @foreach(\App\Models\Product::conditionOptions() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -588,91 +1007,91 @@ new class extends Component
             <div class="flex gap-2">
                 <button type="button" wire:click="openBulkStockModal"
                         @disabled(count($selected) === 0)
-                        class="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold uppercase tracking-widest
-                               {{ count($selected ?? []) ? 'border-[#F9C74F] bg-white text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]' : 'cursor-not-allowed border-[#E0E0E0] bg-white text-[#9E9E9E]' }}">
+                        class="prod-btn-ghost" style="{{ count($selected ?? []) ? '' : 'opacity:0.5;cursor:not-allowed;' }}">
                     Bulk stock update
                 </button>
-                <button type="button" wire:click="showCreate"
-                        class="inline-flex items-center gap-1 rounded-md border-2 border-[#F9C74F] bg-[#2D9F4E] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-[0_2px_4px_rgba(45,159,78,0.2)] hover:bg-[#1B7A37] focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2">
-                    + Add product
+                <button type="button" wire:click="showCreate" class="prod-btn-primary">
+                    <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add product
                 </button>
             </div>
         </div>
 
         {{-- Table --}}
-        <div class="overflow-hidden rounded-lg border border-[#E0E0E0] bg-white shadow-sm">
-            <table class="min-w-full text-sm">
-                <thead class="bg-[#FFFEF5]">
+        <div class="prod-table-wrap">
+            <table class="prod-table">
+                <thead>
                     <tr>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">
+                        <th>
                             <button type="button" wire:click="selectPage" class="text-[11px] text-[#F9C74F] hover:text-[#E6B340] hover:underline">
                                 Select page
                             </button>
                         </th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Image</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Name</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Condition</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Category</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Price</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Sale Price</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Stock</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Views</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Status</th>
-                        <th class="border-b border-[#FFE17B] px-4 py-3 text-left text-[13px] font-medium uppercase text-[#424242]">Actions</th>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Condition</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Sale Price</th>
+                        <th>Stock</th>
+                        <th>Views</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white">
+                <tbody>
                     @forelse($this->products as $product)
-                    <tr class="border-b border-[#F5F5F5] transition hover:bg-gradient-to-r hover:from-[#F8FDF9] hover:to-[#FFFEF5]">
-                        <td class="px-4 py-3">
+                    <tr>
+                        <td>
                             <input type="checkbox" wire:model="selected" value="{{ $product->id }}"
                                    class="rounded border-[#E0E0E0] text-[#2D9F4E] focus:ring-[#2D9F4E]">
                         </td>
-                        <td class="px-4 py-3">
+                        <td>
                             @if($product->image_path)
                                 <img src="{{ asset('storage/' . $product->image_path) }}"
                                      alt="{{ $product->name }}"
-                                     class="h-12 w-12 object-cover rounded">
+                                     class="h-12 w-12 object-cover rounded-lg">
                             @else
-                                <div class="flex h-12 w-12 items-center justify-center rounded bg-[#FFF9E6] text-xs text-[#9E9E9E]">No img</div>
+                                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#FFF9E6] text-xs text-[#9E9E9E]">No img</div>
                             @endif
                         </td>
-                        <td class="px-4 py-3 font-medium text-[#212121]">{{ $product->name }}</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex items-center rounded border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-xs font-medium text-[#F57C00]">
+                        <td class="font-medium text-[#212121]">{{ $product->name }}</td>
+                        <td>
+                            <span class="prod-badge condition">
                                 {{ \App\Models\Product::conditionOptions()[$product->condition] ?? $product->condition }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-xs text-[#9E9E9E]">{{ $product->category ?? '—' }}</td>
-                        <td class="px-4 py-3 font-medium text-[#2D9F4E]">₱{{ number_format($product->price, 2) }}</td>
-                        <td class="px-4 py-3 text-[#2D9F4E]">
+                        <td class="text-xs text-[#9E9E9E]">{{ $product->category ?? '—' }}</td>
+                        <td class="prod-price">₱{{ number_format($product->price, 2) }}</td>
+                        <td class="text-[#2D9F4E]">
                             {{ $product->sale_price ? '₱' . number_format($product->sale_price, 2) : '—' }}
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="{{ $product->stock === 0 ? 'font-semibold text-[#EF5350]' : 'text-[#212121]' }}">
+                        <td>
+                            <span class="{{ $product->stock === 0 ? 'prod-stock-low' : '' }}">
                                 {{ $product->stock }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-sm text-[#424242]">{{ $product->views ?? 0 }}</td>
-                        <td class="px-4 py-3">
+                        <td class="text-sm text-[#424242]">{{ $product->views ?? 0 }}</td>
+                        <td>
                             @if($product->stock === 0)
-                                <span class="inline-flex items-center rounded-full border border-[#EF5350] bg-[#FFEBEE] px-2 py-0.5 text-xs font-medium text-[#EF5350]">Sold out</span>
+                                <span class="prod-badge soldout">Sold out</span>
                             @elseif($product->is_active)
-                                <span class="inline-flex items-center gap-1 rounded-full border border-[#2D9F4E] bg-[#E8F5E9] px-2 py-0.5 text-xs font-medium text-[#2D9F4E]">
+                                <span class="prod-badge active">
                                     <span class="h-1.5 w-1.5 rounded-full bg-[#F9C74F]"></span> Active
                                 </span>
                             @else
-                                <span class="inline-flex items-center rounded-full border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-xs font-medium text-[#F57C00]">Inactive</span>
+                                <span class="prod-badge inactive">Inactive</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <button type="button" wire:click="showView({{ $product->id }})"
-                                    class="text-xs font-semibold text-[#2D9F4E] hover:text-[#1B7A37] hover:underline">View</button>
+                        <td class="whitespace-nowrap">
+                            <button type="button" wire:click="showView({{ $product->id }})" class="prod-btn-view">View</button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="px-4 py-8 text-center text-[#9E9E9E]">No products found.</td>
+                        <td colspan="11" class="prod-empty-state">No products found.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -682,18 +1101,28 @@ new class extends Component
             </div>
         </div>
     </div>
+    @endif
 
     {{-- Delete confirm modal --}}
     @if($showDeleteConfirm)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="w-80 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
-            <h3 class="mb-2 font-semibold text-[#212121]">Delete product?</h3>
-            <p class="mb-4 text-sm text-[#424242]">This cannot be undone. The product image and history will also be removed.</p>
-            <div class="flex gap-3 justify-end">
-                <button type="button" wire:click="cancelDelete"
-                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
-                <button type="button" wire:click="deleteProduct"
-                        class="rounded px-3 py-1.5 text-sm text-white bg-[#EF5350] hover:bg-[#C62828]">Delete</button>
+    <div class="prod-modal-overlay">
+        <div class="prod-modal" style="max-width: 360px;">
+            <div class="prod-modal-header">
+                <h3>Delete product?</h3>
+                <p>This action cannot be undone</p>
+                <button type="button" wire:click="cancelDelete" class="prod-modal-close">&times;</button>
+            </div>
+            <div class="prod-modal-body text-center">
+                <div class="w-16 h-16 rounded-full bg-[#FFEBEE] flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-[#E53935]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <p class="text-[#424242] text-sm">The product image and history will also be removed permanently.</p>
+            </div>
+            <div class="prod-modal-footer" style="justify-content: center;">
+                <button type="button" wire:click="cancelDelete" class="prod-btn-cancel">Cancel</button>
+                <button type="button" wire:click="deleteProduct" class="prod-btn-danger">Delete</button>
             </div>
         </div>
     </div>
@@ -701,25 +1130,27 @@ new class extends Component
 
     {{-- Stock adjust modal --}}
     @if($showStockModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="w-80 space-y-4 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
-            <h3 class="font-semibold text-[#212121]">Adjust stock</h3>
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
-                <input type="number" wire:model.defer="stockDelta"
-                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                @error('stockDelta') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+    <div class="prod-modal-overlay">
+        <div class="prod-modal">
+            <div class="prod-modal-header">
+                <h3>Adjust Stock</h3>
+                <p>Update inventory quantity</p>
+                <button type="button" wire:click="closeStockModal" class="prod-modal-close">&times;</button>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Note <span class="text-[#9E9E9E]">(optional)</span></label>
-                <input type="text" wire:model.defer="stockNote"
-                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
+            <div class="prod-modal-body">
+                <div class="prod-form-group">
+                    <label class="prod-label">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
+                    <input type="number" wire:model.defer="stockDelta" class="prod-input">
+                    @error('stockDelta') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
+                <div class="prod-form-group">
+                    <label class="prod-label">Note <span class="text-[#9E9E9E]">(optional)</span></label>
+                    <input type="text" wire:model.defer="stockNote" class="prod-input" placeholder="e.g., New shipment arrived">
+                </div>
             </div>
-            <div class="flex gap-3 justify-end pt-2">
-                <button type="button" wire:click="closeStockModal"
-                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
-                <button type="button" wire:click="adjustStock"
-                        class="rounded bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-3 py-1.5 text-sm text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95">Save</button>
+            <div class="prod-modal-footer">
+                <button type="button" wire:click="closeStockModal" class="prod-btn-cancel">Cancel</button>
+                <button type="button" wire:click="adjustStock" class="prod-btn-primary">Save Changes</button>
             </div>
         </div>
     </div>
@@ -727,29 +1158,28 @@ new class extends Component
 
     {{-- Bulk stock update modal --}}
     @if($showBulkStockModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="w-80 space-y-4 rounded-xl border border-[#E0E0E0] bg-white p-6 shadow-xl">
-            <h3 class="font-semibold text-[#212121]">Bulk stock update</h3>
-            <p class="text-xs text-[#9E9E9E]">
-                Applying to {{ count($selected ?? []) }} selected product(s).
-            </p>
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
-                <input type="number" wire:model.defer="bulkStockDelta"
-                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                @error('bulkStockDelta') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+    <div class="prod-modal-overlay">
+        <div class="prod-modal">
+            <div class="prod-modal-header">
+                <h3>Bulk Stock Update</h3>
+                <p>Apply to {{ count($selected ?? []) }} selected product(s)</p>
+                <button type="button" wire:click="closeBulkStockModal" class="prod-modal-close">&times;</button>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Note <span class="text-[#9E9E9E]">(optional)</span></label>
-                <input type="text" wire:model.defer="bulkStockNote"
-                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                @error('bulkStockNote') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            <div class="prod-modal-body">
+                <div class="prod-form-group">
+                    <label class="prod-label">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
+                    <input type="number" wire:model.defer="bulkStockDelta" class="prod-input">
+                    @error('bulkStockDelta') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
+                <div class="prod-form-group">
+                    <label class="prod-label">Note <span class="text-[#9E9E9E]">(optional)</span></label>
+                    <input type="text" wire:model.defer="bulkStockNote" class="prod-input" placeholder="e.g., Seasonal restock">
+                    @error('bulkStockNote') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
             </div>
-            <div class="flex gap-3 justify-end pt-2">
-                <button type="button" wire:click="closeBulkStockModal"
-                        class="rounded border border-[#F9C74F] bg-white px-3 py-1.5 text-sm text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">Cancel</button>
-                <button type="button" wire:click="applyBulkStock"
-                        class="rounded bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-3 py-1.5 text-sm text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95">Apply</button>
+            <div class="prod-modal-footer">
+                <button type="button" wire:click="closeBulkStockModal" class="prod-btn-cancel">Cancel</button>
+                <button type="button" wire:click="applyBulkStock" class="prod-btn-primary">Apply Changes</button>
             </div>
         </div>
     </div>
@@ -757,301 +1187,327 @@ new class extends Component
 
     {{-- Inventory history modal --}}
     @if($showHistoryModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-gray-900 text-sm">Inventory & change history</h3>
-                <button type="button" wire:click="closeHistory"
-                        class="text-gray-400 hover:text-gray-600 text-sm">&times;</button>
+    <div class="prod-modal-overlay">
+        <div class="prod-modal" style="max-width: 640px;">
+            <div class="prod-modal-header">
+                <h3>Inventory History</h3>
+                <p>Product changes and stock movements</p>
+                <button type="button" wire:click="closeHistory" class="prod-modal-close">&times;</button>
             </div>
-
-            @php($historyRows = $this->historyRows)
-            @if($historyRows->isEmpty())
-                <p class="text-sm text-gray-500">No history recorded yet for this product.</p>
-            @else
-                <div class="overflow-y-auto border rounded-md divide-y divide-gray-100 text-sm">
-                    @foreach($historyRows as $row)
-                        <div class="px-4 py-3 flex items-start gap-3">
-                            <div class="w-28 text-xs text-gray-500 mt-0.5">
-                                {{ optional($row->created_at)->format('Y-m-d H:i') }}
-                            </div>
-                            <div class="flex-1 space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium
-                                        @switch($row->action)
-                                            @case('added') bg-green-100 text-green-800 @break
-                                            @case('updated') bg-blue-100 text-blue-800 @break
-                                            @case('deleted') bg-red-100 text-red-800 @break
-                                            @case('stock_change') bg-amber-100 text-amber-800 @break
-                                            @default bg-gray-100 text-gray-700
-                                        @endswitch">
-                                        {{ ucfirst(str_replace('_', ' ', $row->action)) }}
-                                    </span>
-                                    @if($row->note)
-                                        <span class="text-xs text-gray-700">{{ $row->note }}</span>
-                                    @endif
-                                </div>
-                                @if($row->action === 'stock_change')
-                                    <div class="text-xs text-gray-600">
-                                        Stock: {{ $row->old_value }} → {{ $row->new_value }}
-                                    </div>
-                                @elseif($row->old_value || $row->new_value)
-                                    <div class="grid grid-cols-2 gap-3 text-[11px] text-gray-600">
-                                        @if($row->old_value)
-                                            <div>
-                                                <div class="font-medium text-gray-700 mb-0.5">Before</div>
-                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row->old_value }}</pre>
-                                            </div>
-                                        @endif
-                                        @if($row->new_value)
-                                            <div>
-                                                <div class="font-medium text-gray-700 mb-0.5">After</div>
-                                                <pre class="bg-gray-50 rounded p-1.5 overflow-x-auto whitespace-pre-wrap">{{ $row->new_value }}</pre>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
+            <div class="prod-modal-body">
+                @php($historyRows = $this->historyRows)
+                @if($historyRows->isEmpty())
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-8 h-8 text-[#9E9E9E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
                         </div>
-                    @endforeach
-                </div>
-                @if($historyRows->hasPages())
-                    <div class="mt-2 pt-2 border-t">
-                        {{ $historyRows->links() }}
+                        <p class="text-[#9E9E9E] text-sm">No history recorded yet for this product.</p>
                     </div>
+                @else
+                    <div class="space-y-3">
+                        @foreach($historyRows as $row)
+                            <div class="prod-section-box" style="margin-bottom: 0;">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-20 text-xs text-[#9E9E9E] mt-0.5">
+                                        {{ optional($row->created_at)->format('M j, Y') }}
+                                        <div class="text-[10px]">{{ optional($row->created_at)->format('g:i A') }}</div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="prod-badge
+                                                @switch($row->action)
+                                                    @case('added') active @break
+                                                    @case('updated') condition @break
+                                                    @case('deleted') soldout @break
+                                                    @case('stock_change') inactive @break
+                                                    @default condition
+                                                @endswitch">
+                                                {{ ucfirst(str_replace('_', ' ', $row->action)) }}
+                                            </span>
+                                            @if($row->note)
+                                                <span class="text-xs text-[#616161]">{{ $row->note }}</span>
+                                            @endif
+                                        </div>
+                                        @if($row->action === 'stock_change')
+                                            <div class="text-sm text-[#424242]">
+                                                Stock: <span class="font-semibold">{{ $row->old_value }}</span> → <span class="font-semibold text-[#2D9F4E]">{{ $row->new_value }}</span>
+                                            </div>
+                                        @elseif($row->old_value || $row->new_value)
+                                            @php($hf = $this->formatHistoryValue($row))
+                                            <div class="grid grid-cols-1 gap-3 text-xs mt-2 sm:grid-cols-2">
+                                                <div class="bg-[#F5F5F5] rounded-lg p-2">
+                                                    <div class="text-[#9E9E9E] mb-1">Before</div>
+                                                    <div class="text-[#616161]">{{ $hf['old'] ?: '—' }}</div>
+                                                </div>
+                                                <div class="bg-[#E8F5E9] rounded-lg p-2">
+                                                    <div class="text-[#2D9F4E] mb-1">After</div>
+                                                    <div class="text-[#424242]">{{ $hf['new'] ?: '—' }}</div>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    @if($historyRows->hasPages())
+                        <div class="mt-4 pt-3 border-t border-[#E0E0E0]">
+                            {{ $historyRows->links() }}
+                        </div>
+                    @endif
                 @endif
-            @endif
-
-            <div class="mt-4 flex justify-end">
-                <button type="button" wire:click="closeHistory"
-                        class="px-4 py-2 border rounded-md text-xs font-semibold text-gray-700 uppercase tracking-widest hover:bg-gray-50">
-                    Close
-                </button>
+            </div>
+            <div class="prod-modal-footer">
+                <button type="button" wire:click="closeHistory" class="prod-btn-cancel">Close</button>
             </div>
         </div>
     </div>
     @endif
-
     {{-- ============================================================
-         CREATE / EDIT VIEW
+         PRODUCT VIEW
     ============================================================ --}}
-    @elseif($mode === 'view')
+    @if($mode === 'view')
     @php($viewProduct = $viewingId ? \App\Models\Product::query()->where('seller_id', $this->seller?->id)->find($viewingId) : null)
-    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <button type="button" wire:click="backToList" class="inline-flex items-center gap-1 text-sm text-[#2D9F4E] hover:text-[#1B7A37]">
-                <span class="text-[#F9C74F]">&larr;</span> Back to products
+    <div class="prod-container">
+        <div class="mb-5 flex items-center justify-between gap-3">
+            <button type="button" wire:click="backToList" class="prod-btn-ghost inline-flex items-center self-center" style="padding: 8px 12px; font-size: 0.75rem; line-height: 1;">
+                <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back to products
             </button>
             @if($viewProduct)
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" wire:click="showEdit({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#2D9F4E] hover:bg-[#E8F5E9] hover:text-[#1B7A37]">Edit</button>
-                    <button type="button" wire:click="openStockModal({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]">Adjust stock</button>
-                    <button type="button" wire:click="toggleActive({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F57C00] hover:bg-[#FFF3E0] hover:text-[#E65100]">{{ $viewProduct->is_active ? 'Set inactive' : 'Set active' }}</button>
+                    <button type="button" wire:click="showEdit({{ $viewProduct->id }})" class="prod-btn-secondary" style="padding: 8px 14px; font-size: 0.75rem;">Edit</button>
+                    <button type="button" wire:click="openStockModal({{ $viewProduct->id }})" class="prod-btn-ghost" style="padding: 8px 14px; font-size: 0.75rem;">Adjust stock</button>
+                    <button type="button" wire:click="toggleActive({{ $viewProduct->id }})" class="prod-btn-ghost" style="padding: 8px 14px; font-size: 0.75rem;">{{ $viewProduct->is_active ? 'Set inactive' : 'Set active' }}</button>
                     @if($viewProduct->stock > 0)
-                        <button type="button" wire:click="markSoldOut({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F57C00] hover:bg-[#FFF3E0] hover:text-[#E65100]">Mark as sold out</button>
+                        <button type="button" wire:click="markSoldOut({{ $viewProduct->id }})" class="prod-btn-ghost" style="padding: 8px 14px; font-size: 0.75rem;">Mark sold out</button>
                     @endif
-                    <button type="button" wire:click="showHistory({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#F9C74F] hover:bg-[#FFF9E6] hover:text-[#E6B340]">History</button>
-                    <button type="button" wire:click="confirmDelete({{ $viewProduct->id }})" class="rounded-md px-3 py-1.5 text-xs font-semibold text-[#EF5350] hover:text-[#C62828]">Delete</button>
+                    <button type="button" wire:click="showHistory({{ $viewProduct->id }})" class="prod-btn-ghost" style="padding: 8px 14px; font-size: 0.75rem;">History</button>
+                    <button type="button" wire:click="confirmDelete({{ $viewProduct->id }})" class="prod-btn-danger" style="padding: 8px 14px; font-size: 0.75rem;">Delete</button>
                 </div>
             @endif
         </div>
 
         @if($viewProduct)
-            <div class="rounded-lg border border-[#E0E0E0] bg-white p-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-[#212121]">{{ $viewProduct->name }}</h3>
-                    <p class="mt-1 text-xs text-[#9E9E9E]">Views: {{ $viewProduct->views ?? 0 }}</p>
-                    <div class="mt-2 h-[3px] w-40 rounded bg-gradient-to-r from-[#2D9F4E] to-[#F9C74F]"></div>
+            <div class="prod-section-box" style="padding: 24px;">
+                <div class="flex items-start gap-4 mb-4">
+                    @if($viewProduct->image_path)
+                        <img src="{{ asset('storage/' . $viewProduct->image_path) }}" alt="{{ $viewProduct->name }}" class="w-24 h-24 object-cover rounded-xl border border-[#E0E0E0]">
+                    @else
+                        <div class="w-24 h-24 rounded-xl bg-[#FFF9E6] flex items-center justify-center text-[#9E9E9E] text-xs">No image</div>
+                    @endif
+                    <div class="flex-1">
+                        <h3 class="text-xl font-bold text-[#212121]">{{ $viewProduct->name }}</h3>
+                        <div class="flex items-center gap-2 mt-2">
+                            @if($viewProduct->stock === 0)
+                                <span class="prod-badge soldout">Sold out</span>
+                            @elseif($viewProduct->is_active)
+                                <span class="prod-badge active">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-[#F9C74F]"></span> Active
+                                </span>
+                            @else
+                                <span class="prod-badge inactive">Inactive</span>
+                            @endif
+                            <span class="prod-badge condition">{{ \App\Models\Product::conditionOptions()[$viewProduct->condition] ?? $viewProduct->condition }}</span>
+                        </div>
+                        <p class="mt-2 text-xs text-[#9E9E9E]">Views: {{ $viewProduct->views ?? 0 }}</p>
+                    </div>
                 </div>
-                <div class="mt-4 grid grid-cols-1 gap-3 text-sm text-[#424242] sm:grid-cols-2">
-                    <p><span class="font-medium">Category:</span> {{ $viewProduct->category ?? '—' }}</p>
-                    <p><span class="font-medium">Condition:</span> {{ \App\Models\Product::conditionOptions()[$viewProduct->condition] ?? $viewProduct->condition }}</p>
-                    <p><span class="font-medium text-[#2D9F4E]">Price:</span> ₱{{ number_format($viewProduct->price, 2) }}</p>
-                    <p><span class="font-medium text-[#2D9F4E]">Sale Price:</span> {{ $viewProduct->sale_price ? '₱' . number_format($viewProduct->sale_price, 2) : '—' }}</p>
-                    <p><span class="font-medium">Stock:</span> {{ $viewProduct->stock }}</p>
-                    <p><span class="font-medium">Status:</span> {{ $viewProduct->stock === 0 ? 'Sold out' : ($viewProduct->is_active ? 'Active' : 'Inactive') }}</p>
+                <div class="prod-gradient-line mb-4"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div class="prod-section-box" style="margin-bottom: 0;">
+                        <div class="prod-section-title">Category</div>
+                        <p class="text-[#424242]">{{ $viewProduct->category ?? '—' }}</p>
+                    </div>
+                    <div class="prod-section-box" style="margin-bottom: 0;">
+                        <div class="prod-section-title">Stock</div>
+                        <p class="{{ $viewProduct->stock === 0 ? 'prod-stock-low' : 'text-[#424242]' }} font-semibold">{{ $viewProduct->stock }} units</p>
+                    </div>
+                    <div class="prod-section-box" style="margin-bottom: 0;">
+                        <div class="prod-section-title">Price</div>
+                        <p class="prod-price text-lg">₱{{ number_format($viewProduct->price, 2) }}</p>
+                    </div>
+                    <div class="prod-section-box" style="margin-bottom: 0;">
+                        <div class="prod-section-title">Sale Price</div>
+                        <p class="text-[#2D9F4E] font-semibold text-lg">{{ $viewProduct->sale_price ? '₱' . number_format($viewProduct->sale_price, 2) : '—' }}</p>
+                    </div>
                 </div>
-                <div class="mt-4">
-                    <p class="mb-1 text-xs font-medium uppercase tracking-widest text-[#9E9E9E]">Description</p>
-                    <p class="text-sm text-[#424242]">{{ $viewProduct->description }}</p>
+                <div class="mt-4 prod-section-box" style="margin-bottom: 0;">
+                    <div class="prod-section-title">Description</div>
+                    <p class="text-sm text-[#424242] leading-relaxed">{{ $viewProduct->description }}</p>
                 </div>
             </div>
         @else
-            <div class="rounded-lg border border-[#E0E0E0] bg-white p-5 text-sm text-[#9E9E9E]">
-                Product not found.
+            <div class="prod-empty-state">
+                <div class="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-8 h-8 text-[#9E9E9E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <p>Product not found.</p>
             </div>
         @endif
     </div>
-    @else
-    <div class="space-y-4 rounded-xl border border-[#E0E0E0] bg-[#FFFEF5] p-4 sm:p-5">
-        <div class="flex items-center gap-3">
-            <button type="button" wire:click="backToList" class="inline-flex items-center gap-1 text-sm text-[#2D9F4E] hover:text-[#1B7A37]"><span class="text-[#F9C74F]">&larr;</span> Back to products</button>
+    {{-- ============================================================
+         CREATE / EDIT FORM
+    ============================================================ --}}
+    @elseif($mode === 'create' || $mode === 'edit')
+    <div class="prod-container">
+        <div class="flex items-center gap-3 mb-5">
+            <button type="button" wire:click="backToList" class="prod-btn-ghost" style="padding: 8px 12px; font-size: 0.75rem;">
+                <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back to products
+            </button>
+            <div class="prod-gradient-line"></div>
             <div>
-                <h3 class="font-semibold text-[#212121]">{{ $mode === 'create' ? 'Add new product' : 'Edit product' }}</h3>
+                <h3 class="font-bold text-[#212121]">{{ $mode === 'create' ? 'Add New Product' : 'Edit Product' }}</h3>
                 @if($mode === 'edit' && $editingId)
                     @php($editProduct = \App\Models\Product::find($editingId))
                     @if($editProduct)
-                        <p class="mt-0.5 text-xs text-[#9E9E9E]">Views: {{ $editProduct->views ?? 0 }}</p>
+                        <p class="text-xs text-[#9E9E9E]">Views: {{ $editProduct->views ?? 0 }}</p>
                     @endif
                 @endif
             </div>
         </div>
 
-        <div class="max-w-2xl space-y-5 rounded-lg border border-[#E0E0E0] bg-white p-6 shadow-sm">
-            <div class="h-[3px] w-44 rounded bg-gradient-to-r from-[#2D9F4E] to-[#F9C74F]"></div>
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Product name <span class="text-[#F57C00]">*</span></label>
-                <input type="text" wire:model.defer="name"
-                       class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                @error('name') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
+        <div class="max-w-2xl">
+            <div class="prod-section-box" style="padding: 24px;">
+                <div class="prod-form-group">
+                    <label class="prod-label">Product name <span class="text-[#F57C00]">*</span></label>
+                    <input type="text" wire:model.defer="name" class="prod-input" placeholder="Enter product name">
+                    @error('name') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
 
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Description <span class="text-[#F57C00]">*</span></label>
-                <textarea wire:model.defer="description" rows="4"
-                          class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"></textarea>
-                @error('description') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
+                <div class="prod-form-group">
+                    <label class="prod-label">Description <span class="text-[#F57C00]">*</span></label>
+                    <textarea wire:model.defer="description" rows="4" class="prod-input prod-textarea" placeholder="Describe your product..."></textarea>
+                    @error('description') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Category <span class="text-[#F57C00]">*</span></label>
-                    <input type="text" wire:model.defer="category"
-                           list="seller-categories"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
-                           placeholder="e.g. Clothing, Bags, Gadgets">
-                    <datalist id="seller-categories">
-                        @foreach($this->sellerCategories as $cat)
-                            <option value="{{ $cat }}"></option>
-                        @endforeach
-                    </datalist>
-                    @error('category') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-                    @if(count($this->sellerCategories))
-                        <div class="mt-1 flex flex-wrap gap-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="prod-form-group">
+                        <label class="prod-label">Category <span class="text-[#F57C00]">*</span></label>
+                        <input type="text" wire:model.defer="category" list="seller-categories" class="prod-input" placeholder="e.g. Clothing, Bags">
+                        <datalist id="seller-categories">
                             @foreach($this->sellerCategories as $cat)
-                                <button type="button"
-                                        wire:click="$set('category', '{{ $cat }}')"
-                                        class="rounded-full border border-[#F9C74F] bg-[#FFF9E6] px-2 py-0.5 text-[11px] text-[#F57C00] hover:border-[#2D9F4E]">
-                                    {{ $cat }}
-                                </button>
+                                <option value="{{ $cat }}"></option>
                             @endforeach
-                        </div>
+                        </datalist>
+                        @error('category') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                        @if(count($this->sellerCategories))
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                @foreach($this->sellerCategories as $cat)
+                                    <button type="button" wire:click="$set('category', '{{ $cat }}')" class="prod-tag">{{ $cat }}</button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    <div class="prod-form-group">
+                        <label class="prod-label">Tags <span class="text-[#9E9E9E]">(optional)</span></label>
+                        <input type="text" wire:model.defer="tags" class="prod-input" placeholder="vintage, denim, bundle">
+                        @error('tags') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="prod-form-group">
+                    <label class="prod-label">Condition <span class="text-[#F57C00]">*</span></label>
+                    <select wire:model.defer="condition" class="prod-input">
+                        @foreach(\App\Models\Product::conditionOptions() as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('condition') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="prod-form-group">
+                    <label class="prod-label">Size / Variant <span class="text-[#9E9E9E]">(optional)</span></label>
+                    <select wire:model.defer="size_variant" class="prod-input">
+                        <option value="">— None —</option>
+                        @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                        <option value="custom">Custom</option>
+                    </select>
+                    @if($size_variant === 'custom')
+                        <input type="text" wire:model.defer="size_custom" maxlength="100" class="prod-input mt-2" placeholder="e.g. One size, 28 waist">
                     @endif
+                    @error('size_variant') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Tags <span class="text-xs text-[#9E9E9E]">(optional, comma separated)</span></label>
-                    <input type="text" wire:model.defer="tags"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
-                           placeholder="e.g. vintage, denim, bundle">
-                    @error('tags') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="prod-form-group">
+                        <label class="prod-label">Price (₱) <span class="text-[#F57C00]">*</span></label>
+                        <input type="number" step="0.01" min="0" wire:model.defer="price" class="prod-input">
+                        @error('price') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="prod-form-group">
+                        <label class="prod-label">Sale Price (₱) <span class="text-[#9E9E9E]">(optional)</span></label>
+                        <input type="number" step="0.01" min="0" wire:model.defer="sale_price" class="prod-input">
+                        @error('sale_price') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Condition <span class="text-[#F57C00]">*</span></label>
-                <select wire:model.defer="condition"
-                        class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                    @foreach(\App\Models\Product::conditionOptions() as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-                @error('condition') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Size / variant <span class="text-xs text-[#9E9E9E]">optional</span></label>
-                <select wire:model.defer="size_variant"
-                        class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                    <option value="">— None —</option>
-                    @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                    <option value="custom">Custom</option>
-                </select>
-                @if($size_variant === 'custom')
-                    <input type="text" wire:model.defer="size_custom" maxlength="100"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] placeholder-[#9E9E9E] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
-                           placeholder="e.g. One size, 28 waist">
-                @endif
-                @error('size_variant') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Price (₱) <span class="text-[#F57C00]">*</span></label>
-                    <input type="number" step="0.01" min="0" wire:model.defer="price"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                    @error('price') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                <div class="prod-form-group">
+                    <label class="prod-label">Delivery Fee (₱) <span class="text-[#9E9E9E]">(optional)</span></label>
+                    <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee" class="prod-input max-w-xs" placeholder="0">
+                    <p class="mt-1 text-xs text-[#9E9E9E]">Used when your store uses "Per product" delivery</p>
+                    @error('delivery_fee') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Sale price (₱) <span class="text-[#9E9E9E]">optional</span></label>
-                    <input type="number" step="0.01" min="0" wire:model.defer="sale_price"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                    @error('sale_price') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-                </div>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">Delivery fee (₱) <span class="text-xs text-[#9E9E9E]">optional - used when your store uses "Per product" delivery</span></label>
-                <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
-                       class="mt-1 block w-full max-w-xs rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
-                       placeholder="0">
-                @error('delivery_fee') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Stock quantity <span class="text-[#F57C00]">*</span></label>
-                    <input type="number" min="0" wire:model.defer="stock"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]">
-                    @error('stock') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="prod-form-group">
+                        <label class="prod-label">Stock Quantity <span class="text-[#F57C00]">*</span></label>
+                        <input type="number" min="0" wire:model.defer="stock" class="prod-input">
+                        @error('stock') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="prod-form-group">
+                        <label class="prod-label">Low Stock Threshold</label>
+                        <input type="number" min="0" wire:model.defer="low_stock_threshold" class="prod-input" placeholder="10">
+                        <p class="mt-1 text-xs text-[#9E9E9E]">Notification when stock falls to this level</p>
+                        @error('low_stock_threshold') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-[#424242]">Low stock threshold</label>
-                    <input type="number" min="0" wire:model.defer="low_stock_threshold"
-                           class="mt-1 block w-full rounded-md border border-[#E0E0E0] bg-white px-3 py-2 text-sm text-[#212121] focus:border-2 focus:border-[#2D9F4E] focus:ring-[0_0_0_3px_rgba(249,199,79,0.15)]"
-                           placeholder="10">
-                    <p class="mt-0.5 text-xs text-[#9E9E9E]">Wishlist notification when stock falls to this level or below.</p>
-                    @error('low_stock_threshold') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" wire:model.defer="is_active"
-                           class="rounded border-[#E0E0E0] text-[#2D9F4E] shadow-sm focus:ring-[#2D9F4E]">
-                    <span class="text-sm text-[#424242]">Active (visible to customers)</span>
-                </label>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium text-[#424242]">
-                    Product image {{ $mode === 'create' ? '*' : '(leave blank to keep current)' }}
-                </label>
-                @if($mode === 'edit' && $editingId)
-                    @php($existingProduct = \App\Models\Product::find($editingId))
-                    @if($existingProduct && $existingProduct->image_path)
-                        <img src="{{ asset('storage/' . $existingProduct->image_path) }}"
-                             class="mt-2 h-24 w-24 object-cover rounded-md border" alt="Current image">
+                <div class="prod-form-group">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" wire:model.defer="is_active" class="rounded border-[#E0E0E0] text-[#2D9F4E] focus:ring-[#2D9F4E]">
+                        <span class="text-sm text-[#424242]">Active (visible to customers)</span>
+                    </label>
+                </div>
+
+                <div class="prod-form-group">
+                    <label class="prod-label">
+                        Product Image {{ $mode === 'create' ? '*' : '(leave blank to keep current)' }}
+                    </label>
+                    @if($mode === 'edit' && $editingId)
+                        @php($existingProduct = \App\Models\Product::find($editingId))
+                        @if($existingProduct && $existingProduct->image_path)
+                            <img src="{{ asset('storage/' . $existingProduct->image_path) }}" class="mt-2 h-24 w-24 object-cover rounded-lg border border-[#E0E0E0]" alt="Current image">
+                        @endif
                     @endif
-                @endif
-                <input type="file" wire:model="image" accept="image/*"
-                       class="mt-2 block rounded-md border border-[#F9C74F] bg-[#FFF9E6] px-3 py-2 text-sm text-[#F57C00] file:mr-3 file:rounded file:border-0 file:bg-white file:px-3 file:py-1 file:text-[#2D9F4E] hover:border-[#2D9F4E]">
-                <div wire:loading wire:target="image" class="mt-1 text-xs text-[#2D9F4E]">Uploading...</div>
-                @if($image)
-                    <img src="{{ $image->temporaryUrl() }}" class="mt-2 h-24 w-24 object-cover rounded-md border" alt="Preview">
-                @endif
-                @error('image') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
+                    <input type="file" wire:model="image" accept="image/*" class="prod-input mt-2" style="padding: 8px;">
+                    <div wire:loading wire:target="image" class="mt-1 text-xs text-[#2D9F4E]">Uploading...</div>
+                    @if($image)
+                        <img src="{{ $image->temporaryUrl() }}" class="mt-2 h-24 w-24 object-cover rounded-lg border border-[#E0E0E0]" alt="Preview">
+                    @endif
+                    @error('image') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
+                </div>
 
-            <div class="flex gap-3 pt-2">
-                <button type="button" wire:click="save" wire:loading.attr="disabled"
-                        class="inline-flex items-center rounded-md border-0 bg-[linear-gradient(135deg,#2D9F4E,#F9C74F)] px-6 py-2 text-xs font-semibold uppercase tracking-widest text-white shadow-[0_2px_8px_rgba(45,159,78,0.3)] hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[#2D9F4E] focus:ring-offset-2">
-                    {{ $mode === 'create' ? 'Create product' : 'Save changes' }}
-                </button>
-                <button type="button" wire:click="backToList"
-                        class="rounded-md border border-[#F9C74F] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[#F57C00] hover:border-[#E6B340] hover:bg-[#FFF9E6]">
-                    Cancel
-                </button>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" wire:click="save" wire:loading.attr="disabled" class="prod-btn-primary">
+                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ $mode === 'create' ? 'Create Product' : 'Save Changes' }}
+                    </button>
+                    <button type="button" wire:click="backToList" class="prod-btn-cancel">Cancel</button>
+                </div>
             </div>
         </div>
     </div>

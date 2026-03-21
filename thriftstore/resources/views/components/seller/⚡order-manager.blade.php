@@ -1051,6 +1051,7 @@ new class extends Component
                 <option value="shipped">Shipped</option>
                 <option value="out_for_delivery">Out for delivery</option>
                 <option value="delivered">Delivered</option>
+                <option value="received">Received</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
             </select>
