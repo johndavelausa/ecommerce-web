@@ -1,3 +1,5 @@
+providers = ["php", "node"]
+
 [phases.setup]
 nixPkgs = [
   "php82",
