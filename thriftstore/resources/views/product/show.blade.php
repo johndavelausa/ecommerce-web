@@ -158,14 +158,6 @@
                                     <span class="text-gray-700">{{ $product->category }}</span>
                                 </div>
                             @endif
-                            @if($product->size_variant)
-                                <div class="flex items-center gap-4">
-                                    <span class="w-28 text-gray-400 flex-shrink-0">Size</span>
-                                    <span class="px-3 py-1.5 border-2 border-[#2D9F4E] text-[#2D9F4E] text-xs font-medium rounded">
-                                        {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}
-                                    </span>
-                                </div>
-                            @endif
                             @if($product->tags)
                                 <div class="flex items-start gap-4">
                                     <span class="w-28 text-gray-400 flex-shrink-0 pt-0.5">Tags</span>

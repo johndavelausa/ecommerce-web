@@ -223,19 +223,47 @@ new class extends Component
 
         $cart = Session::get('cart', []);
         $maxCartItems = 50;
+        $itemsAdded = 0;
+        $itemsSkipped = 0;
+        $debugInfo = [];
 
         foreach ($order->items as $item) {
             if (count($cart) >= $maxCartItems) {
+                $debugInfo[] = 'Cart full';
                 break;
             }
 
             $product = $item->product;
-            if (! $product || ! $product->is_active || $product->stock <= 0) {
+            if (! $product) {
+                $itemsSkipped++;
+                $debugInfo[] = "Item {$item->id}: Product not found";
+                continue;
+            }
+            if (! $product->is_active) {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: Not active";
+                continue;
+            }
+            if ($product->stock <= 0) {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: Out of stock (stock: {$product->stock})";
                 continue;
             }
 
             $seller = $product->seller;
-            if (! $seller || $seller->status !== 'approved' || ! $seller->is_open) {
+            if (! $seller) {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: No seller";
+                continue;
+            }
+            if ($seller->status !== 'approved') {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: Seller not approved (status: {$seller->status})";
+                continue;
+            }
+            if (! $seller->is_open) {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: Shop closed";
                 continue;
             }
 
@@ -244,10 +272,13 @@ new class extends Component
             $desiredQty = $currentQty + $item->quantity;
             $finalQty = min($desiredQty, $product->stock);
             if ($finalQty <= 0) {
+                $itemsSkipped++;
+                $debugInfo[] = "Product {$product->id}: Final qty <= 0";
                 continue;
             }
 
             if (! isset($cart[$key]) && count($cart) >= $maxCartItems) {
+                $debugInfo[] = 'Cart would exceed max';
                 break;
             }
 
@@ -259,11 +290,14 @@ new class extends Component
                 'image_path' => $product->image_path,
                 'quantity'   => $finalQty,
             ];
+            $itemsAdded++;
+            $debugInfo[] = "Product {$product->id}: Added to cart";
         }
 
         Session::put('cart', $cart);
         $count = array_sum(array_map(fn ($row) => (int) ($row['quantity'] ?? 0), $cart));
         $this->dispatch('cart-updated', count: $count);
+        $this->dispatch('show-reorder-toast', itemsAdded: $itemsAdded, itemsSkipped: $itemsSkipped, debug: $debugInfo);
     }
 
     public function getOrdersProperty()
@@ -1333,3 +1367,65 @@ new class extends Component
     @endif
 
 </div>
+
+<script>
+function initReorderToast() {
+    if (typeof Livewire === 'undefined' || typeof Swal === 'undefined') {
+        return;
+    }
+    
+    // Use the custom Toast configuration from sweetalert.blade.php
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#2d6c50',
+        color: '#ffffff',
+        iconColor: '#ffffff',
+        width: 'auto',
+        customClass: {
+            popup: '!p-3 !py-2 rounded-xl shadow-lg mt-14 mr-4',
+            title: '!text-sm !font-semibold !mt-0 !mb-0 text-white',
+            timerProgressBar: '!bg-green-300'
+        },
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+    
+    Livewire.on('show-reorder-toast', (eventData) => {
+        const itemsAdded = eventData.itemsAdded || 0;
+        const itemsSkipped = eventData.itemsSkipped || 0;
+        
+        let title, icon;
+        if (itemsAdded > 0 && itemsSkipped === 0) {
+            title = `${itemsAdded} item${itemsAdded > 1 ? 's' : ''} added to cart`;
+            icon = 'success';
+        } else if (itemsAdded > 0 && itemsSkipped > 0) {
+            title = `${itemsAdded} added, ${itemsSkipped} unavailable`;
+            icon = 'warning';
+        } else {
+            title = 'All items unavailable';
+            icon = 'error';
+        }
+        
+        Toast.fire({
+            icon: icon,
+            title: title
+        });
+    });
+}
+
+// Try to initialize immediately
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReorderToast);
+} else {
+    initReorderToast();
+}
+
+// Also try after Livewire is ready
+document.addEventListener('livewire:initialized', initReorderToast);
+</script>

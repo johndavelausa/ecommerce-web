@@ -20,7 +20,6 @@ new class extends Component
     public string $category = '';
     public string $seller = '';
     public string $condition = '';
-    public string $size_variant = '';
     public ?float $min_price = null;
     public ?float $max_price = null;
     public bool $on_sale_only = false;
@@ -33,7 +32,6 @@ new class extends Component
         'category' => ['except' => ''],
         'seller' => ['except' => ''],
         'condition' => ['except' => ''],
-        'size_variant' => ['except' => ''],
     ];
 
     public function updatingSearch(): void { $this->resetPage(); }
@@ -42,7 +40,6 @@ new class extends Component
     public function updatingCategory(): void { $this->resetPage(); }
     public function updatingSeller(): void { $this->resetPage(); }
     public function updatingCondition(): void { $this->resetPage(); }
-    public function updatingSizeVariant(): void { $this->resetPage(); }
     public function updatingMinPrice(): void { $this->resetPage(); }
     public function updatingMaxPrice(): void { $this->resetPage(); }
     public function updatedOnSaleOnly(): void { $this->resetPage(); }
@@ -59,12 +56,6 @@ new class extends Component
         $this->resetPage();
     }
 
-    public function toggleSize(string $size): void
-    {
-        $this->size_variant = ($this->size_variant === $size) ? '' : $size;
-        $this->resetPage();
-    }
-
     public function applyFilters(): void
     {
         $this->resetPage();
@@ -77,7 +68,6 @@ new class extends Component
         $this->category = '';
         $this->seller = '';
         $this->condition = '';
-        $this->size_variant = '';
         $this->min_price = null;
         $this->max_price = null;
         $this->on_sale_only = false;
@@ -96,7 +86,6 @@ new class extends Component
             'category' => $this->category,
             'seller' => $this->seller,
             'condition' => $this->condition,
-            'size_variant' => $this->size_variant,
             'min_price' => $this->min_price,
             'max_price' => $this->max_price,
             'on_sale_only' => $this->on_sale_only,
@@ -133,10 +122,6 @@ new class extends Component
 
         if ($this->condition !== '') {
             $q->where('condition', $this->condition);
-        }
-
-        if ($this->size_variant !== '') {
-            $q->where('size_variant', $this->size_variant);
         }
 
         if ($this->min_price !== null) {
@@ -501,25 +486,6 @@ new class extends Component
                         </div>
                     </div>
 
-                    {{-- SIZE --}}
-                    <div>
-                        <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Size</h4>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
-                                <button
-                                    type="button"
-                                    wire:click="toggleSize('{{ $value }}')"
-                                    class="min-w-[42px] rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all
-                                        {{ $size_variant === $value
-                                            ? 'border-[#2D9F4E] bg-[#2D9F4E] text-white shadow-sm'
-                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2D9F4E] hover:text-[#2D9F4E]' }}"
-                                >
-                                    {{ $label }}
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
-
                     {{-- On Sale toggle --}}
                     <label class="flex cursor-pointer items-center gap-2.5">
                         <div class="relative">
@@ -705,12 +671,6 @@ new class extends Component
                                     {{ $product->name }}
                                 </a>
 
-                                @if($product->size_variant)
-                                    <p class="mt-1 text-[11px] text-gray-400">
-                                        Size: {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}
-                                    </p>
-                                @endif
-
                                 <div class="mt-auto flex items-end justify-between pt-3">
                                     <div>
                                         @if($product->sale_price)
@@ -786,9 +746,6 @@ new class extends Component
                                 <div class="min-w-0 flex-1">
                                     <p class="text-[10px] uppercase tracking-widest text-gray-400">{{ $product->seller?->store_name ?? 'Ukay Hub Seller' }}</p>
                                     <a href="{{ route('product.show', $product->id) }}" class="line-clamp-1 text-sm font-bold text-gray-900 hover:text-[#2D9F4E] transition-colors">{{ $product->name }}</a>
-                                    @if($product->size_variant)
-                                        <p class="text-[11px] text-gray-400">Size: {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}</p>
-                                    @endif
                                     @if($product->seller?->is_verified ?? false)
                                         <div class="mt-1 flex items-center gap-1">
                                             <svg class="h-3 w-3 text-[#2D9F4E]" fill="currentColor" viewBox="0 0 20 20">

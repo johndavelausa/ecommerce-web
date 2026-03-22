@@ -37,7 +37,6 @@ class Product extends Model
         'image_path',
         'is_active',
         'condition',
-        'size_variant',
         'delivery_fee',
         'views',
         'low_stock_threshold',
@@ -52,20 +51,6 @@ class Product extends Model
             'good'      => 'Good',
             'fair'      => 'Fair',
             'poor'      => 'Poor',
-        ];
-    }
-
-    /** Size/variant options (C1 - v1.4) */
-    public static function sizeVariantOptions(): array
-    {
-        return [
-            'xs' => 'XS',
-            's' => 'S',
-            'm' => 'M',
-            'l' => 'L',
-            'xl' => 'XL',
-            'xxl' => 'XXL',
-            'free_size' => 'Free Size',
         ];
     }
 

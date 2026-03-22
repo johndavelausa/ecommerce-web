@@ -32,8 +32,6 @@ new class extends Component
     public string $price = '';
     public string $sale_price = '';
     public string $condition = 'good';   // new, like_new, good, fair, poor (A1 - v1.3)
-    public string $size_variant = '';    // C1 v1.4 — optional size/variant (xs,s,m,l,xl,xxl,free_size or custom)
-    public string $size_custom = '';      // when size_variant is 'custom'
     public string $delivery_fee = '';    // optional; used when seller delivery_option is per_product (A2 - v1.3)
     public string $low_stock_threshold = '10'; // B1 v1.4 — per-product low stock warning level
     public int    $stock = 0;
@@ -66,12 +64,6 @@ new class extends Component
         'filterStatus'    => ['except' => ''],
         'filterCondition' => ['except' => ''],
     ];
-
-    #[Computed]
-    public function seller()
-    {
-        return Auth::guard('seller')->user()?->seller;
-    }
 
     #[Computed]
     public function products()
@@ -120,24 +112,10 @@ new class extends Component
     public function updatingFilterStatus(): void { $this->resetPage(); }
     public function updatingFilterCondition(): void { $this->resetPage(); }
 
-    /** C1 v1.4 — resolved size/variant value for DB (preset key or custom text). */
-    protected function sizeVariantValue(): ?string
-    {
-        if ($this->size_variant === 'custom' && trim($this->size_custom) !== '') {
-            return trim($this->size_custom);
-        }
-        if ($this->size_variant !== '' && $this->size_variant !== 'custom') {
-            return $this->size_variant;
-        }
-        return null;
-    }
-
     public function showCreate(): void
     {
-        $this->reset(['name','description','category','tags','price','sale_price','condition','size_variant','size_custom','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
+        $this->reset(['name','description','category','tags','price','sale_price','condition','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
         $this->condition = 'good';
-        $this->size_variant = '';
-        $this->size_custom = '';
         $this->low_stock_threshold = '10';
         $this->is_active = true;
         $this->mode = 'create';
@@ -167,9 +145,6 @@ new class extends Component
         $this->price          = (string) $product->price;
         $this->sale_price     = $product->sale_price !== null ? (string) $product->sale_price : '';
         $this->condition      = (string) ($product->condition ?? 'good');
-        $preset = array_keys(\App\Models\Product::sizeVariantOptions());
-        $this->size_variant  = $product->size_variant && in_array($product->size_variant, $preset, true) ? $product->size_variant : ($product->size_variant ? 'custom' : '');
-        $this->size_custom   = $product->size_variant && !in_array($product->size_variant, $preset, true) ? (string) $product->size_variant : '';
         $this->delivery_fee   = $product->delivery_fee !== null ? (string) $product->delivery_fee : '';
         $this->stock          = $product->stock;
         $this->low_stock_threshold = (string) ($product->low_stock_threshold ?? 10);
@@ -188,8 +163,6 @@ new class extends Component
             'price'       => ['required', 'numeric', 'min:0'],
             'sale_price'  => ['nullable', 'numeric', 'min:0'],
             'condition'   => ['required', 'string', 'in:new,like_new,good,fair,poor'],
-            'size_variant' => ['nullable', 'string', 'max:100'],
-            'size_custom'  => ['nullable', 'string', 'max:100'],
             'delivery_fee'=> ['nullable', 'numeric', 'min:0'],
             'stock'       => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
@@ -222,7 +195,6 @@ new class extends Component
                     'tags'        => $this->tags !== '' ? $this->tags : $existing->tags,
                     'sale_price'  => $this->sale_price !== '' ? $this->sale_price : $existing->sale_price,
                     'condition'   => $this->condition,
-                    'size_variant' => $this->sizeVariantValue(),
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : $existing->delivery_fee,
                     'low_stock_threshold' => (int) $this->low_stock_threshold ?: $existing->low_stock_threshold,
                     'is_active'   => $this->is_active,
@@ -250,7 +222,6 @@ new class extends Component
                     'price'       => $this->price,
                     'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
                     'condition'   => $this->condition,
-                    'size_variant' => $this->sizeVariantValue(),
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                     'stock'       => $this->stock,
                     'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
@@ -282,7 +253,6 @@ new class extends Component
                 'price'       => $this->price,
                 'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
                 'condition'   => $this->condition,
-                'size_variant' => $this->sizeVariantValue(),
                 'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                 'stock'       => $this->stock,
                 'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
@@ -1423,21 +1393,6 @@ new class extends Component
                         @endforeach
                     </select>
                     @error('condition') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="prod-form-group">
-                    <label class="prod-label">Size / Variant <span class="text-[#9E9E9E]">(optional)</span></label>
-                    <select wire:model.defer="size_variant" class="prod-input">
-                        <option value="">— None —</option>
-                        @foreach(\App\Models\Product::sizeVariantOptions() as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                        <option value="custom">Custom</option>
-                    </select>
-                    @if($size_variant === 'custom')
-                        <input type="text" wire:model.defer="size_custom" maxlength="100" class="prod-input mt-2" placeholder="e.g. One size, 28 waist">
-                    @endif
-                    @error('size_variant') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

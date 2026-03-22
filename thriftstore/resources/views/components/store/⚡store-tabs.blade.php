@@ -327,10 +327,6 @@ new class extends Component {
                                 <div class="text-xs flex flex-wrap gap-1 items-center">
                                     <span
                                         class="inline-flex items-center px-2 py-0.5 rounded font-medium bg-indigo-100 text-indigo-800">{{ \App\Models\Product::conditionOptions()[$product->condition] ?? ucfirst(str_replace('_', ' ', $product->condition ?? 'Good')) }}</span>
-                                    @if ($product->size_variant)
-                                        <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded font-medium bg-gray-100 text-gray-700">{{ \App\Models\Product::sizeVariantOptions()[$product->size_variant] ?? $product->size_variant }}</span>
-                                    @endif
                                     @if ($product->seller?->is_verified ?? false)
                                         <span class="inline-flex items-center text-blue-600"
                                             title="Verified seller">✓</span>
@@ -456,10 +452,6 @@ new class extends Component {
                                     <div class="text-xs flex flex-wrap gap-1 items-center">
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 rounded font-medium bg-indigo-100 text-indigo-800">{{ \App\Models\Product::conditionOptions()[$product->condition] ?? ucfirst(str_replace('_', ' ', $product->condition ?? 'Good')) }}</span>
-                                        @if ($product->size_variant)
-                                            <span
-                                                class="inline-flex items-center px-2 py-0.5 rounded font-medium bg-gray-100 text-gray-700">{{ \App\Models\Product::sizeVariantOptions()[$product->size_variant] ?? $product->size_variant }}</span>
-                                        @endif
                                         @if ($product->seller?->is_verified ?? false)
                                             <span class="inline-flex items-center text-blue-600"
                                                 title="Verified seller">✓</span>

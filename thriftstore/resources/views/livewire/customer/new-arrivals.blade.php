@@ -323,12 +323,6 @@ new class extends Component
                                 {{ $product->name }}
                             </a>
 
-                            @if($product->size_variant)
-                                <p class="mt-1 text-[11px] font-medium text-gray-500">
-                                    Size: {{ (\App\Models\Product::sizeVariantOptions())[$product->size_variant] ?? $product->size_variant }}
-                                </p>
-                            @endif
-
                             <div class="mt-auto flex items-end justify-between pt-3">
                                 <div class="flex flex-col">
                                     @if($product->sale_price)
