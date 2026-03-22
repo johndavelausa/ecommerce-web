@@ -19,9 +19,6 @@ new class extends Component
     public string $store_description = '';
     public string $gcash_number = '';
 
-    public string $delivery_option = 'free';
-    public string $delivery_fee = '';
-
     /** B2 v1.4 — Business hours (displayed on public store profile) */
     public string $business_hours = '';
 
@@ -47,8 +44,6 @@ new class extends Component
         $this->store_name = (string) ($seller?->store_name ?? '');
         $this->store_description = (string) ($seller?->store_description ?? '');
         $this->gcash_number = (string) ($seller?->gcash_number ?? '');
-        $this->delivery_option = (string) ($seller?->delivery_option ?? 'free');
-        $this->delivery_fee = $seller && $seller->delivery_fee !== null ? (string) $seller->delivery_fee : '';
         $this->business_hours = (string) ($seller?->business_hours ?? '');
         $this->is_open = (bool) ($seller?->is_open ?? true);
 
@@ -74,15 +69,9 @@ new class extends Component
             'store_name' => ['required', 'string', 'max:255', 'unique:sellers,store_name,'.$seller->id],
             'store_description' => ['nullable', 'string', 'max:5000'],
             'business_hours' => ['nullable', 'string', 'max:1000'],
-            'gcash_number' => ['nullable', 'string', 'max:50'],
-            'delivery_option' => ['required', 'string', 'in:free,flat_rate,per_product'],
+            'gcash_number' => ['nullable', 'digits:11'],
             'avatar' => ['nullable', 'image', 'max:2048'],
         ];
-        if ($this->delivery_option === 'flat_rate') {
-            $rules['delivery_fee'] = ['required', 'numeric', 'min:0'];
-        } else {
-            $rules['delivery_fee'] = ['nullable', 'numeric', 'min:0'];
-        }
         $this->validate($rules);
 
 
@@ -113,8 +102,6 @@ new class extends Component
             'store_name' => $this->store_name,
             'store_description' => $this->store_description,
             'gcash_number' => $this->gcash_number,
-            'delivery_option' => $this->delivery_option,
-            'delivery_fee' => $this->delivery_option === 'flat_rate' && $this->delivery_fee !== '' ? $this->delivery_fee : null,
             'business_hours' => $this->business_hours !== '' ? trim($this->business_hours) : null,
             'is_open' => $this->is_open,
         ]);
@@ -506,40 +493,15 @@ new class extends Component
                 @error('business_hours') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
+
             {{-- GCash --}}
             <div class="sst-form-row">
                 <label class="sst-label">GCash Number</label>
-                <input type="text" wire:model.defer="gcash_number" class="sst-input sst-input--xs" style="max-width:280px;">
+                <input type="text" wire:model.defer="gcash_number" class="sst-input sst-input--xs" style="max-width:280px;" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,11)" placeholder="09XXXXXXXXX">
                 <p class="sst-hint">Used for customer payments.</p>
                 @error('gcash_number') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <hr class="sst-divider">
-
-            {{-- Delivery Fee --}}
-            <div class="sst-form-row">
-                <div class="sst-section-title">Delivery Fee</div>
-                <p class="sst-hint" style="margin-bottom:12px;">Choose how delivery is charged. Customers see this at checkout.</p>
-                <div class="sst-radio-group">
-                    @foreach(\App\Models\Seller::deliveryOptionLabels() as $value => $label)
-                        <label class="sst-radio-label">
-                            <input type="radio" wire:model.defer="delivery_option" value="{{ $value }}">
-                            <span>{{ $label }}</span>
-                        </label>
-                    @endforeach
-                </div>
-                @if($delivery_option === 'flat_rate')
-                    <div style="margin-top:12px;padding-left:16px;">
-                        <label class="sst-label">Flat Rate (₱) per order</label>
-                        <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
-                               class="sst-input" style="max-width:200px;" placeholder="e.g. 50">
-                        @error('delivery_fee') <div class="sst-error">{{ $message }}</div> @enderror
-                    </div>
-                @endif
-                @if($delivery_option === 'per_product')
-                    <p class="sst-hint" style="margin-top:10px;padding-left:16px;">Set a delivery fee on each product in Manage Products.</p>
-                @endif
-            </div>
 
             <hr class="sst-divider">
 

@@ -184,6 +184,7 @@ new class extends Component
                 'orders_cancelled' => 0,
                 'orders_ready_to_ship' => 0,
                 'bad_orders_count' => 0,
+                'orders_completed' => 0,
                 'bad_orders_percent' => 0.0,
                 'earnings_total' => 0,
                 'earnings_month' => 0,
@@ -227,11 +228,24 @@ new class extends Component
         $badOrdersCount = $ordersCancelled;
         $badOrdersPercent = $ordersTotal > 0 ? round(($badOrdersCount / $ordersTotal) * 100, 1) : 0.0;
 
-        $earningsTotal = (clone $orderBase)->where('status', 'delivered')->sum('total_amount');
-        $earningsMonth = (clone $orderBase)
-            ->where('status', 'delivered')
-            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
-            ->sum('total_amount');
+        $ordersCompleted = (clone $orderBase)
+            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->count();
+
+        $earningsTotal = (float) OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.seller_id', $seller->id)
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
+            ->value('total') ?? 0;
+
+        $earningsMonth = (float) OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.seller_id', $seller->id)
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereBetween('orders.created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
+            ->value('total') ?? 0;
 
         // Store rating: average rating across all product reviews for this seller (v1.2 - Seller #9)
         $storeRatingAvg = (float) Review::query()
@@ -243,21 +257,20 @@ new class extends Component
             ->where('products.seller_id', $seller->id)
             ->count();
 
-        // Net Profit: sum of (sale_price or price) × qty for delivered orders (v1.2 - Seller #2)
+        // Net Profit: sum of price_at_purchase × qty for received/completed orders (delivery fee excluded)
         $netProfit = (float) OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
-            ->where('orders.status', 'delivered')
-            ->selectRaw('SUM(COALESCE(NULLIF(products.sale_price, 0), products.price) * order_items.quantity) as total')
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
             ->value('total') ?? 0;
 
-        $avgOrderValue = (float) ((clone $orderBase)->where('status', 'delivered')->avg('total_amount') ?? 0);
+        $avgOrderValue = $ordersCompleted > 0 ? round($earningsTotal / $ordersCompleted, 2) : 0.0;
 
         $topProductData = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('orders.seller_id', $seller->id)
-            ->where('orders.status', 'delivered')
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->selectRaw('order_items.product_id, SUM(order_items.quantity) as total_sold')
             ->groupBy('order_items.product_id')
             ->orderByDesc('total_sold')
@@ -287,6 +300,7 @@ new class extends Component
             'avg_order_value' => $avgOrderValue,
             'top_product_name' => $topProductName,
             'top_product_sold' => $topProductSold,
+            'orders_completed' => $ordersCompleted,
         ];
     }
 
@@ -298,11 +312,12 @@ new class extends Component
             return ['labels' => [], 'data' => []];
         }
         $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
-        $revenues = Order::query()
-            ->where('seller_id', $seller->id)
-            ->where('status', 'delivered')
-            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
-            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+        $revenues = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.seller_id', $seller->id)
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereBetween('orders.created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->selectRaw('DATE(orders.created_at) as date, SUM(order_items.price_at_purchase * order_items.quantity) as total')
             ->groupBy('date')
             ->pluck('total', 'date');
         return [
@@ -322,7 +337,7 @@ new class extends Component
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
-            ->where('orders.status', 'delivered')
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->selectRaw('products.name, SUM(order_items.quantity) as total_sold')
             ->groupBy('order_items.product_id', 'products.name')
             ->orderByDesc('total_sold')
@@ -786,7 +801,7 @@ new class extends Component
             <div class="dash-kpi-body">
                 <div class="dash-kpi-label">Net Profit</div>
                 <div class="dash-kpi-value">&#8369;{{ number_format($this->stats['net_profit'], 0) }}</div>
-                <div class="dash-kpi-sub">{{ $this->stats['orders_delivered'] }} delivered orders</div>
+                <div class="dash-kpi-sub">{{ $this->stats['orders_completed'] }} completed orders</div>
             </div>
         </div>
     </div>
@@ -882,7 +897,7 @@ new class extends Component
                     <canvas x-ref="salesChart" style="height:130px;"></canvas>
                 </div>
                 <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
-                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Delivered</div><div style="font-size:0.8125rem;font-weight:700;color:#2D9F4E;">{{ $this->stats['orders_delivered'] }}</div></div>
+                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Completed</div><div style="font-size:0.8125rem;font-weight:700;color:#2D9F4E;">{{ $this->stats['orders_completed'] }}</div></div>
                     <div><div style="font-size:0.6rem;color:#BDBDBD;">Total Revenue</div><div style="font-size:0.8125rem;font-weight:700;color:#212121;">&#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div></div>
                 </div>
             </div>
@@ -991,11 +1006,11 @@ new class extends Component
                 <div class="dash-pipeline-num" style="color:#1976D2;">{{ $this->stats['orders_ready_to_ship'] }}</div>
                 <div class="dash-pipeline-sub">Ready for pickup</div>
             </a>
-            <a href="{{ route('seller.orders', ['status' => 'delivered']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+            <a href="{{ route('seller.orders', ['status' => 'completed']) }}" class="dash-pipeline-step" style="text-decoration:none;">
                 <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#2D9F4E;"></div>
                 <div class="dash-pipeline-label" style="color:#2D9F4E;">Completed</div>
-                <div class="dash-pipeline-num" style="color:#2D9F4E;">{{ $this->stats['orders_delivered'] }}</div>
-                <div class="dash-pipeline-sub">Successfully delivered</div>
+                <div class="dash-pipeline-num" style="color:#2D9F4E;">{{ $this->stats['orders_completed'] }}</div>
+                <div class="dash-pipeline-sub">Order received by buyer</div>
             </a>
             <a href="{{ route('seller.orders', ['status' => 'cancelled']) }}" class="dash-pipeline-step" style="text-decoration:none;">
                 <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#E74C3C;"></div>
