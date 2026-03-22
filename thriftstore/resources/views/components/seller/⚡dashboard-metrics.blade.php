@@ -327,6 +327,128 @@ new class extends Component
     }
 
     #[Computed]
+    public function salesByProduct(): array
+    {
+        $seller = $this->seller;
+        if (! $seller) {
+            return ['labels' => [], 'data' => []];
+        }
+        $items = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('orders.seller_id', $seller->id)
+            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->selectRaw('products.name, SUM(order_items.price_at_purchase * order_items.quantity) as total_revenue, SUM(order_items.quantity) as total_qty')
+            ->groupBy('order_items.product_id', 'products.name')
+            ->orderByDesc('total_revenue')
+            ->limit(10)
+            ->get();
+        return [
+            'labels'   => $items->pluck('name')->map(fn ($n) => \Illuminate\Support\Str::limit($n, 24))->values()->toArray(),
+            'revenue'  => $items->pluck('total_revenue')->map(fn ($v) => round((float) $v, 2))->values()->toArray(),
+            'qty'      => $items->pluck('total_qty')->map(fn ($v) => (int) $v)->values()->toArray(),
+        ];
+    }
+
+    #[Computed]
+    public function productHistory(): array
+    {
+        $seller = $this->seller;
+        if (! $seller) {
+            return ['chart' => ['labels' => [], 'datasets' => []], 'recent' => []];
+        }
+
+        $days = collect(range(29, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
+
+        $chartData = \App\Models\ProductHistory::query()
+            ->join('products', 'products.id', '=', 'product_histories.product_id')
+            ->where('products.seller_id', $seller->id)
+            ->whereBetween('product_histories.created_at', [now()->subDays(29)->startOfDay(), now()->endOfDay()])
+            ->selectRaw('DATE(product_histories.created_at) as date, product_histories.action, COUNT(*) as count')
+            ->groupBy('date', 'product_histories.action')
+            ->get();
+
+        $actionColors = [
+            'added'        => 'rgba(45,159,78,0.8)',
+            'updated'      => 'rgba(74,144,217,0.8)',
+            'deleted'      => 'rgba(231,76,60,0.8)',
+            'stock_change' => 'rgba(249,199,79,0.8)',
+        ];
+
+        $datasets = [];
+        foreach ($actionColors as $action => $color) {
+            $counts = $chartData->where('action', $action)->pluck('count', 'date');
+            $data = $days->map(fn ($d) => (int) ($counts[$d] ?? 0))->values()->toArray();
+            if (array_sum($data) > 0) {
+                $datasets[] = [
+                    'label'           => ucfirst(str_replace('_', ' ', $action)),
+                    'data'            => $data,
+                    'backgroundColor' => $color,
+                    'borderRadius'    => 4,
+                    'borderSkipped'   => false,
+                ];
+            }
+        }
+
+        $badgeBg    = ['added' => '#E8F5E9', 'updated' => '#E3F2FD', 'deleted' => '#FFEBEE', 'stock_change' => '#FFF9E3'];
+        $badgeColor = ['added' => '#1B7A37', 'updated' => '#1565C0', 'deleted' => '#C0392B', 'stock_change' => '#F57C00'];
+        $badgeLabel = ['added' => 'Added',   'updated' => 'Updated', 'deleted' => 'Deleted', 'stock_change' => 'Stock'];
+
+        $recent = \App\Models\ProductHistory::query()
+            ->join('products', 'products.id', '=', 'product_histories.product_id')
+            ->where('products.seller_id', $seller->id)
+            ->orderByDesc('product_histories.created_at')
+            ->limit(15)
+            ->select('product_histories.*', 'products.name as product_name')
+            ->get()
+            ->map(fn ($r) => [
+                'product' => $r->product_name,
+                'action'  => $r->action,
+                'note'    => $r->note,
+                'date'    => $r->created_at?->format('M j, Y g:i A'),
+                'bg'      => $badgeBg[$r->action]    ?? '#F5F5F5',
+                'color'   => $badgeColor[$r->action] ?? '#9E9E9E',
+                'label'   => $badgeLabel[$r->action] ?? ucfirst($r->action),
+            ])->toArray();
+
+        return [
+            'chart'  => [
+                'labels'   => $days->map(fn ($d) => \Carbon\Carbon::parse($d)->format('M j'))->values()->toArray(),
+                'datasets' => $datasets,
+            ],
+            'recent' => $recent,
+        ];
+    }
+
+    #[Computed]
+    public function stockLevels(): array
+    {
+        $seller = $this->seller;
+        if (! $seller) {
+            return ['labels' => [], 'stock' => [], 'thresholds' => [], 'colors' => []];
+        }
+        $products = \App\Models\Product::query()
+            ->where('seller_id', $seller->id)
+            ->where('is_active', true)
+            ->orderBy('stock')
+            ->limit(15)
+            ->get(['name', 'stock', 'low_stock_threshold']);
+
+        $colors = $products->map(function ($p) {
+            if ($p->stock <= 0) return 'rgba(231,76,60,0.85)';
+            if ($p->stock <= ($p->low_stock_threshold ?? 10)) return 'rgba(249,199,79,0.85)';
+            return 'rgba(45,159,78,0.75)';
+        })->values()->toArray();
+
+        return [
+            'labels'     => $products->pluck('name')->map(fn ($n) => \Illuminate\Support\Str::limit($n, 24))->values()->toArray(),
+            'stock'      => $products->pluck('stock')->map(fn ($v) => (int) $v)->values()->toArray(),
+            'thresholds' => $products->pluck('low_stock_threshold')->map(fn ($v) => (int) ($v ?? 10))->values()->toArray(),
+            'colors'     => $colors,
+        ];
+    }
+
+    #[Computed]
     public function topProducts(): array
     {
         $seller = $this->seller;
@@ -951,6 +1073,247 @@ new class extends Component
                     </div>
                 @endif
             </div>
+        </div>
+    </div>
+
+    {{-- ── Sales by Product ── --}}
+    <div class="dash-analytics-card">
+        <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#4A90D9,#357ABD);"></div>
+        <div class="dash-analytics-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#4A90D9,#357ABD);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Total Sales per Product</span>
+                </div>
+                <span style="font-size:0.6rem;color:#BDBDBD;">Top 10 by revenue &middot; received/completed orders only</span>
+            </div>
+            @if(!empty($this->salesByProduct['labels']))
+            <div x-data="{
+                init() {
+                    const ctx = this.$refs.salesByProductChart.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: {{ Js::from($this->salesByProduct['labels']) }},
+                            datasets: [
+                                {
+                                    label: 'Revenue (₱)',
+                                    data: {{ Js::from($this->salesByProduct['revenue']) }},
+                                    backgroundColor: 'rgba(74,144,217,0.82)',
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                    yAxisID: 'yRevenue',
+                                },
+                                {
+                                    label: 'Units Sold',
+                                    data: {{ Js::from($this->salesByProduct['qty']) }},
+                                    backgroundColor: 'rgba(45,159,78,0.75)',
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                    yAxisID: 'yQty',
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 12 } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label === 'Revenue (₱)'
+                                            ? '₱' + ctx.parsed.y.toLocaleString()
+                                            : ctx.parsed.y + ' units'
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#616161', maxRotation: 30 }, border: { display: false } },
+                                yRevenue: {
+                                    position: 'left',
+                                    grid: { color: '#F5F5F5' },
+                                    ticks: { font: { size: 9 }, color: '#4A90D9', callback: v => '₱'+v.toLocaleString() },
+                                    border: { display: false }
+                                },
+                                yQty: {
+                                    position: 'right',
+                                    grid: { display: false },
+                                    ticks: { font: { size: 9 }, color: '#2D9F4E', stepSize: 1 },
+                                    border: { display: false }
+                                }
+                            }
+                        }
+                    });
+                }
+            }">
+                <canvas x-ref="salesByProductChart" style="height:220px;"></canvas>
+            </div>
+            @else
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;">
+                    <svg style="width:32px;height:32px;color:#E0E0E0;margin-bottom:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    <div style="font-size:0.75rem;color:#BDBDBD;font-weight:500;">No sales data yet</div>
+                    <div style="font-size:0.6rem;color:#E0E0E0;margin-top:2px;">Complete orders to see per-product sales</div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- ── Current Stock Levels per Product ── --}}
+    <div class="dash-analytics-card">
+        <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#E74C3C,#F39C12);"></div>
+        <div class="dash-analytics-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#E74C3C,#F39C12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    </div>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Current Stock Levels per Product</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;font-size:0.6rem;color:#9E9E9E;">
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(231,76,60,0.85);margin-right:3px;"></span>Out of stock</span>
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(249,199,79,0.85);margin-right:3px;"></span>Low stock</span>
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(45,159,78,0.75);margin-right:3px;"></span>OK</span>
+                </div>
+            </div>
+            @if(!empty($this->stockLevels['labels']))
+            <div x-data="{
+                init() {
+                    const ctx = this.$refs.stockChart.getContext('2d');
+                    const thresholds = {{ Js::from($this->stockLevels['thresholds']) }};
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: {{ Js::from($this->stockLevels['labels']) }},
+                            datasets: [
+                                {
+                                    label: 'Stock',
+                                    data: {{ Js::from($this->stockLevels['stock']) }},
+                                    backgroundColor: {{ Js::from($this->stockLevels['colors']) }},
+                                    borderRadius: 5,
+                                    borderSkipped: false,
+                                    yAxisID: 'y',
+                                },
+                                {
+                                    label: 'Low Stock Threshold',
+                                    data: thresholds,
+                                    type: 'line',
+                                    borderColor: 'rgba(231,76,60,0.5)',
+                                    borderWidth: 1.5,
+                                    borderDash: [4,3],
+                                    pointRadius: 0,
+                                    fill: false,
+                                    yAxisID: 'y',
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ctx.dataset.label === 'Stock'
+                                            ? ctx.parsed.y + ' units in stock'
+                                            : 'Threshold: ' + ctx.parsed.y
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#616161', maxRotation: 30 }, border: { display: false } },
+                                y: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false }, beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }">
+                <canvas x-ref="stockChart" style="height:220px;"></canvas>
+            </div>
+            @else
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;">
+                    <svg style="width:32px;height:32px;color:#E0E0E0;margin-bottom:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    <div style="font-size:0.75rem;color:#BDBDBD;font-weight:500;">No active products</div>
+                    <div style="font-size:0.6rem;color:#E0E0E0;margin-top:2px;">Add products to see stock levels</div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- ── Product History ── --}}
+    <div class="dash-analytics-card">
+        <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#9B59B6,#8E44AD);"></div>
+        <div class="dash-analytics-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#9B59B6,#8E44AD);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Product Activity History</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:0.6rem;color:#9E9E9E;">
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(45,159,78,0.8);margin-right:3px;"></span>Added</span>
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(74,144,217,0.8);margin-right:3px;"></span>Updated</span>
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(231,76,60,0.8);margin-right:3px;"></span>Deleted</span>
+                    <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(249,199,79,0.8);margin-right:3px;"></span>Stock change</span>
+                </div>
+            </div>
+
+            @php($ph = $this->productHistory)
+            @if(!empty($ph['chart']['datasets']))
+            <div x-data="{
+                init() {
+                    const ctx = this.$refs.phChart.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: {{ Js::from($ph['chart']['labels']) }},
+                            datasets: {{ Js::from($ph['chart']['datasets']) }}
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 10, padding: 10 } },
+                                tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y } }
+                            },
+                            scales: {
+                                x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 }, color: '#BDBDBD', maxTicksLimit: 10 }, border: { display: false } },
+                                y: { stacked: true, grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false }, beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }">
+                <canvas x-ref="phChart" style="height:160px;"></canvas>
+            </div>
+            @endif
+
+            {{-- Recent Activity Feed --}}
+            @if(!empty($ph['recent']))
+            <div style="margin-top:14px;border-top:1px solid #F5F5F5;padding-top:10px;">
+                <div style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Recent Activity</div>
+                <div style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;">
+                    @foreach($ph['recent'] as $entry)
+                    <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;background:#FAFAFA;">
+                        <span style="font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:{{ $entry['bg'] }};color:{{ $entry['color'] }};flex-shrink:0;min-width:48px;text-align:center;">{{ $entry['label'] }}</span>
+                        <span style="font-size:0.75rem;color:#212121;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $entry['product'] }}</span>
+                        @if(!empty($entry['note']))
+                        <span style="font-size:0.6875rem;color:#9E9E9E;font-style:italic;flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $entry['note'] }}</span>
+                        @endif
+                        <span style="font-size:0.6rem;color:#BDBDBD;flex-shrink:0;">{{ $entry['date'] }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @else
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;">
+                    <svg style="width:32px;height:32px;color:#E0E0E0;margin-bottom:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div style="font-size:0.75rem;color:#BDBDBD;font-weight:500;">No product activity yet</div>
+                    <div style="font-size:0.6rem;color:#E0E0E0;margin-top:2px;">Add, update, or remove products to see history</div>
+                </div>
+            @endif
         </div>
     </div>
 

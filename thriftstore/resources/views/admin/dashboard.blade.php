@@ -109,6 +109,12 @@
     .adm-table .empty-row td { color: #9E9E9E; font-style: italic; padding: 18px 16px; }
     .adm-month-change.up   { color: #F9C74F; font-weight: 700; }
     .adm-month-change.down { color: #FF7675; font-weight: 700; }
+    /* ── Chart Cards ── */
+    .adm-chart-card { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .adm-chart-header { background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%); padding: 11px 18px; border-bottom: 2px solid #F9C74F; }
+    .adm-chart-header .title { font-size: 0.9rem; font-weight: 700; color: #fff; margin: 0 0 2px; }
+    .adm-chart-header .sub   { font-size: 0.6875rem; color: rgba(255,255,255,0.5); margin: 0; font-style: italic; }
+    .adm-chart-body { padding: 14px 18px; }
 </style>
 @endpush
 
@@ -258,76 +264,178 @@
                 {{-- ── Order Status ── --}}
                 <div class="adm-section-label">Order Status Breakdown</div>
                 <p style="font-size:0.75rem;color:#9E9E9E;font-style:italic;margin:-4px 0 10px;"><em>Click a status to filter orders in the order list.</em></p>
-                <div class="adm-status-row">
-                    <a href="{{ route('admin.orders', ['status' => 'processing']) }}" class="adm-chip">
-                        <span class="adm-chip-label">Processing</span><span class="adm-chip-val chip-processing">{{ $orderStatusBreakdown['processing'] ?? 0 }}</span>
-                    </a>
-                    <a href="{{ route('admin.orders', ['status' => 'shipped']) }}" class="adm-chip">
-                        <span class="adm-chip-label">Shipped</span><span class="adm-chip-val chip-shipped">{{ $orderStatusBreakdown['shipped'] ?? 0 }}</span>
-                    </a>
-                    <a href="{{ route('admin.orders', ['status' => 'delivered']) }}" class="adm-chip">
-                        <span class="adm-chip-label">Delivered</span><span class="adm-chip-val chip-delivered">{{ $orderStatusBreakdown['delivered'] ?? 0 }}</span>
-                    </a>
-                    <a href="{{ route('admin.orders', ['status' => 'cancelled']) }}" class="adm-chip">
-                        <span class="adm-chip-label">Cancelled</span><span class="adm-chip-val chip-cancelled">{{ $orderStatusBreakdown['cancelled'] ?? 0 }}</span>
-                    </a>
+                <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+                    <div class="adm-status-row" style="align-content:start;">
+                        <a href="{{ route('admin.orders', ['status' => 'processing']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Processing</span><span class="adm-chip-val chip-processing">{{ $orderStatusBreakdown['processing'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'shipped']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Shipped</span><span class="adm-chip-val chip-shipped">{{ $orderStatusBreakdown['shipped'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'delivered']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Delivered</span><span class="adm-chip-val chip-delivered">{{ $orderStatusBreakdown['delivered'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'cancelled']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Cancelled</span><span class="adm-chip-val chip-cancelled">{{ $orderStatusBreakdown['cancelled'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'received']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Received</span><span class="adm-chip-val" style="color:#00897B;">{{ $orderStatusBreakdown['received'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'completed']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Completed</span><span class="adm-chip-val" style="color:#9B59B6;">{{ $orderStatusBreakdown['completed'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders', ['status' => 'out_for_delivery']) }}" class="adm-chip">
+                            <span class="adm-chip-label">Out for Delivery</span><span class="adm-chip-val" style="color:#0288D1;">{{ $orderStatusBreakdown['out_for_delivery'] ?? 0 }}</span>
+                        </a>
+                        <a href="{{ route('admin.orders') }}" class="adm-chip">
+                            <span class="adm-chip-label">All Orders</span><span class="adm-chip-val" style="color:#424242;">{{ $totalOrders }}</span>
+                        </a>
+                    </div>
+                    <div class="adm-chart-card" style="width:260px;">
+                        <div class="adm-chart-header"><p class="title">Status Distribution</p><p class="sub">Doughnut view</p></div>
+                        <div class="adm-chart-body" style="display:flex;justify-content:center;">
+                            <canvas id="adminOrderStatusChart" style="height:180px;max-width:220px;"></canvas>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- ── Tables ── --}}
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;padding-bottom:32px;">
-                    <div class="adm-table-card">
-                        <div class="adm-table-card-header"><p class="title">Monthly Revenue</p><p class="sub"><em>Last 12 months</em></p></div>
-                        <table class="adm-table">
-                            <thead><tr><th>Month</th><th class="right">Revenue</th></tr></thead>
-                            <tbody>
-                                @forelse(($monthlyRevenue ?? []) as $row)
-                                    <tr><td>{{ $row->ym }}</td><td class="right">₱{{ number_format((float)$row->total, 2) }}</td></tr>
-                                @empty
-                                    <tr class="empty-row"><td colspan="2">No data yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                {{-- ── Analytics Charts ── --}}
+                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+                <div class="adm-section-label" style="margin-top:20px;">Analytics Charts</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                    <div class="adm-chart-card">
+                        <div class="adm-chart-header"><p class="title">Monthly Revenue</p><p class="sub">Last 12 months &middot; shipped + delivered</p></div>
+                        <div class="adm-chart-body"><canvas id="adminMonthlyRevenueChart" style="height:210px;"></canvas></div>
                     </div>
-                    <div class="adm-table-card">
-                        <div class="adm-table-card-header"><p class="title">New Seller Registrations</p><p class="sub"><em>{{ now()->year }} — per month</em></p></div>
-                        <table class="adm-table">
-                            <thead><tr><th>Month</th><th class="right">New Sellers</th></tr></thead>
-                            <tbody>
-                                @forelse(($sellerRegistrations ?? []) as $row)
-                                    <tr><td>{{ $row->ym }}</td><td class="right">{{ (int)$row->total }}</td></tr>
-                                @empty
-                                    <tr class="empty-row"><td colspan="2">No registrations yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="adm-table-card">
-                        <div class="adm-table-card-header"><p class="title">Top 5 Best-Selling Products</p><p class="sub"><em>By quantity sold from delivered orders</em></p></div>
-                        <table class="adm-table">
-                            <thead><tr><th>Product</th><th>Seller</th><th class="right">Qty</th></tr></thead>
-                            <tbody>
-                                @forelse(($topProducts ?? []) as $row)
-                                    <tr><td>{{ $row->product_name }}</td><td style="color:#9E9E9E;font-style:italic;">{{ $row->store_name ?? '—' }}</td><td class="right">{{ (int)$row->qty_sold }}</td></tr>
-                                @empty
-                                    <tr class="empty-row"><td colspan="3">No data yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="adm-table-card">
-                        <div class="adm-table-card-header"><p class="title">Top 5 Most Active Sellers</p><p class="sub"><em>By number of completed orders</em></p></div>
-                        <table class="adm-table">
-                            <thead><tr><th>Store</th><th class="right">Orders</th></tr></thead>
-                            <tbody>
-                                @forelse(($topSellers ?? []) as $row)
-                                    <tr><td>{{ $row->store_name ?? '—' }}</td><td class="right">{{ (int)$row->completed_orders }}</td></tr>
-                                @empty
-                                    <tr class="empty-row"><td colspan="2">No data yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="adm-chart-card">
+                        <div class="adm-chart-header"><p class="title">New Seller Registrations</p><p class="sub">{{ now()->year }} &mdash; per month</p></div>
+                        <div class="adm-chart-body"><canvas id="adminSellerRegChart" style="height:210px;"></canvas></div>
                     </div>
                 </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-bottom:32px;">
+                    <div class="adm-chart-card">
+                        <div class="adm-chart-header"><p class="title">Top 5 Best-Selling Products</p><p class="sub">By quantity sold</p></div>
+                        <div class="adm-chart-body"><canvas id="adminTopProductsChart" style="height:210px;"></canvas></div>
+                    </div>
+                    <div class="adm-chart-card">
+                        <div class="adm-chart-header"><p class="title">Top 5 Most Active Sellers</p><p class="sub">By completed orders</p></div>
+                        <div class="adm-chart-body"><canvas id="adminTopSellersChart" style="height:210px;"></canvas></div>
+                    </div>
+                </div>
+
+                <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Monthly Revenue — line chart
+                    new Chart(document.getElementById('adminMonthlyRevenueChart'), {
+                        type: 'line',
+                        data: {
+                            labels: @json($monthlyRevenue->map(fn($r) => \Carbon\Carbon::createFromFormat('Y-m', $r->ym)->format('M Y'))->values()),
+                            datasets: [{
+                                data: @json($monthlyRevenue->map(fn($r) => (float)$r->total)->values()),
+                                borderColor: '#2D9F4E', backgroundColor: 'rgba(45,159,78,0.1)',
+                                borderWidth: 2, fill: true, tension: 0.45,
+                                pointRadius: 4, pointBackgroundColor: '#2D9F4E', pointBorderColor: '#fff', pointBorderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => '₱' + c.parsed.y.toLocaleString() } } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#BDBDBD', maxRotation: 30 }, border: { display: false } },
+                                y: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', callback: v => '₱'+v.toLocaleString() }, border: { display: false } }
+                            }
+                        }
+                    });
+
+                    // Seller Registrations — bar chart
+                    new Chart(document.getElementById('adminSellerRegChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: @json($sellerRegistrations->map(fn($r) => \Carbon\Carbon::createFromFormat('Y-m', $r->ym)->format('M'))->values()),
+                            datasets: [{
+                                data: @json($sellerRegistrations->map(fn($r) => (int)$r->total)->values()),
+                                backgroundColor: 'rgba(249,199,79,0.85)', borderRadius: 6, borderSkipped: false
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#BDBDBD' }, border: { display: false } },
+                                y: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false } }
+                            }
+                        }
+                    });
+
+                    // Top 5 Products — horizontal bar
+                    new Chart(document.getElementById('adminTopProductsChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: @json($topProducts->map(fn($r) => \Illuminate\Support\Str::limit($r->product_name, 22))->values()),
+                            datasets: [{
+                                data: @json($topProducts->map(fn($r) => (int)$r->qty_sold)->values()),
+                                backgroundColor: ['rgba(45,159,78,0.85)','rgba(249,199,79,0.85)','rgba(74,144,217,0.85)','rgba(231,76,60,0.85)','rgba(155,89,182,0.85)'],
+                                borderRadius: 6, borderSkipped: false
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + ' units' } } },
+                            scales: {
+                                x: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false } },
+                                y: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#616161' }, border: { display: false } }
+                            }
+                        }
+                    });
+
+                    // Top 5 Sellers — horizontal bar
+                    new Chart(document.getElementById('adminTopSellersChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: @json($topSellers->map(fn($r) => \Illuminate\Support\Str::limit($r->store_name ?? '—', 22))->values()),
+                            datasets: [{
+                                data: @json($topSellers->map(fn($r) => (int)$r->completed_orders)->values()),
+                                backgroundColor: ['rgba(0,137,123,0.85)','rgba(74,144,217,0.85)','rgba(155,89,182,0.85)','rgba(249,199,79,0.85)','rgba(45,159,78,0.85)'],
+                                borderRadius: 6, borderSkipped: false
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + ' orders' } } },
+                            scales: {
+                                x: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false } },
+                                y: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#616161' }, border: { display: false } }
+                            }
+                        }
+                    });
+
+                    // Order Status — doughnut
+                    const statusColors = {
+                        processing:'#F57C00', shipped:'#1565C0', delivered:'#1B7A37',
+                        cancelled:'#C0392B', completed:'#9B59B6', received:'#00897B',
+                        out_for_delivery:'#0288D1', paid:'#26A69A', to_pack:'#8D6E63',
+                        ready_to_ship:'#5C6BC0', awaiting_payment:'#9E9E9E'
+                    };
+                    const statusLabels = @json(array_keys($orderStatusBreakdown));
+                    const statusData   = @json(array_values($orderStatusBreakdown));
+                    new Chart(document.getElementById('adminOrderStatusChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: statusLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g,' ')),
+                            datasets: [{
+                                data: statusData,
+                                backgroundColor: statusLabels.map(s => statusColors[s] || '#9E9E9E'),
+                                borderWidth: 2, borderColor: '#fff', hoverOffset: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 10, padding: 6 } } },
+                            cutout: '62%'
+                        }
+                    });
+                });
+                </script>
 
             </div>
         </main>
