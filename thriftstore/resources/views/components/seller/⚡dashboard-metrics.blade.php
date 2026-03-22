@@ -289,6 +289,50 @@ new class extends Component
             'top_product_sold' => $topProductSold,
         ];
     }
+
+    #[Computed]
+    public function salesTrend(): array
+    {
+        $seller = $this->seller;
+        if (! $seller) {
+            return ['labels' => [], 'data' => []];
+        }
+        $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
+        $revenues = Order::query()
+            ->where('seller_id', $seller->id)
+            ->where('status', 'delivered')
+            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date');
+        return [
+            'labels' => $days->map(fn ($d) => \Carbon\Carbon::parse($d)->format('M j'))->values()->toArray(),
+            'data'   => $days->map(fn ($d) => (float) ($revenues[$d] ?? 0))->values()->toArray(),
+        ];
+    }
+
+    #[Computed]
+    public function topProducts(): array
+    {
+        $seller = $this->seller;
+        if (! $seller) {
+            return ['labels' => [], 'data' => []];
+        }
+        $items = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('orders.seller_id', $seller->id)
+            ->where('orders.status', 'delivered')
+            ->selectRaw('products.name, SUM(order_items.quantity) as total_sold')
+            ->groupBy('order_items.product_id', 'products.name')
+            ->orderByDesc('total_sold')
+            ->limit(5)
+            ->get();
+        return [
+            'labels' => $items->pluck('name')->map(fn ($n) => \Illuminate\Support\Str::limit($n, 22))->values()->toArray(),
+            'data'   => $items->pluck('total_sold')->map(fn ($v) => (int) $v)->values()->toArray(),
+        ];
+    }
 };
 ?>
 
@@ -781,47 +825,115 @@ new class extends Component
         </a>
     </div>
 
-    {{-- ── Analytics: Avg Order Value + Top Selling Product ── --}}
+    {{-- ── Analytics: Sales Trend Chart + Top Products Chart ── --}}
+    @once
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @endonce
     <div class="dash-grid dash-grid-2">
+        {{-- Sales Trend: line chart --}}
         <div class="dash-analytics-card">
             <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#00897B,#2D9F4E);"></div>
             <div class="dash-analytics-body">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#00897B,#00695C);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#00897B,#00695C);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                        <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">7-Day Sales Trend</span>
                     </div>
-                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Avg. Order Value</span>
+                    <div style="text-align:right;">
+                        <div style="font-size:1rem;font-weight:800;color:#2D9F4E;line-height:1;">&#8369;{{ number_format($this->stats['avg_order_value'], 0) }}</div>
+                        <div style="font-size:0.6rem;color:#BDBDBD;">avg / order</div>
+                    </div>
                 </div>
-                <div style="font-size:1.625rem;font-weight:800;color:#2D9F4E;line-height:1;">&#8369;{{ number_format($this->stats['avg_order_value'], 2) }}</div>
-                <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Average per delivered order</div>
+                <div x-data="{
+                    init() {
+                        const ctx = this.$refs.salesChart.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: {{ Js::from($this->salesTrend['labels']) }},
+                                datasets: [{
+                                    data: {{ Js::from($this->salesTrend['data']) }},
+                                    borderColor: '#2D9F4E',
+                                    backgroundColor: 'rgba(45,159,78,0.1)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.45,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: '#2D9F4E',
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '\u20b1' + ctx.parsed.y.toLocaleString() } } },
+                                scales: {
+                                    x: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#BDBDBD' }, border: { display: false } },
+                                    y: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', callback: v => '\u20b1'+v.toLocaleString() }, border: { display: false } }
+                                }
+                            }
+                        });
+                    }
+                }">
+                    <canvas x-ref="salesChart" style="height:130px;"></canvas>
+                </div>
                 <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
                     <div><div style="font-size:0.6rem;color:#BDBDBD;">Delivered</div><div style="font-size:0.8125rem;font-weight:700;color:#2D9F4E;">{{ $this->stats['orders_delivered'] }}</div></div>
                     <div><div style="font-size:0.6rem;color:#BDBDBD;">Total Revenue</div><div style="font-size:0.8125rem;font-weight:700;color:#212121;">&#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div></div>
                 </div>
             </div>
         </div>
+
+        {{-- Top Products: horizontal bar chart --}}
         <div class="dash-analytics-card">
             <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#F9C74F,#F5A623);"></div>
             <div class="dash-analytics-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                     <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#F9C74F,#F5A623);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <svg style="width:13px;height:13px;" fill="none" stroke="#212121" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#212121" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     </div>
-                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Top Selling Product</span>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Top 5 Products by Units Sold</span>
                 </div>
-                @if($this->stats['top_product_name'])
-                    <div style="font-size:1rem;font-weight:800;color:#212121;line-height:1.35;word-break:break-word;">{{ Str::limit($this->stats['top_product_name'], 45) }}</div>
-                    <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Best performer by units sold</div>
-                    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
-                        <div><div style="font-size:0.6rem;color:#BDBDBD;">Units Sold</div><div style="font-size:0.8125rem;font-weight:700;color:#F5A623;">{{ $this->stats['top_product_sold'] }}</div></div>
-                        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;background:#E8F5E9;color:#2D9F4E;font-size:0.6rem;font-weight:700;">
-                            <svg style="width:8px;height:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                            #1 Best Seller
-                        </span>
-                    </div>
+                @if(!empty($this->topProducts['data']))
+                <div x-data="{
+                    init() {
+                        const ctx = this.$refs.topChart.getContext('2d');
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: {{ Js::from($this->topProducts['labels']) }},
+                                datasets: [{
+                                    data: {{ Js::from($this->topProducts['data']) }},
+                                    backgroundColor: ['rgba(45,159,78,0.85)','rgba(249,199,79,0.85)','rgba(74,144,217,0.85)','rgba(231,76,60,0.85)','rgba(155,89,182,0.85)'],
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x + ' units' } } },
+                                scales: {
+                                    x: { grid: { color: '#F5F5F5' }, ticks: { font: { size: 9 }, color: '#BDBDBD', stepSize: 1 }, border: { display: false } },
+                                    y: { grid: { display: false }, ticks: { font: { size: 9 }, color: '#616161' }, border: { display: false } }
+                                }
+                            }
+                        });
+                    }
+                }">
+                    <canvas x-ref="topChart" style="height:{{ count($this->topProducts['data']) * 30 + 20 }}px;min-height:100px;max-height:160px;"></canvas>
+                </div>
                 @else
-                    <div style="font-size:1rem;font-weight:700;color:#BDBDBD;">No data yet</div>
-                    <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Start selling to see your top product</div>
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:120px;">
+                        <svg style="width:32px;height:32px;color:#E0E0E0;margin-bottom:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <div style="font-size:0.75rem;color:#BDBDBD;font-weight:500;">No sales data yet</div>
+                        <div style="font-size:0.6rem;color:#E0E0E0;margin-top:2px;">Complete orders to see top products</div>
+                    </div>
                 @endif
             </div>
         </div>
