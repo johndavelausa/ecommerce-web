@@ -93,77 +93,81 @@ new class extends Component
 };
 ?>
 
-<div class="bg-white rounded-lg shadow p-6">
-    <div class="flex items-center justify-between">
-        <h3 class="font-medium text-gray-900">Platform announcements (homepage banner)</h3>
-        <span class="text-xs text-gray-500">Shown to all users on the homepage. Auto-hides after expiry.</span>
+<div class="set-card">
+    <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+            <div class="set-card-title">Platform Announcements</div>
+            <p class="set-hint" style="margin-bottom:0;">Shown to all users on the homepage. Auto-hides after expiry.</p>
+        </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3">
+    <div class="grid grid-cols-1 gap-3">
         <div>
-            <label class="block text-sm text-gray-600">Title</label>
-            <input type="text" wire:model.defer="title" class="mt-1 rounded border-gray-300 w-full" placeholder="e.g. Holiday schedule" />
-            @error('title') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
+            <label class="set-label">Title</label>
+            <input type="text" wire:model.defer="title" class="set-input" placeholder="e.g. Holiday schedule" />
+            @error('title') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
         </div>
         <div>
-            <label class="block text-sm text-gray-600">Message</label>
-            <textarea wire:model.defer="body" rows="3" class="mt-1 rounded border-gray-300 w-full" placeholder="Announcement text..."></textarea>
-            @error('body') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
+            <label class="set-label">Message</label>
+            <textarea wire:model.defer="body" rows="3" class="set-textarea" placeholder="Announcement text..."></textarea>
+            @error('body') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
         </div>
         <div class="flex flex-wrap items-center gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model.defer="is_active" class="rounded border-gray-300 text-indigo-600">
-                <span class="text-sm text-gray-700">Active (show on homepage)</span>
+                <input type="checkbox" wire:model.defer="is_active" class="set-checkbox">
+                <span style="font-size:0.875rem;color:#424242;">Active (show on homepage)</span>
             </label>
             <div>
-                <label class="block text-sm text-gray-600">Expires at (optional)</label>
-                <input type="datetime-local" wire:model.defer="expires_at" class="mt-1 rounded border-gray-300 text-sm">
+                <label class="set-label">Expires at (optional)</label>
+                <input type="datetime-local" wire:model.defer="expires_at" class="set-input" style="width:auto;">
             </div>
         </div>
         <div>
-            <button type="button" wire:click="save" wire:loading.attr="disabled"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-500">
+            <button type="button" wire:click="save" wire:loading.attr="disabled" class="set-btn">
                 Add announcement
             </button>
         </div>
     </div>
 
-    <div class="mt-6 border-t pt-4">
-        <h4 class="text-sm font-medium text-gray-700">Current platform announcements</h4>
-        <div class="mt-2 space-y-2">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #D4E8DA;">
+        <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:10px;">Current Announcements</div>
+        <div class="space-y-2">
             @forelse($this->platformAnnouncements as $a)
-                <div class="p-3 bg-gray-50 rounded border">
+                <div style="padding:12px 14px;background:#F5FBF7;border-radius:12px;border:1px solid #D4E8DA;">
                     @if($editingId === $a->id)
                         <div class="space-y-2">
-                            <input type="text" wire:model.defer="edit_title" class="rounded border-gray-300 w-full text-sm">
-                            <textarea wire:model.defer="edit_body" rows="2" class="rounded border-gray-300 w-full text-sm"></textarea>
-                            <label class="flex items-center gap-2"><input type="checkbox" wire:model.defer="edit_is_active" class="rounded border-gray-300"> Active</label>
-                            <input type="datetime-local" wire:model.defer="edit_expires_at" class="rounded border-gray-300 text-sm">
-                            <div class="flex gap-2">
-                                <button type="button" wire:click="update" class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
-                                <button type="button" wire:click="cancelEdit" class="px-3 py-1 border rounded text-xs">Cancel</button>
+                            <input type="text" wire:model.defer="edit_title" class="set-input">
+                            <textarea wire:model.defer="edit_body" rows="2" class="set-textarea"></textarea>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" wire:model.defer="edit_is_active" class="set-checkbox">
+                                <span style="font-size:0.8125rem;color:#424242;">Active</span>
+                            </label>
+                            <input type="datetime-local" wire:model.defer="edit_expires_at" class="set-input" style="width:auto;">
+                            <div class="flex gap-2 mt-2">
+                                <button type="button" wire:click="update" class="set-btn" style="font-size:0.75rem;padding:6px 14px;">Save</button>
+                                <button type="button" wire:click="cancelEdit" style="font-size:0.75rem;padding:6px 14px;border-radius:50px;border:1.5px solid #D4E8DA;background:#fff;color:#424242;cursor:pointer;">Cancel</button>
                             </div>
                         </div>
                     @else
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <div class="text-sm font-semibold text-gray-800">{{ $a->title }}</div>
-                                <div class="text-xs text-gray-600 line-clamp-2">{{ $a->body }}</div>
-                                <div class="text-[11px] text-gray-500 mt-1">
-                                    {{ $a->is_active ? 'Active' : 'Inactive' }}
-                                    @if($a->expires_at) · Expires {{ $a->expires_at->format('M d, Y H:i') }} @endif
+                                <div style="font-weight:700;color:#0F3D22;font-size:0.9rem;">{{ $a->title }}</div>
+                                <div style="font-size:0.75rem;color:#757575;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ $a->body }}</div>
+                                <div style="font-size:0.6875rem;color:#9E9E9E;font-style:italic;margin-top:4px;">
+                                    <span style="background:{{ $a->is_active ? '#E8F5E9' : '#FFEBEE' }};color:{{ $a->is_active ? '#1B7A37' : '#C0392B' }};padding:2px 8px;border-radius:50px;font-weight:600;font-style:normal;">{{ $a->is_active ? 'Active' : 'Inactive' }}</span>
+                                    @if($a->expires_at) &nbsp;· Expires {{ $a->expires_at->format('M d, Y H:i') }} @endif
                                 </div>
                             </div>
-                            <div class="flex gap-1 shrink-0">
-                                <button type="button" wire:click="edit({{ $a->id }})" class="text-xs text-indigo-600 hover:underline">Edit</button>
+                            <div class="flex gap-2 shrink-0">
+                                <button type="button" wire:click="edit({{ $a->id }})" style="font-size:0.75rem;font-weight:600;color:#2D9F4E;background:none;border:none;cursor:pointer;padding:0;">Edit</button>
                                 <button type="button" wire:click="delete({{ $a->id }})" wire:confirm="Delete this announcement?"
-                                        class="text-xs text-red-600 hover:underline">Delete</button>
+                                        style="font-size:0.75rem;font-weight:600;color:#C0392B;background:none;border:none;cursor:pointer;padding:0;">Delete</button>
                             </div>
                         </div>
                     @endif
                 </div>
             @empty
-                <div class="text-sm text-gray-500">No platform announcements yet.</div>
+                <div style="font-size:0.875rem;color:#9E9E9E;font-style:italic;">No platform announcements yet.</div>
             @endforelse
         </div>
     </div>

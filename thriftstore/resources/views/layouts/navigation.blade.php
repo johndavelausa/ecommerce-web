@@ -81,6 +81,132 @@
         position: relative;
     }
 
+    /* ── Admin Navbar (Brand Dark Green) ───────────────────────── */
+    .ts-nav.ts-nav-admin {
+        background: linear-gradient(135deg, #0A2B17 0%, #0F3D22 100%);
+        border-bottom: 2px solid #F9C74F;
+        box-shadow: 0 2px 12px rgba(15,61,34,0.25);
+    }
+    .ts-nav-admin .ts-nav-link { color: rgba(255,255,255,0.85); }
+    .ts-nav-admin .ts-nav-link:hover { color: #F9C74F; }
+    .ts-nav-admin .ts-nav-link::after { background: #F9C74F; }
+    .ts-nav-admin .ts-logo { color: #fff; }
+    .ts-nav-admin .ts-icon-btn { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.08); }
+    .ts-nav-admin .ts-icon-btn:hover { background: rgba(249,199,79,0.15); color: #F9C74F; }
+    .ts-nav-admin .ts-badge-red { background: #E74C3C; border-color: #0F3D22; }
+    .ts-nav-admin .ts-user-btn { background: rgba(249,199,79,0.12); border-color: rgba(249,199,79,0.3); color: rgba(255,255,255,0.9); }
+    .ts-nav-admin .ts-user-btn:hover { background: rgba(249,199,79,0.2); border-color: #F9C74F; color: #F9C74F; }
+    .ts-nav-admin .ts-vdivider { background: rgba(255,255,255,0.15); }
+    .ts-nav-admin .ts-notif-panel { background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%); border: 1px solid rgba(249,199,79,0.25); box-shadow: 0 10px 36px rgba(15,61,34,0.35); }
+    .ts-nav-admin .ts-notif-header { background: rgba(255,255,255,0.05); border-bottom-color: rgba(255,255,255,0.1); }
+    .ts-nav-admin .ts-notif-label { color: rgba(255,255,255,0.55); }
+    .ts-nav-admin .ts-notif-mark { background: rgba(249,199,79,0.2); color: #F9C74F; }
+    .ts-nav-admin .ts-notif-mark:hover { background: #F9C74F; color: #0F3D22; }
+    .ts-nav-admin .ts-notif-row { border-bottom-color: rgba(255,255,255,0.08); }
+    .ts-nav-admin .ts-notif-row:hover { background: rgba(249,199,79,0.08); }
+    .ts-nav-admin .ts-notif-row-title { color: rgba(255,255,255,0.9); }
+    .ts-nav-admin .ts-notif-row-body { color: rgba(255,255,255,0.55); }
+    .ts-nav-admin .ts-notif-row-time { color: #F9C74F; }
+    .ts-nav-admin .ts-notif-empty { color: rgba(255,255,255,0.4); }
+    .ts-nav-admin .ts-user-menu { background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%); border: 1px solid rgba(249,199,79,0.25); box-shadow: 0 10px 36px rgba(15,61,34,0.35); }
+    .ts-nav-admin .ts-user-menu-item { color: rgba(255,255,255,0.85); border-bottom-color: rgba(255,255,255,0.08); }
+    .ts-nav-admin .ts-user-menu-item:hover { background: rgba(249,199,79,0.12); color: #F9C74F; }
+    .ts-nav-admin .ts-user-menu-item.ts-logout { color: #FF7675; }
+    .ts-nav-admin .ts-user-menu-item.ts-logout:hover { background: rgba(231,76,60,0.15); color: #FF7675; }
+
+    /* ── Seller Navbar (Brand Dark Green) ──────────────────────── */
+    .ts-nav.ts-nav-seller {
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
+        border-bottom: 2px solid #F9C74F;
+        box-shadow: 0 2px 12px rgba(15,61,34,0.25);
+    }
+    .ts-nav-seller .ts-nav-link {
+        color: rgba(255,255,255,0.85);
+    }
+    .ts-nav-seller .ts-nav-link:hover {
+        color: #F9C74F;
+    }
+    .ts-nav-seller .ts-nav-link.ts-active {
+        color: #fff;
+        font-weight: 600;
+    }
+    .ts-nav-seller .ts-nav-link::after {
+        background: #F9C74F;
+    }
+    .ts-nav-seller .ts-logo {
+        color: #fff;
+    }
+    .ts-nav-seller .ts-icon-btn {
+        color: rgba(255,255,255,0.8);
+        background: rgba(255,255,255,0.08);
+    }
+    .ts-nav-seller .ts-icon-btn:hover {
+        background: rgba(249,199,79,0.15);
+        color: #F9C74F;
+    }
+    .ts-nav-seller .ts-icon-btn.ts-icon-on {
+        background: #F9C74F;
+        color: #212121;
+    }
+    .ts-nav-seller .ts-badge-red {
+        background: #E74C3C;
+        border-color: #0F3D22;
+    }
+    .ts-nav-seller .ts-badge-green {
+        background: #F9C74F;
+        color: #0F3D22;
+        border-color: #0F3D22;
+    }
+    .ts-nav-seller .ts-user-btn {
+        background: rgba(249,199,79,0.12);
+        border-color: rgba(249,199,79,0.3);
+        color: rgba(255,255,255,0.9);
+    }
+    .ts-nav-seller .ts-user-btn:hover {
+        background: rgba(249,199,79,0.2);
+        border-color: #F9C74F;
+        color: #F9C74F;
+    }
+    .ts-nav-seller .ts-vdivider {
+        background: rgba(255,255,255,0.15);
+    }
+    .ts-nav-seller .ts-hamburger {
+        color: rgba(255,255,255,0.9);
+        border-color: rgba(255,255,255,0.2);
+    }
+    .ts-nav-seller .ts-hamburger:hover {
+        background: rgba(249,199,79,0.15);
+        color: #F9C74F;
+    }
+    /* Seller Mobile */
+    .ts-nav-seller .ts-mobile-wrap {
+        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
+        border-top: 3px solid #F9C74F;
+    }
+    .ts-nav-seller .ts-mob-link {
+        color: rgba(255,255,255,0.75);
+    }
+    .ts-nav-seller .ts-mob-link:hover {
+        background: rgba(249,199,79,0.1);
+        color: #F9C74F;
+        border-left-color: #F9C74F;
+    }
+    .ts-nav-seller .ts-mob-link.ts-active {
+        background: rgba(249,199,79,0.15);
+        color: #F9C74F;
+        border-left-color: #F9C74F;
+    }
+    .ts-nav-seller .ts-mob-user {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+    }
+    .ts-nav-seller .ts-mob-user-name {
+        color: #fff;
+    }
+    .ts-nav-seller .ts-mob-user-email {
+        color: rgba(255,255,255,0.55);
+    }
+
     /* ── Desktop nav links ───────────────────────────────────── */
     .ts-nav-link {
         position: relative;
@@ -208,6 +334,11 @@
         overflow: hidden;
         font-family: 'Inter', sans-serif;
     }
+    .ts-nav-seller .ts-notif-panel {
+        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
+        border: 1px solid rgba(249,199,79,0.25);
+        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
+    }
     .ts-notif-header {
         padding: 10px 16px;
         background: var(--c-bg);
@@ -216,12 +347,19 @@
         align-items: center;
         justify-content: space-between;
     }
+    .ts-nav-seller .ts-notif-header {
+        background: rgba(255,255,255,0.05);
+        border-bottom-color: rgba(255,255,255,0.1);
+    }
     .ts-notif-label {
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--c-muted);
+    }
+    .ts-nav-seller .ts-notif-label {
+        color: rgba(255,255,255,0.55);
     }
     .ts-notif-mark {
         font-size: 11px;
@@ -236,6 +374,14 @@
         font-family: 'Inter', sans-serif;
     }
     .ts-notif-mark:hover { background: var(--c-primary); color: #fff; }
+    .ts-nav-seller .ts-notif-mark {
+        background: rgba(249,199,79,0.2);
+        color: #F9C74F;
+    }
+    .ts-nav-seller .ts-notif-mark:hover {
+        background: #F9C74F;
+        color: #0F3D22;
+    }
     .ts-notif-row {
         padding: 10px 16px;
         border-bottom: 1px solid var(--c-border);
@@ -243,10 +389,20 @@
     }
     .ts-notif-row:last-child { border-bottom: none; }
     .ts-notif-row:hover { background: var(--c-bg); }
+    .ts-nav-seller .ts-notif-row {
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
+    .ts-nav-seller .ts-notif-row:hover {
+        background: rgba(249,199,79,0.08);
+    }
     .ts-notif-row-title { font-size: 12px; font-weight: 600; color: var(--c-text); }
+    .ts-nav-seller .ts-notif-row-title { color: rgba(255,255,255,0.9); }
     .ts-notif-row-body  { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
+    .ts-nav-seller .ts-notif-row-body { color: rgba(255,255,255,0.55); }
     .ts-notif-row-time  { font-size: 10px; color: var(--c-secondary); margin-top: 3px; font-weight: 500; }
+    .ts-nav-seller .ts-notif-row-time { color: #F9C74F; }
     .ts-notif-empty     { padding: 20px 16px; font-size: 12px; color: var(--c-muted); text-align: center; }
+    .ts-nav-seller .ts-notif-empty { color: rgba(255,255,255,0.4); }
 
     /* ── User trigger button ─────────────────────────────────── */
     .ts-user-btn {
@@ -279,6 +435,11 @@
         overflow: hidden;
         font-family: 'Inter', sans-serif;
     }
+    .ts-nav-seller .ts-user-menu {
+        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
+        border: 1px solid rgba(249,199,79,0.25);
+        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
+    }
     .ts-user-menu-item {
         display: flex;
         align-items: center;
@@ -301,6 +462,22 @@
     .ts-user-menu-item:hover        { background: var(--c-bg); color: var(--c-primary); }
     .ts-user-menu-item.ts-logout    { color: var(--c-danger); }
     .ts-user-menu-item.ts-logout:hover { background: #FFF5F5; color: var(--c-danger); }
+    /* Seller dropdown items */
+    .ts-nav-seller .ts-user-menu-item {
+        color: rgba(255,255,255,0.85);
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
+    .ts-nav-seller .ts-user-menu-item:hover {
+        background: rgba(249,199,79,0.12);
+        color: #F9C74F;
+    }
+    .ts-nav-seller .ts-user-menu-item.ts-logout {
+        color: #FF7675;
+    }
+    .ts-nav-seller .ts-user-menu-item.ts-logout:hover {
+        background: rgba(231,76,60,0.15);
+        color: #FF7675;
+    }
 
     /* ── Auth links ──────────────────────────────────────────── */
     .ts-btn-ghost {
@@ -386,12 +563,19 @@
     .ts-vdivider { width:1px; height:22px; background:#F5F5F5; margin:0 4px; }
     .ts-logo { display:flex; align-items:center; transition: opacity 0.15s; }
     .ts-logo:hover { opacity: 0.85; }
+
+    /* ── Live clock slide-up animation ──────────────────── */
+    @keyframes navClockUp {
+        from { transform: translateY(110%); opacity: 0.2; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .nav-clock-anim { animation: navClockUp 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 </style>
 
 <nav x-data="{ open: false, wishlistCount: {{ (int) $wishlistCount }}, cartCount: {{ (int) $cartCount }} }"
      x-on:wishlist-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') wishlistCount = Number($event.detail.count) || 0"
      x-on:cart-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') cartCount = Number($event.detail.count) || 0"
-     class="ts-nav">
+     class="ts-nav {{ request()->is('seller/*') ? 'ts-nav-seller' : (request()->is('admin/*') ? 'ts-nav-admin' : '') }}">
 
     <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8" style="width:100%;">
         <div class="flex justify-between h-16">
@@ -700,6 +884,7 @@
                                         {{ __('Profile') }}
                                     </a>
                                 @endif
+                                @if($logoutRoute === 'logout')
                                 <a href="{{ route('customer.orders') }}" class="ts-user-menu-item">
                                     <svg class="h-4 w-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -714,6 +899,7 @@
                                     </svg>
                                     {{ __('Messages') }}
                                 </a>
+                                @endif
                                 <form method="POST" action="{{ route($logoutRoute) }}">
                                     @csrf
                                     <button type="submit" class="ts-user-menu-item ts-logout">
@@ -727,6 +913,39 @@
                             </div>
                         </x-slot>
                     </x-dropdown>
+
+                    {{-- Live Time (Seller + Admin - Right End) --}}
+                    @if(request()->is('seller/*') || request()->is('admin/*'))
+                        <div x-data="{
+                                hhmm: '',
+                                d1: '', d2: '',
+                                anim(ref) {
+                                    const el = this.$refs[ref];
+                                    if (el) { el.classList.remove('nav-clock-anim'); void el.offsetWidth; el.classList.add('nav-clock-anim'); }
+                                },
+                                init() {
+                                    const update = () => {
+                                        const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                                        this.hhmm = t.slice(0, 6);
+                                        if (t[6] !== this.d1) { this.d1 = t[6]; this.anim('cd1'); }
+                                        if (t[7] !== this.d2) { this.d2 = t[7]; this.anim('cd2'); }
+                                    };
+                                    update();
+                                    setInterval(update, 1000);
+                                }
+                             }"
+                             class="hidden sm:flex items-center gap-1.5 text-xs font-mono ml-3"
+                             style="color: #F9C74F; letter-spacing: 0.05em;">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span style="display:inline-flex;align-items:center;line-height:1;">
+                                <span x-text="hhmm" style="line-height:1;"></span>
+                                <span style="overflow:hidden;height:1em;display:inline-flex;align-items:center;"><span x-ref="cd1" class="nav-clock-anim" style="display:block;line-height:1;" x-text="d1"></span></span>
+                                <span style="overflow:hidden;height:1em;display:inline-flex;align-items:center;"><span x-ref="cd2" class="nav-clock-anim" style="display:block;line-height:1;" x-text="d2"></span></span>
+                            </span>
+                        </div>
+                    @endif
                 @else
                     @if(!request()->is('admin/*') && !request()->is('seller/*') && !$isSellerContext)
                         <a href="{{ route('login') }}" class="ts-btn-ghost">{{ __('Log in') }}</a>
@@ -760,9 +979,9 @@
             </a>
 
             @if($user && request()->is('admin/*'))
-                {{-- Admin: Links moved to sidebar --}}
+                {{-- Admin: Links in sidebar --}}
             @elseif($user && request()->is('seller/*'))
-                <a href="{{ route('customer.orders') }}" class="ts-mob-link {{ request()->routeIs('customer.orders') ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
+                {{-- Seller: Links in sidebar --}}
 
             @elseif($user && !request()->is('admin/*') && !request()->is('seller/*'))
                 <a href="{{ route('customer.orders') }}"   class="ts-mob-link {{ request()->routeIs('customer.orders')   ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
@@ -792,8 +1011,10 @@
                 @if($logoutRoute === 'logout')
                     <a href="{{ route('profile.edit') }}" class="ts-mob-link">{{ __('Profile') }}</a>
                 @endif
+                @if($logoutRoute === 'logout')
                 <a href="{{ route('customer.orders') }}" class="ts-mob-link {{ request()->routeIs('customer.orders') ? 'ts-active' : '' }}">{{ __('My Orders') }}</a>
                 <a href="{{ route('customer.messages') }}" class="ts-mob-link {{ request()->routeIs('customer.messages') ? 'ts-active' : '' }}">{{ __('Messages') }}</a>
+                @endif
                 <form method="POST" action="{{ route($logoutRoute) }}">
                     @csrf
                     <button type="submit" class="ts-mob-link ts-mob-danger">{{ __('Log Out') }}</button>

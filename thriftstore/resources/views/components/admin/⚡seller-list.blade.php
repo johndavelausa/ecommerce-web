@@ -368,45 +368,99 @@ new class extends Component
 };
 ?>
 
+<style>
+    .sel-search { border-radius: 50px; border: 1.5px solid #D4E8DA; padding: 8px 16px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .sel-search:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .sel-filter-btn { padding: 6px 14px; border-radius: 50px; font-size: 0.8125rem; font-weight: 600; border: 1.5px solid #D4E8DA; background: #fff; color: #424242; text-decoration: none; transition: all 0.15s; cursor: pointer; }
+    .sel-filter-btn.active { background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #F9C74F; border-color: #2D9F4E; }
+    .sel-filter-btn:hover { border-color: #2D9F4E; }
+    .sel-label { font-size: 0.6875rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.05em; font-style: italic; }
+    .sel-table-card { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .sel-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .sel-table th { padding: 9px 16px; text-align: left; font-size: 0.6875rem; font-weight: 700; color: #1B7A37; text-transform: uppercase; letter-spacing: 0.05em; background: #F5FBF7; border-bottom: 1px solid #D4E8DA; }
+    .sel-table td { padding: 9px 16px; color: #424242; border-bottom: 1px solid #F0F7F2; }
+    .sel-table tr:last-child td { border-bottom: none; }
+    .sel-table tr:hover td { background: #F5FBF7; }
+    .sel-status-badge { padding: 5px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+    .sel-status-approved { background: #E8F5E9; color: #1B7A37; }
+    .sel-status-pending { background: #FFF9E3; color: #F57C00; }
+    .sel-status-rejected { background: #FFEBEE; color: #C0392B; }
+    .sel-status-suspended { background: #FFF3E0; color: #E65100; }
+    .sel-verified { background: #E3F2FD; color: #1565C0; padding: 4px 8px; border-radius: 50px; font-size: 0.7rem; font-weight: 600; margin-left: 6px; }
+    .sel-action-btn { font-size: 0.8125rem; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+    .sel-action-view { color: #2D9F4E; }
+    .sel-action-view:hover { color: #1B7A37; text-decoration: underline; }
+    .sel-action-suspend { color: #F57C00; }
+    .sel-action-suspend:hover { color: #E65100; text-decoration: underline; }
+    .sel-action-unsuspend { color: #1B7A37; }
+    .sel-action-unsuspend:hover { color: #0F3D22; text-decoration: underline; }
+    .sel-action-delete { color: #C0392B; }
+    .sel-action-delete:hover { color: #A02622; text-decoration: underline; }
+    .sel-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; }
+    .sel-modal { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; box-shadow: 0 10px 40px rgba(15,61,34,0.2); display: flex; flex-direction: column; max-height: 90vh; }
+    .sel-modal-header { padding: 18px 20px; border-bottom: 1.5px solid #D4E8DA; flex-shrink: 0; background: #fff; border-radius: 20px 20px 0 0; }
+    .sel-modal-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
+    .sel-modal-footer { padding: 14px 20px; border-top: 1.5px solid #D4E8DA; flex-shrink: 0; background: #F5FBF7; border-radius: 0 0 20px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+    .sel-modal-title { font-size: 1.125rem; font-weight: 800; color: #0F3D22; }
+    .sel-modal-label { font-size: 0.8125rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.05em; font-style: italic; margin-bottom: 6px; }
+    .sel-section { margin-bottom: 16px; }
+    .sel-section-title { font-size: 0.8125rem; font-weight: 700; color: #1B7A37; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1.5px solid #D4E8DA; }
+    .sel-detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #F0F7F2; }
+    .sel-detail-row:last-child { border-bottom: none; }
+    .sel-detail-row.compact { padding: 6px 0; }
+    .sel-modal-input, .sel-modal-textarea, .sel-modal-select { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.8125rem; color: #424242; transition: all 0.15s; }
+    .sel-modal-input:focus, .sel-modal-textarea:focus, .sel-modal-select:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .sel-modal-btn { padding: 8px 16px; border-radius: 50px; font-size: 0.8125rem; font-weight: 600; border: 1.5px solid #D4E8DA; background: #fff; color: #424242; text-decoration: none; transition: all 0.15s; cursor: pointer; }
+    .sel-modal-btn-primary { background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #fff; border-color: #2D9F4E; }
+    .sel-modal-btn-primary:hover { box-shadow: 0 4px 14px rgba(15,61,34,0.2); }
+    .sel-modal-btn-danger { background: #C0392B; color: #fff; border-color: #A02622; }
+    .sel-modal-btn-danger:hover { background: #A02622; }
+    .sel-detail-label { font-size: 0.8125rem; color: #757575; font-style: italic; }
+    .sel-detail-value { font-size: 0.9375rem; font-weight: 600; color: #0F3D22; }
+    .sel-payment-card { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 12px 14px; }
+    .sel-note-card { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 10px 12px; }
+    .sel-activity-log { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 10px 12px; }
+</style>
+
 <div>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div class="flex flex-wrap gap-2 items-center">
             <input type="text" wire:model.live.debounce.300ms="search"
                    placeholder="Search store name, name, email, GCash…"
-                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64">
-            <span class="text-sm text-gray-600">Filter by status:</span>
-        <button wire:click="$set('statusFilter', '')" class="px-3 py-1 rounded text-sm {{ $statusFilter === '' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">All</button>
-        <button wire:click="$set('statusFilter', 'pending')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'pending' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Pending</button>
-        <button wire:click="$set('statusFilter', 'approved')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'approved' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Approved</button>
-        <button wire:click="$set('statusFilter', 'rejected')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'rejected' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Rejected</button>
-        <button wire:click="$set('statusFilter', 'suspended')" class="px-3 py-1 rounded text-sm {{ $statusFilter === 'suspended' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">Suspended</button>
+                   class="sel-search" style="width:240px;">
+            <span class="sel-label">Filter by status:</span>
+            <button wire:click="$set('statusFilter', '')" class="sel-filter-btn {{ $statusFilter === '' ? 'active' : '' }}">All</button>
+            <button wire:click="$set('statusFilter', 'pending')" class="sel-filter-btn {{ $statusFilter === 'pending' ? 'active' : '' }}">Pending</button>
+            <button wire:click="$set('statusFilter', 'approved')" class="sel-filter-btn {{ $statusFilter === 'approved' ? 'active' : '' }}">Approved</button>
+            <button wire:click="$set('statusFilter', 'rejected')" class="sel-filter-btn {{ $statusFilter === 'rejected' ? 'active' : '' }}">Rejected</button>
+            <button wire:click="$set('statusFilter', 'suspended')" class="sel-filter-btn {{ $statusFilter === 'suspended' ? 'active' : '' }}">Suspended</button>
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="sel-table-card">
+        <table class="sel-table">
+            <thead>
                 <tr>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Active</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Registered</th>
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th>Name</th>
+                    <th>Store</th>
+                    <th>Status</th>
+                    <th>Last Active</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody>
                 @forelse($this->sellers as $seller)
                     <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ $seller->user->name ?? '—' }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900">{{ $seller->store_name }}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs rounded {{ $seller->status === 'approved' ? 'bg-green-100 text-green-800' : ($seller->status === 'rejected' ? 'bg-red-100 text-red-800' : ($seller->status === 'suspended' ? 'bg-amber-100 text-amber-800' : 'bg-yellow-100 text-yellow-800')) }}">{{ ucfirst($seller->status) }}</span>
+                        <td>{{ $seller->user->name ?? '—' }}</td>
+                        <td>{{ $seller->store_name }}</td>
+                        <td>
+                            <span class="sel-status-badge {{ $seller->status === 'approved' ? 'sel-status-approved' : ($seller->status === 'rejected' ? 'sel-status-rejected' : ($seller->status === 'suspended' ? 'sel-status-suspended' : 'sel-status-pending')) }}">{{ ucfirst($seller->status) }}</span>
                             @if($seller->is_verified ?? false)
-                                <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Verified seller">✓ Verified</span>
+                                <span class="sel-verified" title="Verified seller">✓ Verified</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">
+                        <td style="font-style:italic;color:#757575;">
                             @php($last = $seller->user?->last_active_at)
                             @if(!$last)
                                 —
@@ -425,27 +479,27 @@ new class extends Component
                                 @endif
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ $seller->created_at?->format('M d, Y') }}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <button wire:click="viewSeller({{ $seller->id }})" class="text-indigo-600 hover:underline">View</button>
+                        <td style="font-style:italic;color:#757575;">{{ $seller->created_at?->format('M d, Y') }}</td>
+                        <td>
+                            <button wire:click="viewSeller({{ $seller->id }})" class="sel-action-btn sel-action-view">View</button>
                             @if($seller->status === 'approved')
-                                <button wire:click="suspendSeller({{ $seller->id }})" class="ml-2 text-amber-700 hover:underline">Suspend</button>
+                                <button wire:click="suspendSeller({{ $seller->id }})" class="sel-action-btn sel-action-suspend" style="margin-left:8px;">Suspend</button>
                             @elseif($seller->status === 'suspended')
-                                <button wire:click="unsuspendSeller({{ $seller->id }})" class="ml-2 text-green-700 hover:underline">Unsuspend</button>
+                                <button wire:click="unsuspendSeller({{ $seller->id }})" class="sel-action-btn sel-action-unsuspend" style="margin-left:8px;">Unsuspend</button>
                             @endif
                             @if($seller->status === 'rejected')
-                                <button wire:click="confirmDelete({{ $seller->id }})" class="ml-2 text-red-600 hover:underline">Delete</button>
+                                <button wire:click="confirmDelete({{ $seller->id }})" class="sel-action-btn sel-action-delete" style="margin-left:8px;">Delete</button>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">No sellers found.</td>
+                        <td colspan="6" style="text-align:center;padding:32px 16px;color:#9E9E9E;font-style:italic;">No sellers found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
-        <div class="px-4 py-2 border-t">
+        <div style="padding:12px 16px;border-top:1px solid #D4E8DA;">
             {{ $this->sellers->links() }}
         </div>
     </div>
@@ -453,147 +507,143 @@ new class extends Component
     @if($selectedSellerId)
         @php($seller = \App\Models\Seller::with(['user', 'payments', 'notes.admin', 'activityLogs'])->find($selectedSellerId))
         @if($seller)
-            <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+            <div class="fixed inset-0 z-50" aria-modal="true">
                 <div class="flex min-h-screen items-center justify-center p-4">
                     <div wire:click="closeDetail" class="fixed inset-0 bg-black/50"></div>
-                    <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div class="p-6">
+                    <div class="sel-modal relative max-w-2xl w-full">
+                        {{-- Header --}}
+                        <div class="sel-modal-header">
                             <div class="flex justify-between items-start">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-lg font-semibold">Seller: {{ $seller->user->name }}</h3>
+                                <div class="flex items-center gap-2 flex-1">
+                                    <h3 class="sel-modal-title">{{ $seller->user->name }}</h3>
                                     @if($seller->is_verified ?? false)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">✓ Verified</span>
+                                        <span class="sel-verified">✓ Verified</span>
                                     @endif
                                 </div>
-                                <button wire:click="closeDetail" class="text-gray-400 hover:text-gray-600">&times;</button>
+                                <button wire:click="closeDetail" class="text-gray-400 hover:text-gray-600 ml-2" style="font-size:1.5rem;line-height:1;">&times;</button>
                             </div>
                             @if($seller->status === 'approved')
-                                <div class="mt-2">
-                                    <button wire:click="toggleVerified({{ $seller->id }})" class="text-sm {{ $seller->is_verified ? 'text-amber-600 hover:underline' : 'text-indigo-600 hover:underline' }}">
-                                        {{ $seller->is_verified ? 'Remove verified badge' : 'Mark as verified' }}
-                                    </button>
-                                </div>
+                                <button wire:click="toggleVerified({{ $seller->id }})" class="text-xs font-600 mt-2 hover:underline" style="color:{{ $seller->is_verified ? '#F57C00' : '#2D9F4E' }};">
+                                    {{ $seller->is_verified ? '✓ Remove verified badge' : '○ Mark as verified' }}
+                                </button>
                             @endif
-                            <dl class="mt-4 grid grid-cols-1 gap-2 text-sm">
-                                <div><span class="text-gray-500">Store:</span> {{ $seller->store_name }}</div>
-                                <div><span class="text-gray-500">Email:</span> {{ $seller->user->email }}</div>
-                                <div><span class="text-gray-500">Contact:</span> {{ $seller->user->contact_number ?? '—' }}</div>
-                                <div><span class="text-gray-500">GCash:</span> {{ $seller->gcash_number }}</div>
-                                <div><span class="text-gray-500">Status:</span> {{ ucfirst($seller->status) }}</div>
-                                <div>
-                                    <span class="text-gray-500">Subscription:</span>
-                                    @if($seller->subscription_due_date)
-                                        {{ ucfirst($seller->subscription_status) }}
-                                        · due {{ $seller->subscription_due_date->format('Y-m-d') }}
-                                    @else
-                                        Not set
-                                    @endif
+                        </div>
+
+                        {{-- Body --}}
+                        <div class="sel-modal-body">
+                            {{-- Basic Info --}}
+                            <div class="sel-section">
+                                <div class="sel-section-title">Account Details</div>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">Store</span>
+                                    <span class="sel-detail-value">{{ $seller->store_name }}</span>
                                 </div>
-                            </dl>
-                            <div class="mt-6 border-t pt-4">
-                                <h4 class="font-medium text-gray-700">Payments</h4>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">Email</span>
+                                    <span class="sel-detail-value">{{ $seller->user->email }}</span>
+                                </div>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">Contact</span>
+                                    <span class="sel-detail-value">{{ $seller->user->contact_number ?? '—' }}</span>
+                                </div>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">GCash</span>
+                                    <span class="sel-detail-value">{{ $seller->gcash_number }}</span>
+                                </div>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">Status</span>
+                                    <span class="sel-detail-value">{{ ucfirst($seller->status) }}</span>
+                                </div>
+                                <div class="sel-detail-row compact">
+                                    <span class="sel-detail-label">Subscription</span>
+                                    <span class="sel-detail-value">
+                                        @if($seller->subscription_due_date)
+                                            {{ ucfirst($seller->subscription_status) }} · due {{ $seller->subscription_due_date->format('M d') }}
+                                        @else
+                                            Not set
+                                        @endif
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Payments --}}
+                            <div class="sel-section">
+                                <div class="sel-section-title">Payments ({{ count($seller->payments) }})</div>
                                 @forelse($seller->payments as $payment)
-                                    <div class="mt-3 p-3 bg-gray-50 rounded">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <span class="font-medium">{{ ucfirst($payment->type) }}</span> — ₱{{ number_format($payment->amount, 2) }}
-                                                <span class="ml-2 px-2 py-0.5 text-xs rounded {{ $payment->status === 'approved' ? 'bg-green-100' : ($payment->status === 'rejected' ? 'bg-red-100' : 'bg-yellow-100') }}">{{ $payment->status }}</span>
+                                    <div class="sel-payment-card">
+                                        <div class="flex justify-between items-start gap-2">
+                                            <div class="flex-1">
+                                                <div style="color:#0F3D22;font-weight:600;">{{ ucfirst($payment->type) }} — ₱{{ number_format($payment->amount, 2) }}</div>
+                                                <div class="text-xs mt-1" style="color:#9E9E9E;font-style:italic;">Ref: {{ $payment->reference_number }}</div>
                                             </div>
-                                            @if($payment->status === 'pending')
-                                                <div>
-                                                    <button wire:click="approvePayment({{ $payment->id }})" class="text-green-600 text-sm hover:underline">Approve</button>
-                                                    <button wire:click="rejectPayment({{ $payment->id }})" class="ml-2 text-red-600 text-sm hover:underline">Reject</button>
-                                                </div>
-                                            @endif
+                                            <span class="px-2 py-0.5 text-xs rounded flex-shrink-0" style="background:{{ $payment->status === 'approved' ? '#E8F5E9' : ($payment->status === 'rejected' ? '#FFEBEE' : '#FFF9E3') }};color:{{ $payment->status === 'approved' ? '#1B7A37' : ($payment->status === 'rejected' ? '#C0392B' : '#F57C00') }};">{{ $payment->status }}</span>
                                         </div>
-                                        <div class="mt-1 text-xs text-gray-500">Ref: {{ $payment->reference_number }}</div>
-                                        @if($payment->screenshot_path)
-                                            <div class="mt-2">
-                                                <img src="{{ asset('storage/' . $payment->screenshot_path) }}" alt="Screenshot" class="max-w-xs rounded border">
+                                        @if($payment->status === 'pending')
+                                            <div class="flex gap-2 mt-2">
+                                                <button wire:click="approvePayment({{ $payment->id }})" class="text-xs font-600 hover:underline flex-1" style="color:#1B7A37;">✓ Approve</button>
+                                                <button wire:click="rejectPayment({{ $payment->id }})" class="text-xs font-600 hover:underline flex-1" style="color:#C0392B;">✕ Reject</button>
                                             </div>
+                                        @endif
+                                        @if($payment->screenshot_path)
+                                            <img src="{{ asset('storage/' . $payment->screenshot_path) }}" alt="Screenshot" class="max-w-xs rounded border mt-2" style="border-color:#D4E8DA;max-height:120px;">
                                         @endif
                                     </div>
                                 @empty
-                                    <p class="text-gray-500 text-sm">No payments.</p>
+                                    <p class="text-xs" style="color:#9E9E9E;font-style:italic;">No payments.</p>
                                 @endforelse
                             </div>
-                            {{-- A2 v1.4 — Admin notes (internal only) --}}
-                            <div class="mt-6 border-t pt-4">
-                                <h4 class="font-medium text-gray-700">Admin notes</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Internal only — not visible to seller.</p>
-                                <div class="mt-2">
-                                    <textarea wire:model.defer="newNote" rows="2" placeholder="Add a note…"
-                                              class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
-                                    @error('newNote') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                                    <button wire:click="addSellerNote" class="mt-1 px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-gray-800">Add note</button>
+
+                            {{-- Admin Notes --}}
+                            <div class="sel-section">
+                                <div class="sel-section-title">Admin Notes</div>
+                                <div class="mb-2">
+                                    <textarea wire:model.defer="newNote" rows="2" placeholder="Add a note…" class="sel-modal-textarea w-full"></textarea>
+                                    @error('newNote') <span class="text-xs" style="color:#C0392B;">{{ $message }}</span> @enderror
+                                    <button wire:click="addSellerNote" class="sel-modal-btn sel-modal-btn-primary mt-1 w-full">Add note</button>
                                 </div>
-                                <ul class="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                                <div class="space-y-2 max-h-32 overflow-y-auto">
                                     @forelse($seller->notes as $note)
-                                        <li class="p-2 bg-gray-50 rounded text-sm">
-                                            <span class="text-gray-700">{{ $note->note }}</span>
-                                            <span class="block text-xs text-gray-400 mt-1">{{ $note->created_at->format('M d, Y H:i') }} @if($note->admin) · {{ $note->admin->name }} @endif</span>
-                                        </li>
+                                        <div class="sel-note-card">
+                                            <div style="color:#0F3D22;font-size:0.8125rem;">{{ $note->note }}</div>
+                                            <div class="text-xs mt-1" style="color:#9E9E9E;font-style:italic;">{{ $note->created_at->format('M d, H:i') }} @if($note->admin) · {{ $note->admin->name }} @endif</div>
+                                        </div>
                                     @empty
-                                        <li class="text-gray-500 text-sm">No notes yet.</li>
+                                        <p class="text-xs" style="color:#9E9E9E;font-style:italic;">No notes yet.</p>
                                     @endforelse
-                                </ul>
+                                </div>
                             </div>
-                            {{-- A2 v1.4 — Seller activity log --}}
-                            <div class="mt-6 border-t pt-4">
-                                <h4 class="font-medium text-gray-700">Seller activity log</h4>
-                                <ul class="mt-2 space-y-2 max-h-56 overflow-y-auto text-sm">
-                                    @forelse($seller->activityLogs->take(50) as $log)
-                                        <li class="flex flex-col gap-1 text-gray-600 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+
+                            {{-- Activity Log --}}
+                            <div class="sel-section">
+                                <div class="sel-section-title">Activity Log</div>
+                                <div class="space-y-2 max-h-40 overflow-y-auto">
+                                    @forelse($seller->activityLogs->take(20) as $log)
+                                        <div class="sel-activity-log">
                                             <div class="flex items-center justify-between gap-2">
-                                                <span class="text-gray-400 text-xs">{{ $log->created_at->format('Y-m-d H:i') }}</span>
-                                                <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                                                <span class="text-xs" style="color:#9E9E9E;">{{ $log->created_at->format('M d H:i') }}</span>
+                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase" style="background:#E8F5E9;color:#1B7A37;">
                                                     {{ str_replace('_', ' ', $log->action) }}
                                                 </span>
                                             </div>
-                                            @if(!empty($log->details))
-                                                @php($details = $log->details)
-                                                <div class="mt-1 border-t border-dashed border-gray-200 pt-1.5 text-gray-500 text-xs space-y-0.5">
-                                                    @if(is_array($details))
-                                                        @foreach($details as $key => $value)
-                                                            <div>
-                                                                <span class="font-semibold">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
-                                                                @if(is_array($value))
-                                                                    @php($isAssoc = \Illuminate\Support\Arr::isAssoc($value))
-                                                                    @if($isAssoc)
-                                                                        <div class="mt-0.5 ml-4 space-y-0.5">
-                                                                            @foreach($value as $subKey => $subValue)
-                                                                                <div>
-                                                                                    <span class="font-semibold">{{ ucfirst(str_replace('_', ' ', $subKey)) }}:</span>
-                                                                                    <span>{{ is_bool($subValue) ? ($subValue ? 'Yes' : 'No') : $subValue }}</span>
-                                                                                </div>
-                                                                            @endforeach
-                                                                        </div>
-                                                                    @else
-                                                                        <span class="whitespace-pre-wrap font-mono">
-                                                                            {{ implode(', ', $value) }}
-                                                                        </span>
-                                                                    @endif
-                                                                @else
-                                                                    <span>{{ is_bool($value) ? ($value ? 'Yes' : 'No') : $value }}</span>
-                                                                @endif
-                                                            </div>
-                                                        @endforeach
-                                                    @else
-                                                        <div>{{ $details }}</div>
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </li>
+                                        </div>
                                     @empty
-                                        <li class="text-gray-500">No activity logged yet.</li>
+                                        <p class="text-xs" style="color:#9E9E9E;">No activity logged yet.</p>
                                     @endforelse
-                                </ul>
-                            </div>
-                            @if($seller->status === 'rejected')
-                                <div class="mt-4 pt-4 border-t">
-                                    <button wire:click="confirmDelete({{ $seller->id }})" class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Delete seller</button>
                                 </div>
+                            </div>
+                        </div>
+
+                        {{-- Footer --}}
+                        <div class="sel-modal-footer">
+                            @if($seller->status === 'approved')
+                                <button wire:click="suspendSeller({{ $seller->id }})" class="sel-modal-btn" style="background:#FFF3E0;color:#E65100;border-color:#F57C00;">Suspend</button>
+                            @elseif($seller->status === 'suspended')
+                                <button wire:click="unsuspendSeller({{ $seller->id }})" class="sel-modal-btn" style="background:#E8F5E9;color:#1B7A37;border-color:#2D9F4E;">Unsuspend</button>
                             @endif
+                            @if($seller->status === 'rejected')
+                                <button wire:click="confirmDelete({{ $seller->id }})" class="sel-modal-btn sel-modal-btn-danger">Delete</button>
+                            @endif
+                            <button wire:click="closeDetail" class="sel-modal-btn">Close</button>
                         </div>
                     </div>
                 </div>
@@ -603,11 +653,11 @@ new class extends Component
 
     @if($showDeleteConfirm)
         <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
-            <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
-                <p class="text-gray-700">Delete this rejected seller and their user account? This cannot be undone.</p>
+            <div class="sel-modal max-w-sm w-full p-6">
+                <p style="color:#0F3D22;">Delete this rejected seller and their user account? This cannot be undone.</p>
                 <div class="mt-4 flex gap-2 justify-end">
-                    <button wire:click="cancelDelete" class="px-3 py-1 border rounded">Cancel</button>
-                    <button wire:click="deleteSeller" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+                    <button wire:click="cancelDelete" class="sel-modal-btn">Cancel</button>
+                    <button wire:click="deleteSeller" class="sel-modal-btn sel-modal-btn-danger">Delete</button>
                 </div>
             </div>
         </div>
@@ -615,21 +665,21 @@ new class extends Component
 
     @if($showRejectModal)
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
-            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-                <h3 class="text-lg font-semibold text-gray-900">Reject payment</h3>
-                <p class="mt-1 text-sm text-gray-600">
+            <div class="sel-modal max-w-md w-full p-6">
+                <h3 class="sel-modal-title">Reject Payment</h3>
+                <p class="mt-1 text-sm" style="color:#757575;font-style:italic;">
                     Please enter a reason. This will be shown to the seller.
                 </p>
                 <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700">Reason</label>
+                    <label class="sel-modal-label">Reason</label>
                     <textarea wire:model.defer="rejectReason" rows="3"
-                              class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                              class="sel-modal-textarea w-full mt-2"
                               placeholder="e.g. Screenshot unclear, reference number mismatch..."></textarea>
-                    @error('rejectReason') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                    @error('rejectReason') <div class="mt-1 text-xs" style="color:#C0392B;">{{ $message }}</div> @enderror
                 </div>
                 <div class="mt-4 flex gap-2 justify-end">
-                    <button wire:click="cancelReject" class="px-3 py-1 border rounded">Cancel</button>
-                    <button wire:click="confirmReject" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
+                    <button wire:click="cancelReject" class="sel-modal-btn">Cancel</button>
+                    <button wire:click="confirmReject" class="sel-modal-btn sel-modal-btn-danger">Reject</button>
                 </div>
             </div>
         </div>
@@ -637,17 +687,17 @@ new class extends Component
 
     @if($showSuspendModal)
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
-            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-                <h3 class="text-lg font-semibold text-gray-900">Suspend seller</h3>
-                <p class="mt-1 text-sm text-gray-600">
+            <div class="sel-modal max-w-md w-full p-6">
+                <h3 class="sel-modal-title">Suspend Seller</h3>
+                <p class="mt-1 text-sm" style="color:#757575;font-style:italic;">
                     Select a reason for suspension. This will be sent as a message to the seller.
                 </p>
                 
                 <div class="mt-4 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Reason</label>
+                        <label class="sel-modal-label">Reason</label>
                         <select wire:model.live="suspensionReason" 
-                                class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                class="sel-modal-select w-full mt-2">
                             @foreach($suspensionReasonsList as $r)
                                 <option value="{{ $r }}">{{ $r }}</option>
                             @endforeach
@@ -656,18 +706,18 @@ new class extends Component
 
                     @if($suspensionReason === 'Other')
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Custom reason/note</label>
+                            <label class="sel-modal-label">Custom Reason/Note</label>
                             <textarea wire:model.defer="customSuspensionNote" rows="3"
-                                      class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                      class="sel-modal-textarea w-full mt-2"
                                       placeholder="Explain the specific reason..."></textarea>
-                            @error('customSuspensionNote') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                            @error('customSuspensionNote') <div class="mt-1 text-xs" style="color:#C0392B;">{{ $message }}</div> @enderror
                         </div>
                     @endif
                 </div>
 
                 <div class="mt-6 flex gap-2 justify-end">
-                    <button wire:click="cancelSuspension" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Cancel</button>
-                    <button wire:click="confirmSuspension" class="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">Suspend Seller</button>
+                    <button wire:click="cancelSuspension" class="sel-modal-btn">Cancel</button>
+                    <button wire:click="confirmSuspension" class="sel-modal-btn" style="background:#F57C00;color:#fff;border-color:#E65100;">Suspend Seller</button>
                 </div>
             </div>
         </div>
@@ -675,23 +725,23 @@ new class extends Component
 
     @if($showUnsuspendModal)
         <div class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
-            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-                <h3 class="text-lg font-semibold text-gray-900 text-green-700">Reactivate seller account</h3>
-                <p class="mt-1 text-sm text-gray-600">
+            <div class="sel-modal max-w-md w-full p-6">
+                <h3 class="sel-modal-title" style="color:#1B7A37;">Reactivate Seller Account</h3>
+                <p class="mt-1 text-sm" style="color:#757575;font-style:italic;">
                     Please provide a reason or note for reactivating this account (e.g., issues resolved).
                 </p>
                 
                 <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700">Resolution Note</label>
+                    <label class="sel-modal-label">Resolution Note</label>
                     <textarea wire:model.defer="unsuspendReason" rows="3"
-                                class="mt-1 w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="sel-modal-textarea w-full mt-2"
                                 placeholder="e.g. Terms complied, Issue resolved..."></textarea>
-                    @error('unsuspendReason') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                    @error('unsuspendReason') <div class="mt-1 text-xs" style="color:#C0392B;">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="mt-6 flex gap-2 justify-end">
-                    <button wire:click="cancelUnsuspension" class="px-3 py-1 border rounded text-sm hover:bg-gray-50">Cancel</button>
-                    <button wire:click="confirmUnsuspension" class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Confirm Reactivation</button>
+                    <button wire:click="cancelUnsuspension" class="sel-modal-btn">Cancel</button>
+                    <button wire:click="confirmUnsuspension" class="sel-modal-btn" style="background:#1B7A37;color:#fff;border-color:#0F3D22;">Confirm Reactivation</button>
                 </div>
             </div>
         </div>

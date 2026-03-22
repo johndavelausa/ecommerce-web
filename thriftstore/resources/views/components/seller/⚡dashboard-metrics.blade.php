@@ -190,6 +190,9 @@ new class extends Component
                 'net_profit' => 0,
                 'store_rating_avg' => 0.0,
                 'store_reviews_count' => 0,
+                'avg_order_value' => 0.0,
+                'top_product_name' => null,
+                'top_product_sold' => 0,
             ];
         }
 
@@ -249,6 +252,19 @@ new class extends Component
             ->selectRaw('SUM(COALESCE(NULLIF(products.sale_price, 0), products.price) * order_items.quantity) as total')
             ->value('total') ?? 0;
 
+        $avgOrderValue = (float) ((clone $orderBase)->where('status', 'delivered')->avg('total_amount') ?? 0);
+
+        $topProductData = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.seller_id', $seller->id)
+            ->where('orders.status', 'delivered')
+            ->selectRaw('order_items.product_id, SUM(order_items.quantity) as total_sold')
+            ->groupBy('order_items.product_id')
+            ->orderByDesc('total_sold')
+            ->first();
+        $topProductName = $topProductData ? (Product::find($topProductData->product_id)?->name ?? 'N/A') : null;
+        $topProductSold = (int) ($topProductData?->total_sold ?? 0);
+
         return [
             'products_total' => $productsTotal,
             'products_active' => $productsActive,
@@ -268,6 +284,9 @@ new class extends Component
             'net_profit' => $netProfit,
             'store_rating_avg' => $storeRatingAvg,
             'store_reviews_count' => $storeReviewsCount,
+            'avg_order_value' => $avgOrderValue,
+            'top_product_name' => $topProductName,
+            'top_product_sold' => $topProductSold,
         ];
     }
 };
@@ -277,48 +296,58 @@ new class extends Component
 @verbatim
 <style>
     .dash-header {
-        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
-        border-radius: 16px;
-        padding: 24px 28px;
-        border: 1px solid #E8E8E8;
-        margin-bottom: 24px;
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
+        border-radius: 12px;
+        padding: 14px 18px;
+        border: none;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
     }
     .dash-header h2 {
-        font-size: 1.5rem;
+        font-size: 1rem;
         font-weight: 700;
-        color: #212121;
-        margin: 0 0 6px;
+        color: #fff;
+        margin: 0 0 2px;
     }
     .dash-header p {
-        font-size: 0.9375rem;
-        color: #757575;
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.6);
         margin: 0;
+    }
+    .dash-header-date {
+        font-size: 0.6875rem;
+        color: rgba(255,255,255,0.45);
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .dash-card {
         background: #ffffff;
-        border-radius: 16px;
-        border: 1px solid #E8E8E8;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border-radius: 10px;
+        border: 1px solid #EBEBEB;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05);
         overflow: hidden;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
     }
     .dash-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.08);
     }
     .dash-card-header {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 18px 22px;
+        gap: 9px;
+        padding: 11px 14px;
         border-bottom: 1px solid #F0F0F0;
-        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+        background: #FAFAFA;
     }
     .dash-card-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -327,30 +356,36 @@ new class extends Component
     .dash-card-icon.green {
         background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
         color: #fff;
-        box-shadow: 0 2px 10px rgba(45,159,78,0.3);
+        box-shadow: 0 1px 6px rgba(45,159,78,0.25);
     }
     .dash-card-icon.yellow {
         background: linear-gradient(135deg, #F9C74F 0%, #F5A623 100%);
         color: #212121;
-        box-shadow: 0 2px 10px rgba(249,199,79,0.3);
+        box-shadow: 0 1px 6px rgba(249,199,79,0.25);
     }
     .dash-card-icon.blue {
         background: linear-gradient(135deg, #4A90D9 0%, #357ABD 100%);
         color: #fff;
-        box-shadow: 0 2px 10px rgba(74,144,217,0.3);
+        box-shadow: 0 1px 6px rgba(74,144,217,0.25);
     }
     .dash-card-icon.red {
         background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
         color: #fff;
-        box-shadow: 0 2px 10px rgba(231,76,60,0.3);
+        box-shadow: 0 1px 6px rgba(231,76,60,0.25);
     }
     .dash-card-icon.purple {
         background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%);
         color: #fff;
-        box-shadow: 0 2px 10px rgba(155,89,182,0.3);
+        box-shadow: 0 1px 6px rgba(155,89,182,0.25);
     }
+    .dash-card-icon.teal {
+        background: linear-gradient(135deg, #00897B 0%, #00695C 100%);
+        color: #fff;
+        box-shadow: 0 1px 6px rgba(0,137,123,0.25);
+    }
+    .dash-card-icon svg { width: 15px; height: 15px; }
     .dash-card-title {
-        font-size: 0.8125rem;
+        font-size: 0.6875rem;
         font-weight: 700;
         color: #757575;
         text-transform: uppercase;
@@ -358,86 +393,88 @@ new class extends Component
         margin: 0;
     }
     .dash-card-body {
-        padding: 20px 22px;
+        padding: 13px 14px;
     }
     .dash-stat-value {
-        font-size: 1.75rem;
+        font-size: 1.375rem;
         font-weight: 700;
         color: #212121;
-        margin: 0 0 8px;
+        margin: 0 0 3px;
+        line-height: 1.2;
     }
     .dash-stat-value.green { color: #2D9F4E; }
     .dash-stat-value.yellow { color: #F5A623; }
     .dash-stat-value.red { color: #E74C3C; }
     .dash-stat-label {
-        font-size: 0.8125rem;
+        font-size: 0.7rem;
         color: #9E9E9E;
         margin: 0;
+        line-height: 1.3;
     }
     .dash-stat-meta {
         display: flex;
-        gap: 16px;
-        margin-top: 12px;
-        padding-top: 12px;
+        gap: 12px;
+        margin-top: 8px;
+        padding-top: 8px;
         border-top: 1px solid #F0F0F0;
     }
-    .dash-stat-meta-item {
-        font-size: 0.75rem;
-    }
+    .dash-stat-meta-item { font-size: 0.6875rem; }
     .dash-stat-meta-item .label { color: #9E9E9E; }
-    .dash-stat-meta-item .value { 
-        font-weight: 600; 
+    .dash-stat-meta-item .value {
+        font-weight: 600;
         color: #616161;
-        margin-left: 4px;
+        margin-left: 3px;
     }
 
     .dash-alert {
-        border-radius: 14px;
-        padding: 18px 22px;
-        margin-bottom: 24px;
-        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 11px 14px;
+        margin-bottom: 14px;
+        border: 1px solid transparent;
     }
     .dash-alert.success {
-        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
-        border-color: #2D9F4E;
+        background: #E8F5E9;
+        border-color: #A5D6A7;
         color: #1B7A37;
     }
     .dash-alert.warning {
-        background: linear-gradient(135deg, #FFF9E3 0%, #FFE082 100%);
-        border-color: #F9C74F;
+        background: #FFF9E3;
+        border-color: #FFE082;
         color: #F57C00;
     }
     .dash-alert.danger {
-        background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
-        border-color: #E74C3C;
+        background: #FFEBEE;
+        border-color: #FFCDD2;
         color: #C0392B;
     }
     .dash-alert-title {
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        opacity: 0.8;
-        margin: 0 0 6px;
+        opacity: 0.75;
+        margin: 0 0 3px;
     }
     .dash-alert-text {
-        font-size: 1.125rem;
+        font-size: 0.875rem;
         font-weight: 700;
         margin: 0;
     }
 
     .dash-grid {
         display: grid;
-        gap: 20px;
-        margin-bottom: 24px;
+        gap: 12px;
+        margin-bottom: 12px;
     }
     .dash-grid-4 { grid-template-columns: repeat(1, 1fr); }
     .dash-grid-3 { grid-template-columns: repeat(1, 1fr); }
     .dash-grid-5 { grid-template-columns: repeat(1, 1fr); }
+    .dash-grid-2 { grid-template-columns: repeat(1, 1fr); }
     @media (min-width: 768px) {
         .dash-grid-4 { grid-template-columns: repeat(2, 1fr); }
         .dash-grid-3 { grid-template-columns: repeat(2, 1fr); }
         .dash-grid-5 { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid-2 { grid-template-columns: repeat(2, 1fr); }
     }
     @media (min-width: 1024px) {
         .dash-grid-4 { grid-template-columns: repeat(4, 1fr); }
@@ -451,74 +488,58 @@ new class extends Component
     .dash-link {
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        font-size: 0.75rem;
+        gap: 3px;
+        font-size: 0.6875rem;
         font-weight: 600;
         color: #2D9F4E;
         text-decoration: none;
-        margin-top: 12px;
+        margin-top: 7px;
         transition: color 0.15s;
     }
     .dash-link:hover { color: #1B7A37; }
 
-    .dash-subscription-list {
-        max-height: 280px;
-        overflow-y: auto;
-    }
+    .dash-subscription-list { max-height: 220px; overflow-y: auto; }
     .dash-subscription-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 0;
-        border-bottom: 1px solid #F0F0F0;
+        padding: 9px 0;
+        border-bottom: 1px solid #F5F5F5;
     }
     .dash-subscription-item:last-child { border-bottom: none; }
     .dash-subscription-date {
-        font-size: 0.9375rem;
+        font-size: 0.8125rem;
         font-weight: 600;
         color: #212121;
     }
     .dash-subscription-amount {
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         color: #616161;
-        margin-left: 8px;
+        margin-left: 6px;
     }
     .dash-subscription-status {
         display: inline-flex;
         align-items: center;
-        padding: 4px 10px;
+        padding: 2px 8px;
         border-radius: 20px;
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
         font-weight: 700;
         text-transform: uppercase;
     }
-    .dash-subscription-status.approved {
-        background: #E8F5E9;
-        color: #2D9F4E;
-    }
-    .dash-subscription-status.pending {
-        background: #FFF9E3;
-        color: #F57C00;
-    }
-    .dash-subscription-status.rejected {
-        background: #FFEBEE;
-        color: #E74C3C;
-    }
+    .dash-subscription-status.approved { background: #E8F5E9; color: #2D9F4E; }
+    .dash-subscription-status.pending  { background: #FFF9E3; color: #F57C00; }
+    .dash-subscription-status.rejected { background: #FFEBEE; color: #E74C3C; }
 
-    .dash-quick-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
+    .dash-quick-actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .dash-quick-action {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
+        gap: 6px;
+        padding: 7px 12px;
         background: #fff;
         border: 1px solid #E0E0E0;
-        border-radius: 10px;
-        font-size: 0.8125rem;
+        border-radius: 8px;
+        font-size: 0.75rem;
         font-weight: 600;
         color: #616161;
         text-decoration: none;
@@ -529,17 +550,124 @@ new class extends Component
         border-color: #2D9F4E;
         color: #2D9F4E;
     }
+
+    .dash-analytics-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-size: 0.625rem;
+        font-weight: 700;
+        background: #E8F5E9;
+        color: #2D9F4E;
+        margin-top: 5px;
+    }
+
+    /* ── KPI Strip ── */
+    .dash-kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #EBEBEB;
+        box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    @media(max-width:1023px) { .dash-kpi-strip { grid-template-columns: repeat(2,1fr); } }
+    @media(max-width:639px)  { .dash-kpi-strip { grid-template-columns: 1fr; } }
+    .dash-kpi-item {
+        padding: 15px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-right: 1px solid #F0F0F0;
+        text-decoration: none;
+        transition: background 0.15s;
+        box-shadow: inset 0 3px 0 var(--top-c, transparent);
+    }
+    .dash-kpi-item:last-child { border-right: none; }
+    .dash-kpi-item:hover { background: #F8FFF9; }
+    .dash-kpi-circle {
+        width: 42px; height: 42px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .dash-kpi-circle svg { width: 20px; height: 20px; }
+    .dash-kpi-body { min-width: 0; }
+    .dash-kpi-label { font-size: 0.6rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+    .dash-kpi-value { font-size: 1.5rem; font-weight: 800; color: #212121; line-height: 1; margin-bottom: 4px; }
+    .dash-kpi-sub { font-size: 0.6875rem; color: #BDBDBD; }
+
+    /* ── Dark Info Band ── */
+    .dash-info-band {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
+        border-radius: 14px; overflow: hidden;
+        box-shadow: 0 2px 12px rgba(15,61,34,0.2);
+    }
+    @media(max-width:767px) { .dash-info-band { grid-template-columns: 1fr; } }
+    .dash-info-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 18px;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        text-decoration: none; transition: background 0.15s;
+    }
+    .dash-info-item:last-child { border-right: none; }
+    .dash-info-item:hover { background: rgba(255,255,255,0.05); }
+    .dash-info-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .dash-info-icon svg { width: 18px; height: 18px; }
+    .dash-info-value { font-size: 1.375rem; font-weight: 800; color: #fff; line-height: 1; }
+    .dash-info-value.text-yellow { color: #F9C74F; }
+    .dash-info-value.text-red { color: #FF7675; }
+    .dash-info-label { font-size: 0.6875rem; font-weight: 600; color: rgba(255,255,255,0.55); margin-top: 2px; }
+    .dash-info-sublabel { font-size: 0.6rem; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+    /* ── Analytics Feature Cards ── */
+    .dash-analytics-card { background: #fff; border-radius: 14px; border: 1px solid #EBEBEB; box-shadow: 0 1px 6px rgba(0,0,0,0.04); overflow: hidden; }
+    .dash-analytics-accent { height: 4px; }
+    .dash-analytics-body { padding: 14px 16px; }
+
+    /* ── SLA Circles ── */
+    .dash-sla-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+    @media(max-width:1023px) { .dash-sla-grid { grid-template-columns: repeat(2,1fr); } }
+    .dash-sla-card {
+        background: #fff; border-radius: 14px; border: 1px solid #EBEBEB;
+        padding: 16px 12px; display: flex; flex-direction: column; align-items: center;
+        text-align: center; box-shadow: 0 1px 5px rgba(0,0,0,0.04); transition: box-shadow 0.15s;
+    }
+    .dash-sla-card:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.09); }
+    .dash-sla-ring { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .dash-sla-ring-inner { width: 56px; height: 56px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; color: #212121; }
+    .dash-sla-title { font-size: 0.6375rem; font-weight: 700; color: #424242; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .dash-sla-sub { font-size: 0.6rem; color: #9E9E9E; }
+
+    /* ── Order Pipeline ── */
+    .dash-pipeline { background: #fff; border-radius: 14px; border: 1px solid #EBEBEB; box-shadow: 0 1px 5px rgba(0,0,0,0.04); overflow: hidden; }
+    .dash-pipeline-header { padding: 9px 16px; background: #FAFAFA; border-bottom: 1px solid #F0F0F0; font-size: 0.6rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.08em; }
+    .dash-pipeline-track { display: grid; grid-template-columns: repeat(5,1fr); }
+    @media(max-width:767px) { .dash-pipeline-track { grid-template-columns: repeat(3,1fr); } }
+    .dash-pipeline-step { padding: 13px 10px; text-align: center; border-right: 1px solid #F5F5F5; display: block; transition: background 0.15s; position: relative; }
+    .dash-pipeline-step:last-child { border-right: none; }
+    .dash-pipeline-step:hover { background: #FAFAFA; }
+    .dash-pipeline-num { font-size: 1.375rem; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+    .dash-pipeline-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .dash-pipeline-sub { font-size: 0.6rem; color: #BDBDBD; }
 </style>
 @endverbatim
 @endpush
 
-<div class="space-y-6">
+<div class="space-y-3">
 
-    {{-- Header --}}
+    {{-- ── Header ── --}}
     <div class="dash-header">
-        <h2>Dashboard</h2>
-        <p>Welcome back, {{ Auth::guard('seller')->user()?->seller?->store_name ?? 'Seller' }}! Here's what's happening with your store.</p>
+        <div>
+            <h2>Seller Dashboard</h2>
+            <p>Welcome back, {{ Auth::guard('seller')->user()?->seller?->store_name ?? 'Seller' }}! Here's what's happening with your store.</p>
+        </div>
+        <div class="dash-header-date">{{ now()->format('M j, Y') }}</div>
     </div>
+
     {{-- Subscription Alert --}}
     @if($this->seller && $this->seller->subscription_due_date)
         @php
@@ -571,386 +699,253 @@ new class extends Component
         </div>
     @endif
 
-    {{-- Main Stats Row --}}
-    <div class="dash-grid dash-grid-4">
+    {{-- ── KPI Strip: 4-column unified card ── --}}
+    <div class="dash-kpi-strip">
         {{-- Products --}}
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon green">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Products</h3>
+        <a href="{{ route('seller.products') }}" class="dash-kpi-item" style="--top-c:#2D9F4E;">
+            <div class="dash-kpi-circle" style="background:linear-gradient(135deg,#2D9F4E,#1B7A37);">
+                <svg fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value">{{ $this->stats['products_total'] }}</div>
-                <p class="dash-stat-label">Total products in your store</p>
-                <div class="dash-stat-meta">
-                    <div class="dash-stat-meta-item">
-                        <span class="label">Active</span>
-                        <span class="value" style="color: #2D9F4E;">{{ $this->stats['products_active'] }}</span>
-                    </div>
-                    <div class="dash-stat-meta-item">
-                        <span class="label">In Stock</span>
-                        <span class="value">{{ $this->stats['stock_total'] }}</span>
-                    </div>
-                </div>
-                <a href="{{ route('seller.products') }}" class="dash-link">Manage products →</a>
+            <div class="dash-kpi-body">
+                <div class="dash-kpi-label">Products</div>
+                <div class="dash-kpi-value">{{ $this->stats['products_total'] }}</div>
+                <div class="dash-kpi-sub">Active <b style="color:#2D9F4E;">{{ $this->stats['products_active'] }}</b> &middot; Stock {{ $this->stats['stock_total'] }}</div>
             </div>
-        </div>
-
+        </a>
         {{-- Orders --}}
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon yellow">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Orders</h3>
+        <a href="{{ route('seller.orders') }}" class="dash-kpi-item" style="--top-c:#F9C74F;">
+            <div class="dash-kpi-circle" style="background:linear-gradient(135deg,#F9C74F,#F5A623);">
+                <svg fill="none" stroke="#212121" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value">{{ $this->stats['orders_total'] }}</div>
-                <p class="dash-stat-label">Total orders received</p>
-                <div class="dash-stat-meta">
-                    <div class="dash-stat-meta-item">
-                        <span class="label">Processing</span>
-                        <span class="value" style="color: #F57C00;">{{ $this->stats['orders_processing'] }}</span>
-                    </div>
-                    <div class="dash-stat-meta-item">
-                        <span class="label">Shipped</span>
-                        <span class="value" style="color: #4A90D9;">{{ $this->stats['orders_shipped'] }}</span>
-                    </div>
-                </div>
-                <a href="{{ route('seller.orders') }}" class="dash-link">View all orders →</a>
+            <div class="dash-kpi-body">
+                <div class="dash-kpi-label">Orders</div>
+                <div class="dash-kpi-value">{{ $this->stats['orders_total'] }}</div>
+                <div class="dash-kpi-sub">Processing <b style="color:#F57C00;">{{ $this->stats['orders_processing'] }}</b> &middot; Shipped {{ $this->stats['orders_shipped'] }}</div>
             </div>
-        </div>
-
+        </a>
         {{-- Earnings --}}
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon green">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Earnings</h3>
+        <div class="dash-kpi-item" style="--top-c:#2D9F4E;">
+            <div class="dash-kpi-circle" style="background:linear-gradient(135deg,#2D9F4E,#1B7A37);">
+                <svg fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value green">₱{{ number_format($this->stats['earnings_month'], 0) }}</div>
-                <p class="dash-stat-label">This month's earnings</p>
-                <div class="dash-stat-meta">
-                    <div class="dash-stat-meta-item">
-                        <span class="label">Total Lifetime</span>
-                        <span class="value">₱{{ number_format($this->stats['earnings_total'], 0) }}</span>
-                    </div>
-                </div>
+            <div class="dash-kpi-body">
+                <div class="dash-kpi-label">Earnings</div>
+                <div class="dash-kpi-value" style="color:#2D9F4E;">&#8369;{{ number_format($this->stats['earnings_month'], 0) }}</div>
+                <div class="dash-kpi-sub">Lifetime &#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div>
             </div>
         </div>
-
         {{-- Net Profit --}}
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon purple">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Net Profit</h3>
+        <div class="dash-kpi-item" style="--top-c:#9B59B6;">
+            <div class="dash-kpi-circle" style="background:linear-gradient(135deg,#9B59B6,#8E44AD);">
+                <svg fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value">₱{{ number_format($this->stats['net_profit'], 0) }}</div>
-                <p class="dash-stat-label">From delivered orders</p>
-                <div class="dash-stat-meta">
-                    <div class="dash-stat-meta-item">
-                        <span class="label">Delivered</span>
-                        <span class="value" style="color: #2D9F4E;">{{ $this->stats['orders_delivered'] }}</span>
+            <div class="dash-kpi-body">
+                <div class="dash-kpi-label">Net Profit</div>
+                <div class="dash-kpi-value">&#8369;{{ number_format($this->stats['net_profit'], 0) }}</div>
+                <div class="dash-kpi-sub">{{ $this->stats['orders_delivered'] }} delivered orders</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Dark Info Band: Low Stock · Out of Stock · Rating ── --}}
+    <div class="dash-info-band">
+        <a href="{{ route('seller.products') }}" class="dash-info-item">
+            <div class="dash-info-icon" style="background:rgba(249,199,79,0.18);">
+                <svg fill="none" stroke="#F9C74F" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+                <div class="dash-info-value {{ $this->stats['low_stock_count'] > 0 ? 'text-yellow' : '' }}">{{ $this->stats['low_stock_count'] }}</div>
+                <div class="dash-info-label">Low Stock Alert</div>
+                <div class="dash-info-sublabel">Below 10 units</div>
+            </div>
+        </a>
+        <a href="{{ route('seller.products') }}" class="dash-info-item">
+            <div class="dash-info-icon" style="background:rgba(231,76,60,0.18);">
+                <svg fill="none" stroke="#E74C3C" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="dash-info-value {{ $this->stats['out_of_stock_count'] > 0 ? 'text-red' : '' }}">{{ $this->stats['out_of_stock_count'] }}</div>
+                <div class="dash-info-label">Out of Stock</div>
+                <div class="dash-info-sublabel">Needs restock</div>
+            </div>
+        </a>
+        <a href="{{ route('seller.reviews') }}" class="dash-info-item">
+            <div class="dash-info-icon" style="background:rgba(249,199,79,0.18);">
+                <svg fill="#F9C74F" viewBox="0 0 24 24"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+            <div>
+                <div class="dash-info-value">{{ number_format($this->stats['store_rating_avg'], 1) }}<span style="font-size:0.75rem;color:rgba(255,255,255,0.4);font-weight:500;"> / 5</span></div>
+                <div class="dash-info-label">Store Rating</div>
+                <div class="dash-info-sublabel">{{ $this->stats['store_reviews_count'] }} reviews</div>
+            </div>
+        </a>
+    </div>
+
+    {{-- ── Analytics: Avg Order Value + Top Selling Product ── --}}
+    <div class="dash-grid dash-grid-2">
+        <div class="dash-analytics-card">
+            <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#00897B,#2D9F4E);"></div>
+            <div class="dash-analytics-body">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#00897B,#00695C);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     </div>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Avg. Order Value</span>
                 </div>
+                <div style="font-size:1.625rem;font-weight:800;color:#2D9F4E;line-height:1;">&#8369;{{ number_format($this->stats['avg_order_value'], 2) }}</div>
+                <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Average per delivered order</div>
+                <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
+                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Delivered</div><div style="font-size:0.8125rem;font-weight:700;color:#2D9F4E;">{{ $this->stats['orders_delivered'] }}</div></div>
+                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Total Revenue</div><div style="font-size:0.8125rem;font-weight:700;color:#212121;">&#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div></div>
+                </div>
+            </div>
+        </div>
+        <div class="dash-analytics-card">
+            <div class="dash-analytics-accent" style="background:linear-gradient(90deg,#F9C74F,#F5A623);"></div>
+            <div class="dash-analytics-body">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#F9C74F,#F5A623);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="#212121" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                    </div>
+                    <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">Top Selling Product</span>
+                </div>
+                @if($this->stats['top_product_name'])
+                    <div style="font-size:1rem;font-weight:800;color:#212121;line-height:1.35;word-break:break-word;">{{ Str::limit($this->stats['top_product_name'], 45) }}</div>
+                    <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Best performer by units sold</div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
+                        <div><div style="font-size:0.6rem;color:#BDBDBD;">Units Sold</div><div style="font-size:0.8125rem;font-weight:700;color:#F5A623;">{{ $this->stats['top_product_sold'] }}</div></div>
+                        <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;background:#E8F5E9;color:#2D9F4E;font-size:0.6rem;font-weight:700;">
+                            <svg style="width:8px;height:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                            #1 Best Seller
+                        </span>
+                    </div>
+                @else
+                    <div style="font-size:1rem;font-weight:700;color:#BDBDBD;">No data yet</div>
+                    <div style="font-size:0.6875rem;color:#BDBDBD;margin-top:3px;">Start selling to see your top product</div>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- Secondary Stats --}}
-    <div class="dash-grid dash-grid-3">
-        {{-- Low Stock --}}
-        <a href="{{ route('seller.products') }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header">
-                <div class="dash-card-icon yellow">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Low Stock Alert</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value yellow">{{ $this->stats['low_stock_count'] }}</div>
-                <p class="dash-stat-label">Products with stock below 10</p>
-                <span class="dash-link">Restock now →</span>
-            </div>
-        </a>
-
-        {{-- Out of Stock --}}
-        <a href="{{ route('seller.products') }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header">
-                <div class="dash-card-icon red">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Out of Stock</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value red">{{ $this->stats['out_of_stock_count'] }}</div>
-                <p class="dash-stat-label">Products completely sold out</p>
-                <span class="dash-link">Update inventory →</span>
-            </div>
-        </a>
-
-        {{-- Store Rating --}}
-        <a href="{{ route('seller.reviews') }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header">
-                <div class="dash-card-icon green">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Store Rating</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value" style="display: flex; align-items: center; gap: 8px;">
-                    {{ number_format($this->stats['store_rating_avg'], 1) }}
-                    <span style="font-size: 1rem; font-weight: 500; color: #9E9E9E;">/ 5</span>
-                </div>
-                <p class="dash-stat-label">Based on {{ $this->stats['store_reviews_count'] }} customer reviews</p>
-                <span class="dash-link">View all reviews →</span>
-            </div>
-        </a>
-    </div>
-
-    {{-- SLA Metrics --}}
+    {{-- ── SLA: Circular ring indicators ── --}}
     @php($sla = $this->slaMetrics)
-    <div class="dash-grid dash-grid-4">
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon blue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Acceptance Rate</h3>
+    <div class="dash-sla-grid">
+        <div class="dash-sla-card">
+            <div class="dash-sla-ring" style="background:conic-gradient({{ ($sla['acceptance_rate'] ?? 0) >= 90 ? '#2D9F4E' : (($sla['acceptance_rate'] ?? 0) >= 70 ? '#F9C74F' : '#E74C3C') }} {{ min(($sla['acceptance_rate'] ?? 0),100) }}%, #EEEEEE 0);">
+                <div class="dash-sla-ring-inner" style="color:{{ ($sla['acceptance_rate'] ?? 0) >= 90 ? '#2D9F4E' : (($sla['acceptance_rate'] ?? 0) >= 70 ? '#F9C74F' : '#E74C3C') }};">{{ number_format(($sla['acceptance_rate'] ?? 0),1) }}%</div>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value {{ $sla['acceptance_rate'] >= 90 ? 'green' : '' }}">{{ number_format($sla['acceptance_rate'], 1) }}%</div>
-                <p class="dash-stat-label">{{ $sla['accepted_orders'] }} accepted / {{ $sla['acceptance_scope'] }} orders</p>
-            </div>
+            <div class="dash-sla-title">Acceptance</div>
+            <div class="dash-sla-sub">{{ $sla['accepted_orders'] }} / {{ $sla['acceptance_scope'] }} orders</div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon yellow">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">On-Time Shipping</h3>
+        <div class="dash-sla-card">
+            <div class="dash-sla-ring" style="background:conic-gradient({{ ($sla['on_time_ship_rate'] ?? 0) >= 80 ? '#2D9F4E' : (($sla['on_time_ship_rate'] ?? 0) >= 60 ? '#F9C74F' : '#E74C3C') }} {{ min(($sla['on_time_ship_rate'] ?? 0),100) }}%, #EEEEEE 0);">
+                <div class="dash-sla-ring-inner" style="color:{{ ($sla['on_time_ship_rate'] ?? 0) >= 80 ? '#2D9F4E' : (($sla['on_time_ship_rate'] ?? 0) >= 60 ? '#F9C74F' : '#E74C3C') }};">{{ number_format(($sla['on_time_ship_rate'] ?? 0),1) }}%</div>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value {{ $sla['on_time_ship_rate'] >= 80 ? 'green' : 'yellow' }}">{{ number_format($sla['on_time_ship_rate'], 1) }}%</div>
-                <p class="dash-stat-label">{{ $sla['on_time_shipments'] }} on-time / {{ $sla['shipment_scope'] }} shipped (48h SLA)</p>
-            </div>
+            <div class="dash-sla-title">On-Time Ship</div>
+            <div class="dash-sla-sub">48h SLA &middot; {{ $sla['on_time_shipments'] }} / {{ $sla['shipment_scope'] }}</div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon red">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Cancellation Rate</h3>
+        <div class="dash-sla-card">
+            <div class="dash-sla-ring" style="background:conic-gradient({{ ($sla['cancellation_rate'] ?? 0) <= 5 ? '#2D9F4E' : (($sla['cancellation_rate'] ?? 0) <= 20 ? '#F9C74F' : '#E74C3C') }} {{ min(($sla['cancellation_rate'] ?? 0),100) }}%, #EEEEEE 0);">
+                <div class="dash-sla-ring-inner" style="color:{{ ($sla['cancellation_rate'] ?? 0) <= 5 ? '#2D9F4E' : (($sla['cancellation_rate'] ?? 0) <= 20 ? '#F9C74F' : '#E74C3C') }};">{{ number_format(($sla['cancellation_rate'] ?? 0),1) }}%</div>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value {{ $sla['cancellation_rate'] > 20 ? 'red' : '' }}">{{ number_format($sla['cancellation_rate'], 1) }}%</div>
-                <p class="dash-stat-label">{{ $sla['cancelled_orders'] }} cancelled / {{ $sla['cancellation_scope'] }} orders</p>
-            </div>
+            <div class="dash-sla-title">Cancellation</div>
+            <div class="dash-sla-sub">{{ $sla['cancelled_orders'] }} / {{ $sla['cancellation_scope'] }} orders</div>
         </div>
 
-        <div class="dash-card">
-            <div class="dash-card-header">
-                <div class="dash-card-icon purple">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title">Return Rate</h3>
+        <div class="dash-sla-card">
+            <div class="dash-sla-ring" style="background:conic-gradient({{ ($sla['return_rate'] ?? 0) <= 5 ? '#2D9F4E' : (($sla['return_rate'] ?? 0) <= 15 ? '#F9C74F' : '#E74C3C') }} {{ min(($sla['return_rate'] ?? 0),100) }}%, #EEEEEE 0);">
+                <div class="dash-sla-ring-inner" style="color:{{ ($sla['return_rate'] ?? 0) <= 5 ? '#2D9F4E' : (($sla['return_rate'] ?? 0) <= 15 ? '#F9C74F' : '#E74C3C') }};">{{ number_format(($sla['return_rate'] ?? 0),1) }}%</div>
             </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value {{ $sla['return_rate'] > 15 ? 'red' : '' }}">{{ number_format($sla['return_rate'], 1) }}%</div>
-                <p class="dash-stat-label">{{ $sla['returned_orders'] }} returned / {{ $sla['return_scope'] }} delivered</p>
-            </div>
+            <div class="dash-sla-title">Return Rate</div>
+            <div class="dash-sla-sub">{{ $sla['returned_orders'] }} / {{ $sla['return_scope'] }} delivered</div>
         </div>
     </div>
 
-    {{-- Order Status Cards --}}
-    <div class="dash-grid dash-grid-5">
-        <a href="{{ route('seller.orders', ['status' => 'paid']) }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header" style="background: linear-gradient(135deg, #FFF9E3 0%, #FFE082 100%);">
-                <div class="dash-card-icon yellow">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title" style="color: #F57C00;">Pending</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value yellow">{{ $this->stats['orders_processing'] }}</div>
-                <p class="dash-stat-label">Awaiting processing</p>
-            </div>
-        </a>
-
-        <a href="{{ route('seller.orders', ['status' => 'ready_to_ship']) }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header" style="background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);">
-                <div class="dash-card-icon blue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title" style="color: #1976D2;">To Ship</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value" style="color: #1976D2;">{{ $this->stats['orders_ready_to_ship'] }}</div>
-                <p class="dash-stat-label">Ready for pickup</p>
-            </div>
-        </a>
-
-        <a href="{{ route('seller.orders', ['status' => 'delivered']) }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header" style="background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);">
-                <div class="dash-card-icon green">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title" style="color: #2D9F4E;">Completed</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value green">{{ $this->stats['orders_delivered'] }}</div>
-                <p class="dash-stat-label">Successfully delivered</p>
-            </div>
-        </a>
-
-        <a href="{{ route('seller.orders', ['status' => 'cancelled']) }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header" style="background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);">
-                <div class="dash-card-icon red">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title" style="color: #C0392B;">Cancelled</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value red">{{ $this->stats['orders_cancelled'] }}</div>
-                <p class="dash-stat-label">Cancelled orders</p>
-            </div>
-        </a>
-
-        <a href="{{ route('seller.orders', ['status' => 'cancelled']) }}" class="dash-card" style="text-decoration: none;">
-            <div class="dash-card-header" style="background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);">
-                <div class="dash-card-icon purple">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                </div>
-                <h3 class="dash-card-title" style="color: #7B1FA2;">Bad Orders</h3>
-            </div>
-            <div class="dash-card-body">
-                <div class="dash-stat-value" style="color: #7B1FA2;">{{ $this->stats['bad_orders_count'] }}</div>
-                <p class="dash-stat-label">{{ number_format($this->stats['bad_orders_percent'], 1) }}% of total</p>
-            </div>
-        </a>
+    {{-- ── Order Pipeline: single unified card ── --}}
+    <div class="dash-pipeline">
+        <div class="dash-pipeline-header">Order Pipeline</div>
+        <div class="dash-pipeline-track">
+            <a href="{{ route('seller.orders', ['status' => 'paid']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#F9C74F;"></div>
+                <div class="dash-pipeline-label" style="color:#F57C00;">Pending</div>
+                <div class="dash-pipeline-num" style="color:#F57C00;">{{ $this->stats['orders_processing'] }}</div>
+                <div class="dash-pipeline-sub">Awaiting processing</div>
+            </a>
+            <a href="{{ route('seller.orders', ['status' => 'ready_to_ship']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#4A90D9;"></div>
+                <div class="dash-pipeline-label" style="color:#1976D2;">To Ship</div>
+                <div class="dash-pipeline-num" style="color:#1976D2;">{{ $this->stats['orders_ready_to_ship'] }}</div>
+                <div class="dash-pipeline-sub">Ready for pickup</div>
+            </a>
+            <a href="{{ route('seller.orders', ['status' => 'delivered']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#2D9F4E;"></div>
+                <div class="dash-pipeline-label" style="color:#2D9F4E;">Completed</div>
+                <div class="dash-pipeline-num" style="color:#2D9F4E;">{{ $this->stats['orders_delivered'] }}</div>
+                <div class="dash-pipeline-sub">Successfully delivered</div>
+            </a>
+            <a href="{{ route('seller.orders', ['status' => 'cancelled']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#E74C3C;"></div>
+                <div class="dash-pipeline-label" style="color:#E74C3C;">Cancelled</div>
+                <div class="dash-pipeline-num" style="color:#E74C3C;">{{ $this->stats['orders_cancelled'] }}</div>
+                <div class="dash-pipeline-sub">Cancelled orders</div>
+            </a>
+            <a href="{{ route('seller.orders', ['status' => 'cancelled']) }}" class="dash-pipeline-step" style="text-decoration:none;">
+                <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#9B59B6;"></div>
+                <div class="dash-pipeline-label" style="color:#7B1FA2;">Bad Orders</div>
+                <div class="dash-pipeline-num" style="color:#7B1FA2;">{{ $this->stats['bad_orders_count'] }}</div>
+                <div class="dash-pipeline-sub">{{ number_format($this->stats['bad_orders_percent'], 1) }}% of total</div>
+            </a>
+        </div>
     </div>
 
-    {{-- Subscription History & Quick Actions Row --}}
-    <div class="dash-grid dash-grid-2" style="grid-template-columns: repeat(1, 1fr);">
+    {{-- ── Bottom Row: Subscription + Quick Actions ── --}}
+    <div class="dash-grid dash-grid-2">
         @if($this->seller)
             <div class="dash-card">
-                <div class="dash-card-header" style="justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="dash-card-header" style="justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:9px;">
                         <div class="dash-card-icon green">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                         </div>
                         <h3 class="dash-card-title">Subscription History</h3>
                     </div>
-                    <a href="{{ route('seller.payments') }}" class="dash-link" style="margin: 0;">View all →</a>
+                    <a href="{{ route('seller.payments') }}" class="dash-link" style="margin:0;">View all &rarr;</a>
                 </div>
-                <div class="dash-card-body" style="padding: 0;">
+                <div class="dash-card-body" style="padding:0;">
                     @if($this->subscriptionPayments->isNotEmpty())
                         <div class="dash-subscription-list">
                             @foreach($this->subscriptionPayments as $p)
-                                <div class="dash-subscription-item" style="padding-left: 22px; padding-right: 22px;">
+                                <div class="dash-subscription-item" style="padding-left:14px;padding-right:14px;">
                                     <div>
                                         <span class="dash-subscription-date">{{ $p->created_at->format('F Y') }}</span>
-                                        <span class="dash-subscription-amount">₱{{ number_format($p->amount, 2) }}</span>
+                                        <span class="dash-subscription-amount">&#8369;{{ number_format($p->amount, 2) }}</span>
                                     </div>
-                                    <span class="dash-subscription-status {{ $p->status }}">
-                                        {{ ucfirst($p->status) }}
-                                    </span>
+                                    <span class="dash-subscription-status {{ $p->status }}">{{ ucfirst($p->status) }}</span>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <div style="padding: 30px 22px;">
-                            <p class="dash-stat-label">No subscription payments yet.</p>
-                        </div>
+                        <div style="padding:18px 14px;"><p class="dash-stat-label">No subscription payments yet.</p></div>
                     @endif
                 </div>
             </div>
         @endif
-
         <div class="dash-card">
             <div class="dash-card-header">
                 <div class="dash-card-icon yellow">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <h3 class="dash-card-title">Quick Actions</h3>
             </div>
             <div class="dash-card-body">
                 <div class="dash-quick-actions">
-                    <a href="{{ route('seller.products') }}" class="dash-quick-action">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        </svg>
-                        Products
-                    </a>
-                    <a href="{{ route('seller.orders') }}" class="dash-quick-action">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                        Orders
-                    </a>
-                    <a href="{{ route('seller.store') }}" class="dash-quick-action">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                        Store
-                    </a>
-                    <a href="{{ route('seller.payments') }}" class="dash-quick-action">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                        </svg>
-                        Payments
-                    </a>
-                    <a href="{{ route('seller.messages') }}" class="dash-quick-action">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                        </svg>
-                        Messages
-                    </a>
+                    <a href="{{ route('seller.products') }}" class="dash-quick-action"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Products</a>
+                    <a href="{{ route('seller.orders') }}" class="dash-quick-action"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Orders</a>
+                    <a href="{{ route('seller.store') }}" class="dash-quick-action"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>Store</a>
+                    <a href="{{ route('seller.payments') }}" class="dash-quick-action"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>Payments</a>
+                    <a href="{{ route('seller.messages') }}" class="dash-quick-action"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>Messages</a>
                 </div>
             </div>
         </div>

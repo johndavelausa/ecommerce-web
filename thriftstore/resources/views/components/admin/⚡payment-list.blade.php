@@ -214,213 +214,114 @@ new class extends Component
 };
 ?>
 
+<style>
+    .pay-search { border-radius: 50px; border: 1.5px solid #D4E8DA; padding: 8px 16px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .pay-search:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .pay-select { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .pay-select:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .pay-label { font-size: 0.6875rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.05em; font-style: italic; }
+    .pay-table-card { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .pay-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .pay-table th { padding: 9px 16px; text-align: left; font-size: 0.6875rem; font-weight: 700; color: #1B7A37; text-transform: uppercase; letter-spacing: 0.05em; background: #F5FBF7; border-bottom: 1px solid #D4E8DA; }
+    .pay-table td { padding: 9px 16px; color: #424242; border-bottom: 1px solid #F0F7F2; }
+    .pay-table tr:last-child td { border-bottom: none; }
+    .pay-table tr:hover td { background: #F5FBF7; }
+    .pay-badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+    .pay-badge-approved { background: #E8F5E9; color: #1B7A37; }
+    .pay-badge-rejected { background: #FFEBEE; color: #C0392B; }
+    .pay-badge-pending { background: #FFF9E3; color: #F57C00; }
+    .pay-modal { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; box-shadow: 0 10px 40px rgba(15,61,34,0.2); }
+    .pay-modal-btn { padding: 8px 16px; border-radius: 50px; font-size: 0.8125rem; font-weight: 600; border: 1.5px solid #D4E8DA; background: #fff; color: #424242; cursor: pointer; transition: all 0.15s; }
+    .pay-modal-btn-amber { background: #FFF3E0; color: #E65100; border-color: #F57C00; }
+    .pay-modal-input { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.8125rem; color: #424242; transition: all 0.15s; }
+    .pay-modal-input:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+</style>
+
 <div class="space-y-4">
     <div class="flex flex-col gap-3">
-        <div class="flex flex-wrap gap-2 items-end">
+        <div class="flex flex-wrap gap-2 items-center">
             <input type="text" wire:model.live.debounce.300ms="search"
                    placeholder="Search seller name, reference #, GCash..."
-                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64">
-            <div class="flex gap-2 items-center text-sm">
-                <label class="text-gray-600">From</label>
-                <input type="date" wire:model.live="dateFrom"
-                       class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-            </div>
-            <div class="flex gap-2 items-center text-sm">
-                <label class="text-gray-600">To</label>
-                <input type="date" wire:model.live="dateTo"
-                       class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-            </div>
-            <select wire:model.live="statusFilter"
-                    class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                   class="pay-search w-64">
+            <span class="pay-label">From</span>
+            <input type="date" wire:model.live="dateFrom" class="pay-select">
+            <span style="color:#9E9E9E;">–</span>
+            <input type="date" wire:model.live="dateTo" class="pay-select">
+            <select wire:model.live="statusFilter" class="pay-select">
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
             </select>
         </div>
-        <div class="text-xs text-gray-500">
+        <div class="text-xs" style="color:#9E9E9E;font-style:italic;">
             Showing {{ $this->payments->firstItem() ?? 0 }}–{{ $this->payments->lastItem() ?? 0 }} of {{ $this->payments->total() }} payments
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
+    <div class="pay-table-card">
+        <table class="pay-table">
+            <thead>
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th>Date</th>
+                    <th>Seller</th>
+                    <th>Type</th>
+                    <th style="text-align:right;">Amount</th>
+                    <th>Reference</th>
+                    <th>Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody>
                 @forelse($this->payments as $p)
                     <tr>
-                        <td class="px-4 py-3 text-gray-700">{{ $p->created_at ? $p->created_at->format('Y-m-d H:i') : '' }}</td>
-                        <td class="px-4 py-3 text-gray-900">
-                            {{ $p->seller ? $p->seller->store_name : '—' }}<br>
-                            <span class="text-xs text-gray-500">{{ $p->seller && $p->seller->user ? $p->seller->user->name : '' }}</span>
+                        <td style="color:#9E9E9E;font-style:italic;font-size:0.8125rem;">{{ $p->created_at ? $p->created_at->format('M d, Y H:i') : '' }}</td>
+                        <td>
+                            <div style="color:#0F3D22;font-weight:600;">{{ $p->seller ? $p->seller->store_name : '—' }}</div>
+                            <div style="font-size:0.75rem;color:#9E9E9E;font-style:italic;">{{ $p->seller && $p->seller->user ? $p->seller->user->name : '' }}</div>
                         </td>
-                        <td class="px-4 py-3 text-gray-700">{{ ucfirst($p->type) }}</td>
-                        <td class="px-4 py-3 text-right font-medium">₱{{ number_format($p->amount, 2) }}</td>
-                        <td class="px-4 py-3 text-gray-700 font-mono text-xs">{{ $p->reference_number }}</td>
-                        <td class="px-4 py-3">
+                        <td style="color:#424242;">{{ ucfirst($p->type) }}</td>
+                        <td style="text-align:right;color:#0F3D22;font-weight:700;">₱{{ number_format($p->amount, 2) }}</td>
+                        <td style="font-family:monospace;font-size:0.75rem;color:#9E9E9E;font-style:italic;">{{ $p->reference_number }}</td>
+                        <td>
                             @php
-                                if ($p->status === 'approved') {
-                                    $badge = 'bg-green-100 text-green-800';
-                                } elseif ($p->status === 'rejected') {
-                                    $badge = 'bg-red-100 text-red-800';
-                                } elseif ($p->status === 'pending') {
-                                    $badge = 'bg-amber-100 text-amber-800';
-                                } else {
-                                    $badge = 'bg-gray-100 text-gray-700';
-                                }
+                                $badgeClass = match($p->status) {
+                                    'approved' => 'pay-badge-approved',
+                                    'rejected' => 'pay-badge-rejected',
+                                    default => 'pay-badge-pending',
+                                };
                             @endphp
-                            <span class="px-2 py-1 rounded text-xs font-medium {{ $badge }}">{{ ucfirst($p->status) }}</span>
+                            <span class="pay-badge {{ $badgeClass }}">{{ ucfirst($p->status) }}</span>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">No payments match your filters.</td>
+                        <td colspan="6" style="text-align:center;padding:32px 16px;color:#9E9E9E;font-style:italic;">No payments match your filters.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
         @if($this->payments->hasPages())
-            <div class="px-4 py-2 border-t">
+            <div style="padding:12px 16px;border-top:1px solid #D4E8DA;">
                 {{ $this->payments->links() }}
             </div>
         @endif
     </div>
 
-    <div class="bg-white rounded-lg shadow p-4 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h3 class="text-base font-semibold text-gray-900">Seller payouts</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Manual hold/release controls for payout records.</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <label class="text-sm text-gray-600">Payout status</label>
-                <select wire:model.live="payoutStatusFilter"
-                        class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    <option value="">All</option>
-                    <option value="released">Released</option>
-                    <option value="on_hold">On hold</option>
-                    <option value="pending">Pending</option>
-                </select>
-            </div>
-        </div>
-
-        @php
-            $payoutSummary = $this->payoutSummary;
-        @endphp
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="rounded-lg border border-green-200 bg-green-50 p-3">
-                <div class="text-xs font-semibold uppercase tracking-wide text-green-700">Released payouts</div>
-                <div class="mt-1 text-xl font-semibold text-green-800">₱{{ number_format($payoutSummary->released_total, 2) }}</div>
-                <div class="text-xs text-green-700 mt-1">{{ $payoutSummary->released_count }} records</div>
-            </div>
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">On hold payouts</div>
-                <div class="mt-1 text-xl font-semibold text-amber-800">₱{{ number_format($payoutSummary->on_hold_total, 2) }}</div>
-                <div class="text-xs text-amber-700 mt-1">{{ $payoutSummary->on_hold_count }} records</div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg border overflow-hidden">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
-                    @forelse($this->payouts as $sp)
-                        <tr>
-                            <td class="px-4 py-3 text-gray-700">{{ $sp->created_at?->format('Y-m-d H:i') }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $sp->seller?->store_name ?? '—' }}<br><span class="text-xs text-gray-500">{{ $sp->seller?->user?->name ?? '' }}</span></td>
-                            <td class="px-4 py-3 text-gray-700 font-medium">
-                                #{{ $sp->order_id }}
-                                @if($sp->order && $sp->order->refund_status)
-                                    <div class="mt-1 text-xs text-gray-500">
-                                        Refund: {{ \App\Models\Order::refundStatusLabel($sp->order->refund_status) }}
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right font-semibold text-gray-900">₱{{ number_format((float) $sp->net_amount, 2) }}</td>
-                            <td class="px-4 py-3">
-                                @php
-                                    if ($sp->status === 'released') {
-                                        $badge = 'bg-green-100 text-green-800';
-                                    } elseif ($sp->status === 'on_hold') {
-                                        $badge = 'bg-amber-100 text-amber-800';
-                                    } else {
-                                        $badge = 'bg-gray-100 text-gray-700';
-                                    }
-                                @endphp
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst(str_replace('_', ' ', $sp->status)) }}</span>
-                                @if($sp->status === 'on_hold' && $sp->hold_reason)
-                                    <div class="text-xs text-gray-500 mt-1">{{ ucfirst(str_replace('_', ' ', $sp->hold_reason)) }}</div>
-                                @endif
-                                @if($sp->order && $sp->order->refunded_at)
-                                    <div class="text-xs text-gray-500 mt-1">Order refunded at {{ $sp->order->refunded_at->format('Y-m-d H:i') }}</div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-xs">
-                                @if($sp->status === 'released')
-                                    <button type="button" wire:click="openHoldPayoutModal({{ $sp->id }})"
-                                            class="px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded hover:bg-amber-100">Put on hold</button>
-                                @elseif($sp->status === 'on_hold')
-                                    <button type="button" wire:click="releasePayout({{ $sp->id }})"
-                                            class="px-2 py-1 bg-green-50 border border-green-200 text-green-700 rounded hover:bg-green-100">Release now</button>
-                                @else
-                                    <span class="text-gray-400">—</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-gray-500">No payout records match your filters.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-            @if($this->payouts->hasPages())
-                <div class="px-4 py-2 border-t">
-                    {{ $this->payouts->links() }}
-                </div>
-            @endif
-        </div>
-    </div>
-
     @if($showHoldPayoutModal)
-        <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
-                <div class="px-6 py-4 border-b">
-                    <h3 class="text-lg font-semibold text-gray-900">Put payout on hold</h3>
-                    <p class="text-sm text-gray-500 mt-1">Provide a short hold reason for audit visibility.</p>
+        <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+            <div class="pay-modal w-full max-w-md p-6">
+                <h3 style="font-size:1.125rem;font-weight:800;color:#0F3D22;margin-bottom:4px;">Put Payout on Hold</h3>
+                <p class="text-sm" style="color:#757575;font-style:italic;margin-bottom:16px;">Provide a short hold reason for audit visibility.</p>
+                <div>
+                    <label class="pay-label">Hold reason code</label>
+                    <input type="text" wire:model.defer="holdPayoutReason" maxlength="100"
+                           class="pay-modal-input w-full mt-2"
+                           placeholder="e.g. manual_risk_hold">
+                    @error('holdPayoutReason') <span class="text-xs" style="color:#C0392B;">{{ $message }}</span> @enderror
                 </div>
-                <div class="px-6 py-4 space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Hold reason code</label>
-                        <input type="text" wire:model.defer="holdPayoutReason" maxlength="100"
-                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                               placeholder="e.g. manual_risk_hold">
-                        @error('holdPayoutReason') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                    </div>
-                </div>
-                <div class="px-6 py-3 border-t flex justify-end gap-2">
-                    <button type="button" wire:click="closeHoldPayoutModal"
-                            class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                    <button type="button" wire:click="confirmHoldPayout"
-                            class="px-4 py-2 bg-amber-600 text-white rounded-md text-sm font-medium hover:bg-amber-700">Save hold</button>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" wire:click="closeHoldPayoutModal" class="pay-modal-btn">Cancel</button>
+                    <button type="button" wire:click="confirmHoldPayout" class="pay-modal-btn pay-modal-btn-amber">Save hold</button>
                 </div>
             </div>
         </div>

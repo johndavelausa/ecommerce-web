@@ -124,151 +124,441 @@ new class extends Component
 };
 ?>
 
-<div class="max-w-3xl space-y-8">
-    <div class="bg-white rounded-lg shadow p-6 space-y-4">
-        <h3 class="text-lg font-medium text-gray-900">Profile</h3>
+@push('styles')
+<style>
+    /* ── Store Settings — Brand Palette ───────────────────────── */
+    .sst-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #D4E8DA;
+        box-shadow: 0 2px 12px rgba(15,61,34,0.07);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .sst-card-header {
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
+        padding: 18px 24px;
+        border-bottom: 2px solid #F9C74F;
+    }
+    .sst-card-header h3 {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0;
+    }
+    .sst-card-body {
+        padding: 24px;
+    }
+    .sst-label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #1B7A37;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .sst-hint {
+        font-size: 0.75rem;
+        color: #9E9E9E;
+        margin-top: 4px;
+    }
+    .sst-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid #D4E8DA;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        color: #212121;
+        background: #fff;
+        transition: all 0.15s ease;
+        outline: none;
+    }
+    .sst-input:focus {
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.1);
+    }
+    .sst-input.max-xs {
+        max-width: 280px;
+    }
+    .sst-error {
+        font-size: 0.75rem;
+        color: #E53935;
+        margin-top: 4px;
+    }
+    .sst-alert-success {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        border: 1px solid #A5D6A7;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        color: #1B7A37;
+        font-weight: 600;
+        margin-bottom: 16px;
+    }
+    .sst-alert-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+        border: 1px solid #90CAF9;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        color: #1565C0;
+        margin-bottom: 16px;
+    }
+    .sst-alert-warn {
+        background: #FFF9E3;
+        border: 1px solid #F9C74F;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.8125rem;
+        color: #B45309;
+        margin-top: 4px;
+    }
+    .sst-avatar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: #F5FBF7;
+        border: 1.5px dashed #A8D5B5;
+        border-radius: 12px;
+    }
+    .sst-avatar-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0F3D22 0%, #2D9F4E 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .sst-avatar-placeholder svg {
+        color: rgba(255,255,255,0.7);
+    }
+    .sst-avatar-img {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #2D9F4E;
+        flex-shrink: 0;
+    }
+    .sst-file-hint {
+        font-size: 0.75rem;
+        color: #9E9E9E;
+        margin-top: 4px;
+    }
+    .sst-uploading {
+        font-size: 0.75rem;
+        color: #2D9F4E;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .sst-btn-save {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: 0 2px 8px rgba(45,159,78,0.25);
+    }
+    .sst-btn-save:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(45,159,78,0.35);
+    }
+    .sst-btn-save:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .sst-verified-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+        border: 1px solid #90CAF9;
+        border-radius: 20px;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        color: #1565C0;
+    }
+    .sst-divider {
+        border: none;
+        border-top: 1px solid #D4E8DA;
+        margin: 20px 0;
+    }
+    .sst-section-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #0F3D22;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 12px;
+    }
+    .sst-radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .sst-radio-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: #F5FBF7;
+        border: 1.5px solid #D4E8DA;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 0.875rem;
+        color: #424242;
+    }
+    .sst-radio-label:has(input:checked) {
+        border-color: #2D9F4E;
+        background: #EAF7EE;
+        color: #1B7A37;
+        font-weight: 600;
+    }
+    .sst-radio-label input[type="radio"] {
+        accent-color: #2D9F4E;
+        width: 16px;
+        height: 16px;
+    }
+    .sst-toggle-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        background: #F5FBF7;
+        border: 1.5px solid #D4E8DA;
+        border-radius: 12px;
+    }
+    .sst-toggle-wrap input[type="checkbox"] {
+        accent-color: #2D9F4E;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    .sst-toggle-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #212121;
+    }
+    .sst-toggle-status {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .sst-toggle-status.open  { color: #2D9F4E; }
+    .sst-toggle-status.closed { color: #9E9E9E; }
+    .sst-form-row {
+        margin-bottom: 18px;
+    }
+    .sst-form-row:last-child {
+        margin-bottom: 0;
+    }
+</style>
+@endpush
 
-        @if($saved)
-            <div class="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
-                Changes saved.
-            </div>
-        @endif
-        @if($emailVerificationSent)
-            <div class="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-800">
-                A verification link has been sent to <strong>{{ $email }}</strong>. Click the link in that email to update your login address. Until then, continue using your current email to sign in.
-            </div>
-        @endif
+<div style="max-width:1200px;">
 
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Profile Photo</label>
-                <div class="flex items-center gap-4 mt-2">
+    {{-- Page header with Save button --}}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+            <h2 style="font-size:1.25rem;font-weight:700;color:#0F3D22;margin:0;">Store &amp; Profile Settings</h2>
+            <p style="font-size:0.8125rem;color:#9E9E9E;margin:4px 0 0;">Manage your account details and store information.</p>
+        </div>
+        <button type="button" wire:click="save" wire:loading.attr="disabled" class="sst-btn-save">
+            <svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Save Changes
+        </button>
+    </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+    {{-- Profile Card --}}
+    <div class="sst-card" style="margin-bottom:0;">
+        <div class="sst-card-header">
+            <h3>Profile</h3>
+        </div>
+        <div class="sst-card-body">
+
+            @if($saved)
+                <div class="sst-alert-success">
+                    <svg style="width:18px;height:18px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Changes saved successfully.
+                </div>
+            @endif
+
+            @if($emailVerificationSent)
+                <div class="sst-alert-info">
+                    <svg style="width:18px;height:18px;flex-shrink:0;margin-top:1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>A verification link has been sent to <strong>{{ $email }}</strong>. Click the link to update your login address. Until then, continue using your current email to sign in.</span>
+                </div>
+            @endif
+
+            {{-- Profile Photo --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Profile Photo</label>
+                <div class="sst-avatar-wrap">
                     @php($currentAvatar = Auth::guard('seller')->user()?->avatar)
                     @if($currentAvatar)
-                        <img src="{{ asset('storage/' . $currentAvatar) }}" class="h-16 w-16 rounded-full object-cover border" alt="Profile photo">
+                        <img src="{{ asset('storage/' . $currentAvatar) }}" class="sst-avatar-img" alt="Profile photo">
                     @else
-                        <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <div class="sst-avatar-placeholder">
+                            <svg style="width:28px;height:28px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         </div>
                     @endif
-                    <div class="flex-1">
-                        <input type="file" wire:model="avatar" accept="image/*" class="block text-sm text-gray-500">
-                        <div wire:loading wire:target="avatar" class="text-xs text-indigo-600 mt-1">Uploading…</div>
-                        @error('avatar') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-                        <p class="text-xs text-gray-500 mt-1">Max 2MB. JPG, PNG, GIF allowed.</p>
+                    <div style="flex:1;">
+                        <input type="file" wire:model="avatar" accept="image/*" style="font-size:0.875rem;color:#424242;">
+                        <div wire:loading wire:target="avatar" class="sst-uploading">Uploading…</div>
+                        @error('avatar') <div class="sst-error">{{ $message }}</div> @enderror
+                        <p class="sst-file-hint">Max 2 MB · JPG, PNG, GIF</p>
                     </div>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Name</label>
-                <input type="text" wire:model.defer="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                @error('name') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Name --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Name</label>
+                <input type="text" wire:model.defer="name" class="sst-input">
+                @error('name') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Email (login)</label>
-                <input type="email" wire:model.defer="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                       placeholder="your@email.com">
-                <p class="mt-1 text-xs text-gray-500">Changing your email will require verifying the new address. We'll send a link to the new email.</p>
-                @error('email') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
-            </div>
-            @if($pending_email)
-                <p class="text-xs text-amber-700">Pending: <strong>{{ $pending_email }}</strong>. Check that inbox for the verification link.</p>
-            @endif
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Contact number</label>
-                <input type="text" wire:model.defer="contact_number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                @error('contact_number') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Email --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Email (login)</label>
+                <input type="email" wire:model.defer="email" class="sst-input" placeholder="your@email.com">
+                <p class="sst-hint">Changing your email requires verifying the new address. We'll send a link to the new email.</p>
+                @error('email') <div class="sst-error">{{ $message }}</div> @enderror
+                @if($pending_email)
+                    <div class="sst-alert-warn" style="margin-top:8px;">
+                        Pending email change: <strong>{{ $pending_email }}</strong>. Check that inbox for the verification link.
+                    </div>
+                @endif
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Delivery address</label>
-                <textarea wire:model.defer="address" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"></textarea>
-                @error('address') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Contact Number --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Contact Number</label>
+                <input type="text" wire:model.defer="contact_number" class="sst-input">
+                @error('contact_number') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
+
+            {{-- Address --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Delivery Address</label>
+                <textarea wire:model.defer="address" rows="3" class="sst-input" style="resize:vertical;"></textarea>
+                @error('address') <div class="sst-error">{{ $message }}</div> @enderror
+            </div>
+
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6 space-y-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <h3 class="text-lg font-medium text-gray-900">Store details</h3>
+    {{-- Store Details Card --}}
+    <div class="sst-card" style="margin-bottom:0;">
+        <div class="sst-card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <h3>Store Details</h3>
                 @if(Auth::guard('seller')->user()?->seller?->is_verified ?? false)
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">✓ Verified seller</span>
+                    <span class="sst-verified-badge">
+                        <svg style="width:12px;height:12px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        Verified Seller
+                    </span>
                 @endif
             </div>
-            <button type="button" wire:click="save" wire:loading.attr="disabled"
-                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-indigo-600 rounded-md font-semibold text-xs text-white uppercase tracking-widest shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                Save changes
-            </button>
         </div>
+        <div class="sst-card-body">
 
-        <div class="grid grid-cols-1 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Store name</label>
-                <input type="text" wire:model.defer="store_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                @error('store_name') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Store Name --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Store Name</label>
+                <input type="text" wire:model.defer="store_name" class="sst-input">
+                @error('store_name') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Store description</label>
-                <textarea wire:model.defer="store_description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"></textarea>
-                @error('store_description') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Store Description --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Store Description</label>
+                <textarea wire:model.defer="store_description" rows="3" class="sst-input" style="resize:vertical;"></textarea>
+                @error('store_description') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Business hours</label>
-                <textarea wire:model.defer="business_hours" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" placeholder="e.g. Mon–Sat 8:00 AM – 5:00 PM, Closed Sunday"></textarea>
-                <p class="mt-0.5 text-xs text-gray-500">Shown on your public store page. Optional.</p>
-                @error('business_hours') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- Business Hours --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Business Hours</label>
+                <textarea wire:model.defer="business_hours" rows="2" class="sst-input" style="resize:vertical;" placeholder="e.g. Mon–Sat 8:00 AM – 5:00 PM, Closed Sunday"></textarea>
+                <p class="sst-hint">Shown on your public store page. Optional.</p>
+                @error('business_hours') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700">GCash number (for customer payments)</label>
-                <input type="text" wire:model.defer="gcash_number" class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                @error('gcash_number') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+            {{-- GCash --}}
+            <div class="sst-form-row">
+                <label class="sst-label">GCash Number</label>
+                <input type="text" wire:model.defer="gcash_number" class="sst-input sst-input--xs" style="max-width:280px;">
+                <p class="sst-hint">Used for customer payments.</p>
+                @error('gcash_number') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
-            <div class="border-t pt-4 mt-4">
-                <h4 class="text-sm font-semibold text-gray-900 mb-2">Delivery fee</h4>
-                <p class="text-xs text-gray-500 mb-3">Choose how delivery is charged for your store. Customers see this at checkout.</p>
-                <div class="space-y-3">
+            <hr class="sst-divider">
+
+            {{-- Delivery Fee --}}
+            <div class="sst-form-row">
+                <div class="sst-section-title">Delivery Fee</div>
+                <p class="sst-hint" style="margin-bottom:12px;">Choose how delivery is charged. Customers see this at checkout.</p>
+                <div class="sst-radio-group">
                     @foreach(\App\Models\Seller::deliveryOptionLabels() as $value => $label)
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" wire:model.defer="delivery_option" value="{{ $value }}"
-                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm text-gray-700">{{ $label }}</span>
+                        <label class="sst-radio-label">
+                            <input type="radio" wire:model.defer="delivery_option" value="{{ $value }}">
+                            <span>{{ $label }}</span>
                         </label>
                     @endforeach
-                    @if($delivery_option === 'flat_rate')
-                        <div class="pl-6">
-                            <label class="block text-sm font-medium text-gray-700">Flat rate (₱) per order</label>
-                            <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
-                                   class="mt-1 block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                   placeholder="e.g. 50">
-                            @error('delivery_fee') <div class="mt-1 text-xs text-red-600">{{ $message }}</div> @enderror
+                </div>
+                @if($delivery_option === 'flat_rate')
+                    <div style="margin-top:12px;padding-left:16px;">
+                        <label class="sst-label">Flat Rate (₱) per order</label>
+                        <input type="number" step="0.01" min="0" wire:model.defer="delivery_fee"
+                               class="sst-input" style="max-width:200px;" placeholder="e.g. 50">
+                        @error('delivery_fee') <div class="sst-error">{{ $message }}</div> @enderror
+                    </div>
+                @endif
+                @if($delivery_option === 'per_product')
+                    <p class="sst-hint" style="margin-top:10px;padding-left:16px;">Set a delivery fee on each product in Manage Products.</p>
+                @endif
+            </div>
+
+            <hr class="sst-divider">
+
+            {{-- Store Open Toggle --}}
+            <div class="sst-form-row">
+                <div class="sst-toggle-wrap">
+                    <input type="checkbox" wire:model.defer="is_open" id="store_open_toggle">
+                    <label for="store_open_toggle" style="cursor:pointer;">
+                        <div class="sst-toggle-label">Store is Open</div>
+                        <div class="sst-toggle-status {{ $is_open ? 'open' : 'closed' }}">
+                            {{ $is_open ? 'Customers can see and order your products.' : 'Store closed — products hidden but not deleted.' }}
                         </div>
-                    @endif
-                    @if($delivery_option === 'per_product')
-                        <p class="text-xs text-gray-500 pl-6">Set a delivery fee on each product in Manage products.</p>
-                    @endif
+                    </label>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2">
-                    <input type="checkbox" wire:model.defer="is_open"
-                           class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                    <span class="text-sm text-gray-700">
-                        Store is open (products visible in catalog)
-                    </span>
-                </label>
-                <span class="text-xs {{ $is_open ? 'text-green-600' : 'text-gray-500' }}">
-                    {{ $is_open ? 'Customers can see and order your products.' : 'Store closed — products hidden but not deleted.' }}
-                </span>
-            </div>
         </div>
     </div>
-</div>
+
+</div>{{-- end grid --}}
+</div>{{-- end max-width wrapper --}}
 

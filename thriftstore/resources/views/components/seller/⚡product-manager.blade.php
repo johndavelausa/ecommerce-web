@@ -66,6 +66,12 @@ new class extends Component
     ];
 
     #[Computed]
+    public function seller()
+    {
+        return Auth::guard('seller')->user()?->seller;
+    }
+
+    #[Computed]
     public function products()
     {
         $q = Product::query()
@@ -570,11 +576,8 @@ new class extends Component
 <style>
     /* Brand-styled Product Manager CSS */
     .prod-container {
-        background: linear-gradient(135deg, #FFFEF5 0%, #F8FDF9 100%);
-        border: 1px solid #E0E0E0;
         border-radius: 16px;
         padding: 20px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
     }
     .prod-header {
         background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
@@ -595,7 +598,7 @@ new class extends Component
         margin: 4px 0 0;
     }
     .prod-search {
-        border: 1px solid #E0E0E0;
+        border: 1.5px solid #D4E8DA;
         border-radius: 10px;
         padding: 10px 14px;
         font-size: 0.875rem;
@@ -606,10 +609,80 @@ new class extends Component
     .prod-search:focus {
         outline: none;
         border-color: #2D9F4E;
-        box-shadow: 0 0 0 3px rgba(45,159,78,0.15);
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
+    }
+    /* Custom Dropdown Styles */
+    .prod-dropdown-wrap {
+        position: relative;
+    }
+    .prod-dropdown-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 140px;
+        padding: 10px 14px;
+        border: 1.5px solid #D4E8DA;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        background: #fff;
+        color: #424242;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .prod-dropdown-trigger:hover {
+        border-color: #2D9F4E;
+    }
+    .prod-dropdown-trigger.active {
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
+    }
+    .prod-dropdown-panel {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        min-width: 180px;
+        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
+        border: 1px solid rgba(249,199,79,0.25);
+        border-radius: 10px;
+        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
+        overflow: hidden;
+        z-index: 50;
+    }
+    .prod-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        font-size: 0.8125rem;
+        color: rgba(255,255,255,0.85);
+        cursor: pointer;
+        transition: all 0.15s;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .prod-dropdown-item:last-child {
+        border-bottom: none;
+    }
+    .prod-dropdown-item:hover {
+        background: rgba(249,199,79,0.12);
+        color: #F9C74F;
+    }
+    .prod-dropdown-item.selected {
+        background: rgba(249,199,79,0.2);
+        color: #F9C74F;
+        font-weight: 600;
+    }
+    .prod-dropdown-item .check {
+        width: 16px;
+        height: 16px;
+        opacity: 0;
+    }
+    .prod-dropdown-item.selected .check {
+        opacity: 1;
     }
     .prod-select {
-        border: 1px solid #E0E0E0;
+        border: 1.5px solid #D4E8DA;
         border-radius: 10px;
         padding: 10px 14px;
         font-size: 0.875rem;
@@ -621,7 +694,7 @@ new class extends Component
     .prod-select:focus {
         outline: none;
         border-color: #2D9F4E;
-        box-shadow: 0 0 0 3px rgba(45,159,78,0.15);
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
     }
     .prod-btn-primary {
         background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
@@ -962,17 +1035,52 @@ new class extends Component
                 <input type="text" wire:model.live.debounce.300ms="search"
                        placeholder="Search products…"
                        class="prod-search w-56">
-                <select wire:model.live="filterStatus" class="prod-select">
-                    <option value="">All status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
-                <select wire:model.live="filterCondition" class="prod-select">
-                    <option value="">All conditions</option>
-                    @foreach(\App\Models\Product::conditionOptions() as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+
+                {{-- Status Dropdown --}}
+                <div class="prod-dropdown-wrap" x-data="{ open: false }" @click.away="open = false">
+                    <button type="button" @click="open = !open" class="prod-dropdown-trigger" :class="{ 'active': open }">
+                        <span>{{ $filterStatus === '' ? 'All status' : ucfirst($filterStatus) }}</span>
+                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition class="prod-dropdown-panel">
+                        <div wire:click="$set('filterStatus', '')" @click="open = false" class="prod-dropdown-item {{ $filterStatus === '' ? 'selected' : '' }}">
+                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>All status</span>
+                        </div>
+                        <div wire:click="$set('filterStatus', 'active')" @click="open = false" class="prod-dropdown-item {{ $filterStatus === 'active' ? 'selected' : '' }}">
+                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Active</span>
+                        </div>
+                        <div wire:click="$set('filterStatus', 'inactive')" @click="open = false" class="prod-dropdown-item {{ $filterStatus === 'inactive' ? 'selected' : '' }}">
+                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>Inactive</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Condition Dropdown --}}
+                <div class="prod-dropdown-wrap" x-data="{ open: false }" @click.away="open = false">
+                    <button type="button" @click="open = !open" class="prod-dropdown-trigger" :class="{ 'active': open }">
+                        <span>{{ $filterCondition === '' ? 'All conditions' : \App\Models\Product::conditionOptions()[$filterCondition] ?? $filterCondition }}</span>
+                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-cloak x-transition class="prod-dropdown-panel">
+                        <div wire:click="$set('filterCondition', '')" @click="open = false" class="prod-dropdown-item {{ $filterCondition === '' ? 'selected' : '' }}">
+                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>All conditions</span>
+                        </div>
+                        @foreach(\App\Models\Product::conditionOptions() as $value => $label)
+                            <div wire:click="$set('filterCondition', '{{ $value }}')" @click="open = false" class="prod-dropdown-item {{ $filterCondition === $value ? 'selected' : '' }}">
+                                <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>{{ $label }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button type="button" wire:click="openBulkStockModal"

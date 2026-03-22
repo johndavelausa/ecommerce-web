@@ -496,29 +496,30 @@ new class extends Component
 @push('styles')
 @verbatim
 <style>
-    /* Order Manager Brand Styles */
+    /* ── Order Manager — Brand Palette ───────────────────────── */
     .ord-header {
-        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
         border-radius: 16px;
         padding: 20px 24px;
-        border: 1px solid #E8E8E8;
+        border: none;
         margin-bottom: 20px;
+        box-shadow: 0 4px 16px rgba(15,61,34,0.20);
     }
     .ord-header h2 {
         font-size: 1.375rem;
         font-weight: 700;
-        color: #212121;
+        color: #fff;
         margin: 0 0 4px;
     }
     .ord-header p {
         font-size: 0.875rem;
-        color: #757575;
+        color: rgba(255,255,255,0.6);
         margin: 0;
     }
 
     .ord-search {
         padding: 10px 16px;
-        border: 2px solid #E0E0E0;
+        border: 1.5px solid #D4E8DA;
         border-radius: 10px;
         font-size: 0.875rem;
         color: #212121;
@@ -527,29 +528,90 @@ new class extends Component
         outline: none;
     }
     .ord-search:focus {
+        outline: none;
         border-color: #2D9F4E;
         box-shadow: 0 0 0 3px rgba(45,159,78,0.1);
     }
-    .ord-select {
+    .ord-dropdown-wrap {
+        position: relative;
+    }
+    .ord-dropdown-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 140px;
         padding: 10px 14px;
-        border: 2px solid #E0E0E0;
+        border: 1.5px solid #D4E8DA;
         border-radius: 10px;
         font-size: 0.875rem;
-        color: #212121;
         background: #fff;
+        color: #424242;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s;
     }
+    .ord-dropdown-trigger:hover {
+        border-color: #2D9F4E;
+    }
+    .ord-dropdown-trigger.active {
+        border-color: #2D9F4E;
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
+    }
+    .ord-dropdown-panel {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        min-width: 180px;
+        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
+        border: 1px solid rgba(249,199,79,0.25);
+        border-radius: 10px;
+        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
+        overflow: hidden;
+        z-index: 50;
+    }
+    .ord-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        font-size: 0.8125rem;
+        color: rgba(255,255,255,0.85);
+        cursor: pointer;
+        transition: all 0.15s;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ord-dropdown-item:last-child {
+        border-bottom: none;
+    }
+    .ord-dropdown-item:hover {
+        background: rgba(249,199,79,0.12);
+        color: #F9C74F;
+    }
+    .ord-dropdown-item.selected {
+        background: rgba(249,199,79,0.2);
+        color: #F9C74F;
+        font-weight: 600;
+    }
+    .ord-dropdown-item .check {
+        width: 16px;
+        height: 16px;
+        opacity: 0;
+    }
+    .ord-dropdown-item.selected .check {
+        opacity: 1;
+    }
+    .ord-select { display: none; }
     .ord-select:focus {
         border-color: #2D9F4E;
-        box-shadow: 0 0 0 3px rgba(45,159,78,0.1);
+        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
     }
 
     .ord-table-wrap {
         background: #ffffff;
         border-radius: 16px;
-        border: 1px solid #E8E8E8;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid #D4E8DA;
+        box-shadow: 0 2px 12px rgba(15,61,34,0.07);
         overflow: hidden;
     }
     .ord-table {
@@ -557,24 +619,24 @@ new class extends Component
         border-collapse: collapse;
     }
     .ord-table th {
-        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
-        padding: 14px 16px;
+        background: linear-gradient(135deg, #0F3D22 0%, #1B5E32 100%);
+        padding: 13px 16px;
         text-align: left;
         font-size: 0.6875rem;
         font-weight: 700;
-        color: #757575;
+        color: rgba(255,255,255,0.75);
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        border-bottom: 1px solid #E8E8E8;
+        letter-spacing: 0.07em;
+        border-bottom: 2px solid #F9C74F;
     }
     .ord-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid #F0F0F0;
+        padding: 13px 16px;
+        border-bottom: 1px solid #F0F7F2;
         font-size: 0.875rem;
         color: #424242;
     }
     .ord-table tr:hover td {
-        background: #FAFAFA;
+        background: #F5FBF7;
     }
     .ord-table tr:last-child td {
         border-bottom: none;
@@ -591,15 +653,15 @@ new class extends Component
         letter-spacing: 0.03em;
     }
     .ord-status.awaiting_payment { background: #FFF3E0; color: #E65100; }
-    .ord-status.paid { background: #E3F2FD; color: #1565C0; }
-    .ord-status.to_pack { background: #E1F5FE; color: #0277BD; }
-    .ord-status.ready_to_ship { background: #F3E5F5; color: #7B1FA2; }
-    .ord-status.processing { background: #FFF9E3; color: #F57C00; }
-    .ord-status.shipped { background: #E8EAF6; color: #3949AB; }
+    .ord-status.paid             { background: #E3F2FD; color: #1565C0; }
+    .ord-status.to_pack          { background: #E1F5FE; color: #0277BD; }
+    .ord-status.ready_to_ship    { background: #F3E5F5; color: #7B1FA2; }
+    .ord-status.processing       { background: #FFF9E3; color: #F57C00; }
+    .ord-status.shipped          { background: #E8EAF6; color: #3949AB; }
     .ord-status.out_for_delivery { background: #EDE7F6; color: #5E35B1; }
-    .ord-status.delivered { background: #E8F5E9; color: #2D9F4E; }
-    .ord-status.completed { background: #C8E6C9; color: #1B7A37; }
-    .ord-status.cancelled { background: #FFEBEE; color: #C0392B; }
+    .ord-status.delivered        { background: #E8F5E9; color: #2D9F4E; }
+    .ord-status.completed        { background: #C8E6C9; color: #1B7A37; }
+    .ord-status.cancelled        { background: #FFEBEE; color: #C0392B; }
 
     .ord-dispute-badge {
         display: inline-flex;
@@ -610,7 +672,7 @@ new class extends Component
         font-weight: 700;
         margin-top: 6px;
     }
-    .ord-dispute-badge.active { background: #FFF9E3; color: #F57C00; }
+    .ord-dispute-badge.active   { background: #FFF9E3; color: #F57C00; }
     .ord-dispute-badge.resolved { background: #F5F5F5; color: #757575; }
 
     .ord-btn-view {
@@ -667,18 +729,18 @@ new class extends Component
     }
     .ord-modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #F0F0F0;
-        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+        border-bottom: 2px solid #F9C74F;
+        background: linear-gradient(135deg, #0F3D22 0%, #1a5c35 100%);
     }
     .ord-modal-header h3 {
         font-size: 1.125rem;
         font-weight: 700;
-        color: #212121;
+        color: #fff;
         margin: 0 0 4px;
     }
     .ord-modal-header p {
         font-size: 0.8125rem;
-        color: #757575;
+        color: rgba(255,255,255,0.6);
         margin: 0;
     }
     .ord-modal-close {
@@ -691,16 +753,16 @@ new class extends Component
         align-items: center;
         justify-content: center;
         border-radius: 8px;
-        color: #9E9E9E;
+        color: rgba(255,255,255,0.7);
         font-size: 1.5rem;
         cursor: pointer;
         transition: all 0.15s;
         border: none;
-        background: transparent;
+        background: rgba(255,255,255,0.1);
     }
     .ord-modal-close:hover {
-        background: #F5F5F5;
-        color: #616161;
+        background: rgba(249,199,79,0.2);
+        color: #F9C74F;
     }
     .ord-modal-body {
         flex: 1;
@@ -714,31 +776,31 @@ new class extends Component
     }
     .ord-modal-sidebar {
         width: 280px;
-        border-left: 1px solid #F0F0F0;
-        background: #FAFAFA;
+        border-left: 1px solid #D4E8DA;
+        background: #F5FBF7;
         padding: 20px;
         overflow-y: auto;
     }
     .ord-modal-footer {
         padding: 16px 24px;
-        border-top: 1px solid #F0F0F0;
+        border-top: 1px solid #D4E8DA;
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        background: #FAFAFA;
+        background: #F5FBF7;
     }
 
     .ord-section-title {
         font-size: 0.6875rem;
         font-weight: 700;
-        color: #757575;
+        color: #1B7A37;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.07em;
         margin: 0 0 10px;
     }
     .ord-section-box {
         background: #fff;
-        border: 1px solid #E8E8E8;
+        border: 1px solid #D4E8DA;
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 16px;
@@ -1003,6 +1065,84 @@ new class extends Component
         margin-bottom: 16px;
     }
 
+    /* Pagination — Brand Styled */
+    .ord-table-wrap nav[role="navigation"] {
+        display: flex;
+        justify-content: center;
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%);
+        border-top: 1px solid #D4E8DA;
+    }
+    .ord-table-wrap nav .flex {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    /* Hide the simple Previous/Next text links (first flex container) */
+    .ord-table-wrap nav > .flex:first-child {
+        display: none;
+    }
+    /* Show only the numbered pagination */
+    .ord-table-wrap nav .flex.justify-between {
+        justify-content: center;
+    }
+    .ord-table-wrap nav .flex > span,
+    .ord-table-wrap nav .flex > a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+    /* Pagination arrows (Previous/Next) */
+    .ord-table-wrap nav .flex > a[rel="prev"],
+    .ord-table-wrap nav .flex > a[rel="next"],
+    .ord-table-wrap nav .flex > span[aria-disabled="true"] {
+        border: 1px solid #D4E8DA;
+        background: #fff;
+        color: #424242;
+    }
+    .ord-table-wrap nav .flex > a[rel="prev"]:hover,
+    .ord-table-wrap nav .flex > a[rel="next"]:hover {
+        border-color: #2D9F4E;
+        background: #F5FBF7;
+        color: #1B7A37;
+    }
+    .ord-table-wrap nav .flex > span[aria-disabled="true"] {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    /* Page numbers */
+    .ord-table-wrap nav .flex > a:not([rel]) {
+        border: 1px solid transparent;
+        background: transparent;
+        color: #424242;
+    }
+    .ord-table-wrap nav .flex > a:not([rel]):hover {
+        border-color: #D4E8DA;
+        background: #F5FBF7;
+        color: #1B7A37;
+    }
+    /* Active page */
+    .ord-table-wrap nav .flex > span[aria-current="page"] {
+        background: linear-gradient(135deg, #2D9F4E 0%, #1B7A37 100%);
+        border: 1px solid transparent;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(45,159,78,0.3);
+    }
+    /* Dots */
+    .ord-table-wrap nav .flex > span:not([aria-current]):not([aria-disabled]):not([rel]) {
+        color: #9E9E9E;
+        padding: 0 4px;
+        min-width: auto;
+    }
+
     /* Pulse ring animation - rings expand outward from current step */
     @keyframes ord-pulse-ring {
         0%   { transform: scale(1);   opacity: 0.75; }
@@ -1041,20 +1181,26 @@ new class extends Component
                    placeholder="Search tracking # or customer…"
                    class="ord-search w-64">
 
-            <select wire:model.live="status" class="ord-select">
-                <option value="">All statuses</option>
-                <option value="awaiting_payment">Awaiting payment</option>
-                <option value="paid">Paid</option>
-                <option value="to_pack">To pack</option>
-                <option value="ready_to_ship">Ready to ship</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="out_for_delivery">Out for delivery</option>
-                <option value="delivered">Delivered</option>
-                <option value="received">Received</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-            </select>
+            {{-- Status Dropdown --}}
+            <div class="ord-dropdown-wrap" x-data="{ open: false }" @click.away="open = false">
+                <button type="button" @click="open = !open" class="ord-dropdown-trigger" :class="{ 'active': open }">
+                    <span>{{ $status === '' ? 'All statuses' : ucwords(str_replace('_', ' ', $status)) }}</span>
+                    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="open" x-cloak x-transition class="ord-dropdown-panel">
+                    @php
+                        $statuses = ['' => 'All statuses', 'awaiting_payment' => 'Awaiting payment', 'paid' => 'Paid', 'to_pack' => 'To pack', 'ready_to_ship' => 'Ready to ship', 'processing' => 'Processing', 'shipped' => 'Shipped', 'out_for_delivery' => 'Out for delivery', 'delivered' => 'Delivered', 'received' => 'Received', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+                    @endphp
+                    @foreach($statuses as $val => $label)
+                        <div wire:click="$set('status', '{{ $val }}')" @click="open = false" class="ord-dropdown-item {{ $status === $val ? 'selected' : '' }}">
+                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <span>{{ $label }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
 
         <div class="text-xs" style="color: #757575;">

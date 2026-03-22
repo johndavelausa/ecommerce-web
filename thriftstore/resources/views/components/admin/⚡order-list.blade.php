@@ -318,15 +318,50 @@ new class extends Component
 };
 ?>
 
+<style>
+    .ord-search { border-radius: 50px; border: 1.5px solid #D4E8DA; padding: 8px 16px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .ord-search:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .ord-select { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .ord-select:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .ord-table-card { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .ord-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .ord-table th { padding: 9px 16px; text-align: left; font-size: 0.6875rem; font-weight: 700; color: #1B7A37; text-transform: uppercase; letter-spacing: 0.05em; background: #F5FBF7; border-bottom: 1px solid #D4E8DA; }
+    .ord-table td { padding: 9px 16px; color: #424242; border-bottom: 1px solid #F0F7F2; }
+    .ord-table tr:last-child td { border-bottom: none; }
+    .ord-table tr:hover td { background: #F5FBF7; }
+    .ord-status-badge { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+    .ord-status-awaiting { background: #FFF3E0; color: #E65100; }
+    .ord-status-paid { background: #E0F7FA; color: #00838F; }
+    .ord-status-to-pack { background: #E1F5FE; color: #01579B; }
+    .ord-status-ready { background: #F3E5F5; color: #6A1B9A; }
+    .ord-status-processing { background: #FFF9E3; color: #F57C00; }
+    .ord-status-shipped { background: #E3F2FD; color: #1565C0; }
+    .ord-status-delivery { background: #E8EAF6; color: #283593; }
+    .ord-status-delivered { background: #E8F5E9; color: #1B7A37; }
+    .ord-status-completed { background: #C8E6C9; color: #1B5E20; }
+    .ord-status-cancelled { background: #FFEBEE; color: #C0392B; }
+    .ord-action-btn { font-size: 0.8125rem; font-weight: 600; color: #2D9F4E; text-decoration: none; transition: all 0.15s; }
+    .ord-action-btn:hover { color: #1B7A37; text-decoration: underline; }
+    .ord-label { font-size: 0.6875rem; font-weight: 700; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.05em; font-style: italic; }
+    .ord-modal { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; box-shadow: 0 10px 40px rgba(15,61,34,0.2); }
+    .ord-modal-title { font-size: 1.125rem; font-weight: 800; color: #0F3D22; }
+    .ord-modal-input, .ord-modal-textarea, .ord-modal-select { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.8125rem; color: #424242; transition: all 0.15s; }
+    .ord-modal-input:focus, .ord-modal-textarea:focus, .ord-modal-select:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .ord-modal-btn { padding: 8px 16px; border-radius: 50px; font-size: 0.8125rem; font-weight: 600; border: 1.5px solid #D4E8DA; background: #fff; color: #424242; text-decoration: none; transition: all 0.15s; cursor: pointer; }
+    .ord-modal-btn-primary { background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #fff; border-color: #2D9F4E; }
+    .ord-modal-btn-primary:hover { box-shadow: 0 4px 14px rgba(15,61,34,0.2); }
+    .ord-modal-btn-amber { background: #FFF3E0; color: #E65100; border-color: #F57C00; }
+    .ord-modal-btn-amber:hover { background: #FFE0B2; }
+</style>
+
 <div class="space-y-4">
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div class="flex gap-2 flex-wrap items-center">
             <input type="text" wire:model.live.debounce.300ms="search"
                    placeholder="Search by ID, tracking #, customer, or seller…"
-                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500 w-64">
+                   class="ord-search w-64">
 
-            <select wire:model.live="status"
-                    class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <select wire:model.live="status" class="ord-select">
                 <option value="">All statuses</option>
                 <option value="awaiting_payment">Awaiting payment</option>
                 <option value="paid">Paid</option>
@@ -340,93 +375,90 @@ new class extends Component
                 <option value="cancelled">Cancelled</option>
             </select>
 
-            <span class="text-xs text-gray-500">Date range:</span>
-            <input type="date" wire:model.live="dateFrom"
-                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-            <span class="text-gray-400">–</span>
-            <input type="date" wire:model.live="dateTo"
-                   class="rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <span class="ord-label">Date range:</span>
+            <input type="date" wire:model.live="dateFrom" class="ord-select">
+            <span style="color:#9E9E9E;">–</span>
+            <input type="date" wire:model.live="dateTo" class="ord-select">
         </div>
 
-        <div class="text-xs text-gray-500">
+        <div class="text-xs" style="color:#9E9E9E;font-style:italic;">
             Showing {{ $this->orders->firstItem() ?? 0 }}–{{ $this->orders->lastItem() ?? 0 }}
             of {{ $this->orders->total() }} orders
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gray-50">
+    <div class="ord-table-card">
+        <table class="ord-table">
+            <thead>
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID / Tracking</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th>Date</th>
+                    <th>ID / Tracking</th>
+                    <th>Customer</th>
+                    <th>Seller</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Total</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
+            <tbody>
                 @forelse($this->orders as $order)
                     <tr>
-                        <td class="px-4 py-3 text-xs text-gray-500">
+                        <td style="color:#9E9E9E;font-style:italic;font-size:0.8125rem;">
                             {{ optional($order->created_at)->format('Y-m-d H:i') }}
                         </td>
-                        <td class="px-4 py-3">
-                            <div class="text-gray-900 text-xs font-medium">#{{ $order->id }}</div>
-                            <div class="font-mono text-xs text-gray-500">{{ $order->tracking_number ?? '—' }}</div>
+                        <td>
+                            <div style="color:#0F3D22;font-weight:600;font-size:0.8125rem;">#{{ $order->id }}</div>
+                            <div style="font-family:monospace;font-size:0.75rem;color:#9E9E9E;font-style:italic;">{{ $order->tracking_number ?? '—' }}</div>
                         </td>
-                        <td class="px-4 py-3">
-                            <div class="text-gray-900 text-sm">{{ $order->customer->name ?? '—' }}</div>
-                            <div class="text-xs text-gray-500">{{ $order->customer->email ?? '' }}</div>
+                        <td>
+                            <div style="color:#0F3D22;font-weight:600;">{{ $order->customer->name ?? '—' }}</div>
+                            <div class="text-xs" style="color:#9E9E9E;font-style:italic;">{{ $order->customer->email ?? '' }}</div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-700">
+                        <td style="color:#424242;">
                             {{ $order->seller->store_name ?? '—' }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td>
                             @php
-                                $statusColor = match ($order->status) {
-                                    'awaiting_payment' => 'bg-orange-100 text-orange-800',
-                                    'paid' => 'bg-cyan-100 text-cyan-800',
-                                    'to_pack' => 'bg-sky-100 text-sky-800',
-                                    'ready_to_ship' => 'bg-violet-100 text-violet-800',
-                                    'processing' => 'bg-amber-100 text-amber-800',
-                                    'shipped' => 'bg-blue-100 text-blue-800',
-                                    'out_for_delivery' => 'bg-indigo-100 text-indigo-800',
-                                    'delivered' => 'bg-green-100 text-green-800',
-                                    'completed' => 'bg-emerald-100 text-emerald-800',
-                                    'cancelled' => 'bg-red-100 text-red-800',
-                                    default => 'bg-gray-100 text-gray-700',
+                                $statusClass = match ($order->status) {
+                                    'awaiting_payment' => 'ord-status-awaiting',
+                                    'paid' => 'ord-status-paid',
+                                    'to_pack' => 'ord-status-to-pack',
+                                    'ready_to_ship' => 'ord-status-ready',
+                                    'processing' => 'ord-status-processing',
+                                    'shipped' => 'ord-status-shipped',
+                                    'out_for_delivery' => 'ord-status-delivery',
+                                    'delivered' => 'ord-status-delivered',
+                                    'completed' => 'ord-status-completed',
+                                    'cancelled' => 'ord-status-cancelled',
+                                    default => 'ord-status-awaiting',
                                 };
                             @endphp
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">
+                            <span class="ord-status-badge {{ $statusClass }}">
                                 {{ ucwords(str_replace('_', ' ', $order->status)) }}
                             </span>
                             @if($order->refund_status)
-                                <div class="mt-1 text-xs text-gray-600">
+                                <div class="text-xs mt-1" style="color:#9E9E9E;font-style:italic;">
                                     Refund: {{ \App\Models\Order::refundStatusLabel($order->refund_status) }}
                                 </div>
                                 @if($order->refunded_at)
-                                    <div class="mt-0.5 text-xs text-gray-600">
-                                        Refunded at: {{ $order->refunded_at->format('M j, Y g:i A') }}
+                                    <div class="text-xs" style="color:#9E9E9E;font-style:italic;">
+                                        {{ $order->refunded_at->format('M j, Y g:i A') }}
                                     </div>
                                 @endif
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right text-gray-900">
+                        <td style="text-align:right;color:#0F3D22;font-weight:700;">
                             ₱{{ number_format($order->total_amount, 2) }}
                         </td>
-                        <td class="px-4 py-3 text-sm">
-                            <button type="button" wire:click="viewOrder({{ $order->id }})"
-                                    class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                        <td>
+                            <button type="button" wire:click="viewOrder({{ $order->id }})" class="ord-action-btn">
                                 View
                             </button>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="7" style="text-align:center;padding:32px 16px;color:#9E9E9E;font-style:italic;">
                             No orders found.
                         </td>
                     </tr>
@@ -434,172 +466,150 @@ new class extends Component
             </tbody>
         </table>
 
-        <div class="px-4 py-3 border-t">
+        <div style="padding:12px 16px;border-top:1px solid #D4E8DA;">
             {{ $this->orders->links() }}
         </div>
     </div>
 
-    {{-- Order details modal --}}
+    {{-- Order details modal (receipt style) --}}
     @if($showDetails && $viewOrderId)
         @php
             $order = \App\Models\Order::with(['customer', 'seller', 'items.product', 'disputes.customer', 'disputes.resolvedByAdmin', 'trackingEvents'])->find($viewOrderId);
         @endphp
         @if($order)
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
-                    <div class="flex items-center justify-between px-6 py-4 border-b">
-                        <div>
-                            <h3 class="font-semibold text-gray-900 text-sm">
-                                Order #{{ $order->id }}
-                            </h3>
-                            <p class="text-xs text-gray-500">
-                                {{ optional($order->created_at)->format('Y-m-d H:i') }} ·
-                                Tracking: {{ $order->tracking_number ?? '—' }} ·
-                                {{ $order->seller->store_name ?? '—' }}
-                            </p>
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div class="ord-modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                    {{-- Receipt Header --}}
+                    <div style="background:linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%);color:#fff;padding:20px;border-radius:20px 20px 0 0;">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div style="font-size:1.25rem;font-weight:800;letter-spacing:0.05em;">ORDER RECEIPT</div>
+                                <div style="font-size:0.75rem;opacity:0.9;margin-top:4px;font-style:italic;">Order #{{ $order->id }}</div>
+                            </div>
+                            <button type="button" wire:click="closeDetails" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:1.5rem;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
                         </div>
-                        <button type="button" wire:click="closeDetails"
-                                class="text-gray-400 hover:text-gray-600 text-lg">&times;</button>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-4 text-sm">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="md:col-span-2 space-y-2">
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Shipping address</h4>
-                                <p class="text-gray-800 whitespace-pre-wrap">{{ $order->shipping_address }}</p>
+                    {{-- Receipt Body --}}
+                    <div class="flex-1 overflow-y-auto" style="padding:20px;background:#fff;">
+                        {{-- Order Info Row --}}
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #D4E8DA;">
+                            <div>
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:4px;">Date & Time</div>
+                                <div style="color:#0F3D22;font-weight:600;">{{ optional($order->created_at)->format('M d, Y') }}</div>
+                                <div style="font-size:0.75rem;color:#9E9E9E;font-style:italic;">{{ optional($order->created_at)->format('H:i A') }}</div>
                             </div>
-                            <div class="space-y-2">
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Customer</h4>
-                                <p class="text-gray-800">
-                                    {{ $order->customer->name ?? '—' }}<br>
-                                    <span class="text-xs text-gray-500">{{ $order->customer->email ?? '' }}</span>
-                                </p>
-                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-2">Seller</h4>
-                                <p class="text-gray-800">{{ $order->seller->store_name ?? '—' }}</p>
+                            <div>
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:4px;">Tracking Number</div>
+                                <div style="color:#0F3D22;font-weight:600;font-family:monospace;">{{ $order->tracking_number ?? '—' }}</div>
                             </div>
                         </div>
 
-                        <div>
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</h4>
-                            <div class="border rounded-md divide-y divide-gray-100">
-                                @foreach($order->items as $item)
-                                    <div class="px-3 py-2 flex items-center justify-between gap-4">
-                                        <div>
-                                            <div class="text-gray-900 text-sm">
-                                                {{ $item->product->name ?? 'Product #'.$item->product_id }}
-                                            </div>
-                                            <div class="text-xs text-gray-500">
-                                                Qty: {{ $item->quantity }} × ₱{{ number_format($item->price_at_purchase, 2) }}
-                                            </div>
-                                        </div>
-                                        <div class="text-sm font-medium text-gray-900">
-                                            ₱{{ number_format($item->quantity * $item->price_at_purchase, 2) }}
-                                        </div>
+                        {{-- Customer & Seller Info --}}
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #D4E8DA;">
+                            <div>
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:6px;">Customer</div>
+                                <div style="color:#0F3D22;font-weight:600;font-size:0.9375rem;">{{ $order->customer->name ?? '—' }}</div>
+                                <div style="font-size:0.75rem;color:#9E9E9E;font-style:italic;margin-top:2px;">{{ $order->customer->email ?? '' }}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:6px;">Seller</div>
+                                <div style="color:#0F3D22;font-weight:600;font-size:0.9375rem;">{{ $order->seller->store_name ?? '—' }}</div>
+                            </div>
+                        </div>
+
+                        {{-- Shipping Address --}}
+                        <div style="margin-bottom:20px;padding:12px;background:#F5FBF7;border-radius:12px;border:1px solid #D4E8DA;">
+                            <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:6px;">Shipping Address</div>
+                            <div style="color:#0F3D22;font-size:0.8125rem;line-height:1.5;white-space:pre-wrap;">{{ $order->shipping_address }}</div>
+                        </div>
+
+                        {{-- Items Table (Receipt Style) --}}
+                        <div style="margin-bottom:20px;">
+                            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:2px solid #0F3D22;margin-bottom:8px;font-size:0.75rem;font-weight:700;color:#1B7A37;text-transform:uppercase;letter-spacing:0.05em;">
+                                <div>Item</div>
+                                <div style="text-align:center;">Qty</div>
+                                <div style="text-align:right;">Amount</div>
+                            </div>
+                            @foreach($order->items as $item)
+                                <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #F0F7F2;align-items:start;">
+                                    <div>
+                                        <div style="color:#0F3D22;font-weight:600;font-size:0.8125rem;">{{ $item->product->name ?? 'Product #'.$item->product_id }}</div>
+                                        <div style="font-size:0.75rem;color:#9E9E9E;font-style:italic;margin-top:2px;">₱{{ number_format($item->price_at_purchase, 2) }} each</div>
                                     </div>
-                                @endforeach
+                                    <div style="text-align:center;color:#424242;font-weight:600;">{{ $item->quantity }}</div>
+                                    <div style="text-align:right;color:#0F3D22;font-weight:700;">₱{{ number_format($item->quantity * $item->price_at_purchase, 2) }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Total Section --}}
+                        <div style="background:#F5FBF7;padding:14px;border-radius:12px;border:1.5px solid #D4E8DA;margin-bottom:20px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div style="font-size:0.9375rem;font-weight:700;color:#0F3D22;text-transform:uppercase;letter-spacing:0.05em;">Total Amount</div>
+                                <div style="font-size:1.5rem;font-weight:800;color:#1B7A37;">₱{{ number_format($order->total_amount, 2) }}</div>
                             </div>
                         </div>
 
-                        <div>
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tracking timeline</h4>
-                            @if($order->trackingEvents->isEmpty())
-                                <div class="text-xs text-gray-500">No courier events yet.</div>
-                            @else
-                                <div class="rounded-md border border-gray-200 divide-y divide-gray-100">
-                                    @foreach($order->trackingEvents->take(12) as $event)
-                                        <div class="px-3 py-2 text-xs">
-                                            <div class="font-medium text-gray-800">
-                                                {{ ucwords(str_replace('_', ' ', (string) $event->event_status)) }}
-                                            </div>
-                                            <div class="text-gray-500 mt-0.5">
-                                                {{ optional($event->occurred_at ?? $event->created_at)->format('Y-m-d H:i') }}
-                                                @if($event->location)
-                                                    · {{ $event->location }}
-                                                @endif
-                                                @if($event->description)
-                                                    · {{ $event->description }}
-                                                @endif
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-
-                        <div>
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Refund audit</h4>
+                        {{-- Status & Refund Info --}}
+                        @php
+                            $statusClass = match ($order->status) {
+                                'awaiting_payment' => 'ord-status-awaiting',
+                                'paid' => 'ord-status-paid',
+                                'to_pack' => 'ord-status-to-pack',
+                                'ready_to_ship' => 'ord-status-ready',
+                                'processing' => 'ord-status-processing',
+                                'shipped' => 'ord-status-shipped',
+                                'out_for_delivery' => 'ord-status-delivery',
+                                'delivered' => 'ord-status-delivered',
+                                'completed' => 'ord-status-completed',
+                                'cancelled' => 'ord-status-cancelled',
+                                default => 'ord-status-awaiting',
+                            };
+                        @endphp
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                            <div style="padding:12px;background:#F5FBF7;border-radius:12px;border:1px solid #D4E8DA;">
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:6px;">Order Status</div>
+                                <span class="ord-status-badge {{ $statusClass }}" style="display:inline-block;">{{ ucwords(str_replace('_', ' ', $order->status)) }}</span>
+                            </div>
                             @if($order->refund_status)
-                                <div class="rounded-md border border-gray-200 p-3 space-y-1 text-xs">
-                                    <div class="text-gray-700">Status: <span class="font-medium">{{ \App\Models\Order::refundStatusLabel($order->refund_status) }}</span></div>
-                                    <div class="text-gray-700">Reason: <span class="font-medium">{{ \App\Models\Order::refundReasonLabel($order->refund_reason_code) }}</span></div>
-                                    @if($order->refunded_at)
-                                        <div class="text-gray-700">Refunded at: <span class="font-medium">{{ $order->refunded_at->format('Y-m-d H:i') }}</span></div>
-                                    @endif
+                                <div style="padding:12px;background:#FFF3E0;border-radius:12px;border:1px solid #FFE0B2;">
+                                    <div style="font-size:0.6875rem;font-weight:700;color:#E65100;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:6px;">Refund Status</div>
+                                    <div style="color:#E65100;font-weight:600;font-size:0.8125rem;">{{ \App\Models\Order::refundStatusLabel($order->refund_status) }}</div>
                                 </div>
-                            @else
-                                <div class="text-xs text-gray-500">No refund audit data for this order.</div>
                             @endif
                         </div>
 
-                        <div>
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Disputes</h4>
-                            @if($order->disputes->isEmpty())
-                                <div class="text-xs text-gray-500">No disputes for this order.</div>
-                            @else
-                                <div class="space-y-2">
-                                    @foreach($order->disputes as $d)
-                                        <div class="rounded-md border border-gray-200 p-3">
-                                            <div class="flex items-center justify-between gap-3">
-                                                <div class="text-xs text-gray-700 font-semibold">Dispute #{{ $d->id }}</div>
-                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-700">{{ \App\Models\OrderDispute::statusLabel($d->status) }}</span>
-                                            </div>
-                                            <div class="mt-1 text-xs text-gray-600">Reason: {{ \App\Models\OrderDispute::REASON_CODES[$d->reason_code] ?? ucfirst(str_replace('_', ' ', (string) $d->reason_code)) }}</div>
-                                            <div class="mt-1 text-xs text-gray-700 whitespace-pre-wrap">{{ $d->description }}</div>
-                                            @if($d->evidence_path)
-                                                <div class="mt-1 text-xs"><a href="{{ asset('storage/' . $d->evidence_path) }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline">View evidence</a></div>
-                                            @endif
-                                            @if($d->seller_response_note)
-                                                <div class="mt-2 text-xs text-emerald-700 whitespace-pre-wrap">Seller response: {{ $d->seller_response_note }}</div>
-                                                @if($d->seller_responded_at)
-                                                    <div class="mt-1 text-[11px] text-gray-500">Seller responded at {{ optional($d->seller_responded_at)->format('Y-m-d H:i') }}</div>
-                                                @endif
-                                            @endif
-                                            @if($d->admin_resolution_note)
-                                                <div class="mt-2 text-xs text-gray-600">Admin note: {{ $d->admin_resolution_note }}</div>
-                                            @endif
-                                            @if(!\App\Models\OrderDispute::isTerminalStatus($d->status))
-                                                <div class="mt-2">
-                                                    <button type="button" wire:click="openResolveDisputeModal({{ $d->id }})"
-                                                            class="px-2 py-1 text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100">
-                                                        Advance dispute stage
-                                                    </button>
-                                                </div>
-                                            @endif
+                        {{-- Tracking Timeline (if exists) --}}
+                        @if(!$order->trackingEvents->isEmpty())
+                            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #D4E8DA;">
+                                <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:8px;">Recent Tracking Events</div>
+                                <div style="space-y:2;">
+                                    @foreach($order->trackingEvents->take(5) as $event)
+                                        <div style="padding:8px 0;border-bottom:1px solid #F0F7F2;font-size:0.75rem;">
+                                            <div style="color:#0F3D22;font-weight:600;">{{ ucwords(str_replace('_', ' ', (string) $event->event_status)) }}</div>
+                                            <div style="color:#9E9E9E;font-style:italic;margin-top:2px;">{{ optional($event->occurred_at ?? $event->created_at)->format('M d, Y H:i') }}@if($event->location) · {{ $event->location }}@endif</div>
                                         </div>
                                     @endforeach
                                 </div>
-                            @endif
-                        </div>
-
-                        <div class="flex justify-end">
-                            <div class="text-right">
-                                <div class="text-xs text-gray-500 uppercase tracking-wide">Total</div>
-                                <div class="text-lg font-semibold text-gray-900">
-                                    ₱{{ number_format($order->total_amount, 2) }}
-                                </div>
                             </div>
-                        </div>
+                        @endif
+
+                        {{-- Disputes (if exists) --}}
+                        @if(!$order->disputes->isEmpty())
+                            <div style="padding:12px;background:#FFEBEE;border-radius:12px;border:1px solid #FFCDD2;">
+                                <div style="font-size:0.6875rem;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:8px;">⚠ Active Disputes ({{ count($order->disputes) }})</div>
+                                <div style="font-size:0.75rem;color:#C0392B;">This order has {{ count($order->disputes) }} dispute(s). Review details in disputes section.</div>
+                            </div>
+                        @endif
                     </div>
 
-                    <div class="px-6 py-3 border-t flex justify-between items-center">
-                        <div>
-                            <button type="button" wire:click="openOverrideModal({{ $order->id }})"
-                                    class="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100">
-                                Change status (admin override)
-                            </button>
-                        </div>
-                        <button type="button" wire:click="closeDetails"
-                                class="px-4 py-2 border rounded-md text-xs font-semibold text-gray-700 uppercase tracking-widest hover:bg-gray-50">
+                    {{-- Receipt Footer --}}
+                    <div style="padding:14px 20px;border-top:1px solid #D4E8DA;background:#F5FBF7;border-radius:0 0 20px 20px;display:flex;justify-content:space-between;gap:8px;">
+                        <button type="button" wire:click="openOverrideModal({{ $order->id }})" class="ord-modal-btn ord-modal-btn-amber">
+                            Override Status
+                        </button>
+                        <button type="button" wire:click="closeDetails" class="ord-modal-btn">
                             Close
                         </button>
                     </div>

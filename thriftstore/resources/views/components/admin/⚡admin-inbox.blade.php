@@ -96,89 +96,110 @@ new class extends Component
 };
 ?>
 
+<style>
+    .inbox-sidebar { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; display: flex; flex-direction: column; max-height: 75vh; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .inbox-title { font-size: 1rem; font-weight: 800; color: #0F3D22; }
+    .inbox-search { border-radius: 50px; border: 1.5px solid #D4E8DA; padding: 7px 14px; font-size: 0.8125rem; background: #fff; color: #424242; transition: all 0.15s; }
+    .inbox-search:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .inbox-conv-item { width: 100%; text-align: left; padding: 10px 14px; border-bottom: 1px solid #F0F7F2; background: #fff; transition: background 0.12s; cursor: pointer; border: none; }
+    .inbox-conv-item:hover { background: #F5FBF7; }
+    .inbox-conv-item.active { background: #E8F5E9; border-left: 3px solid #1B7A37; }
+    .inbox-unread { background: #1B7A37; color: #fff; font-size: 0.7rem; border-radius: 50px; padding: 2px 7px; font-weight: 700; }
+    .inbox-thread { background: #fff; border-radius: 20px; border: 1.5px solid #D4E8DA; overflow: hidden; display: flex; flex-direction: column; max-height: 75vh; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .inbox-thread-header { padding: 12px 16px; border-bottom: 1px solid #D4E8DA; background: #F5FBF7; display: flex; justify-content: space-between; align-items: center; }
+    .inbox-bubble-admin { background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #fff; border-radius: 16px 16px 4px 16px; padding: 8px 14px; max-width: 80%; font-size: 0.875rem; }
+    .inbox-bubble-other { background: #F5F5F5; color: #424242; border-radius: 16px 16px 16px 4px; padding: 8px 14px; max-width: 80%; font-size: 0.875rem; }
+    .inbox-reply-area { border-radius: 12px; border: 1.5px solid #D4E8DA; padding: 8px 12px; font-size: 0.875rem; color: #424242; transition: all 0.15s; resize: none; }
+    .inbox-reply-area:focus { border-color: #2D9F4E; box-shadow: 0 0 0 3px rgba(45,159,78,0.1); outline: none; }
+    .inbox-send-btn { padding: 8px 18px; border-radius: 50px; font-size: 0.8125rem; font-weight: 700; background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #fff; border: none; cursor: pointer; transition: all 0.15s; }
+    .inbox-send-btn:hover { box-shadow: 0 4px 14px rgba(15,61,34,0.25); }
+    .inbox-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .inbox-close-btn { font-size: 0.8125rem; font-weight: 600; color: #9E9E9E; border: 1.5px solid #D4E8DA; border-radius: 50px; padding: 4px 12px; background: #fff; cursor: pointer; }
+    .inbox-close-btn:hover { color: #C0392B; border-color: #C0392B; }
+</style>
+
 <div class="flex gap-4">
-    <div class="w-80 shrink-0 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">
-        <div class="p-3 border-b space-y-2">
-            <div class="font-medium">Inbox</div>
+    <div class="inbox-sidebar w-80 shrink-0">
+        <div style="padding:12px 14px;border-bottom:1px solid #D4E8DA;background:#F5FBF7;display:flex;flex-direction:column;gap:8px;">
+            <div class="inbox-title">Inbox</div>
             <input type="text" wire:model.live.debounce.300ms="search"
                    placeholder="Search sender or message..."
-                   class="w-full rounded border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                   class="inbox-search w-full">
         </div>
-        <div class="overflow-y-auto flex-1 divide-y">
+        <div class="overflow-y-auto flex-1">
             @forelse($this->conversations as $conv)
-                <button type="button" wire:click="selectConversation({{ $conv->id }})" class="w-full text-left p-3 hover:bg-gray-50 {{ $selectedConversationId === $conv->id ? 'bg-indigo-50' : '' }}">
+                <button type="button" wire:click="selectConversation({{ $conv->id }})"
+                        class="inbox-conv-item {{ $selectedConversationId === $conv->id ? 'active' : '' }}">
                     <div class="flex justify-between items-start">
-                        <span class="font-medium text-sm">
+                        <span style="font-weight:600;font-size:0.875rem;color:#0F3D22;">
                             @if($conv->type === 'seller-admin' && $conv->seller)
                                 {{ $conv->seller->user->name ?? $conv->seller->store_name }}
                             @else
-                                Guest inquiry
+                                <span style="font-style:italic;color:#757575;">Guest inquiry</span>
                             @endif
                         </span>
                         @if($conv->unread_count > 0)
-                            <span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">{{ $conv->unread_count }}</span>
+                            <span class="inbox-unread">{{ $conv->unread_count }}</span>
                         @endif
                     </div>
-                    <div class="flex items-center justify-between gap-2 mt-0.5">
-                        <div class="text-xs text-gray-400 truncate flex-1">
+                    <div class="flex items-center justify-between gap-2 mt-1">
+                        <div style="font-size:0.75rem;color:#9E9E9E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-style:italic;">
                             {{ $conv->latestMessage?->body ?? 'No messages yet.' }}
                         </div>
-                        <div class="text-[10px] text-gray-400 shrink-0">
+                        <div style="font-size:0.6875rem;color:#9E9E9E;white-space:nowrap;font-style:italic;">
                             {{ optional($conv->latestMessage?->created_at)->diffForHumans(null, true) }}
                         </div>
                     </div>
                 </button>
             @empty
-                <div class="p-4 text-center text-gray-500 text-sm">No conversations yet.</div>
+                <div style="padding:24px;text-align:center;color:#9E9E9E;font-style:italic;font-size:0.875rem;">No conversations yet.</div>
             @endforelse
         </div>
         @if($this->conversations->hasPages())
-            <div class="p-2 border-t">
+            <div style="padding:8px 12px;border-top:1px solid #D4E8DA;">
                 {{ $this->conversations->links() }}
             </div>
         @endif
     </div>
 
-    <div class="flex-1 bg-white rounded-lg shadow overflow-hidden flex flex-col max-h-[70vh]">
+    <div class="inbox-thread flex-1">
         @if($this->selectedConversation)
             @php($conv = $this->selectedConversation)
-            <div class="p-3 border-b flex justify-between items-center">
-                <span class="font-medium">
-                    @if($conv->type === 'seller-admin' && $conv->seller)
-                        {{ $conv->seller->user->name ?? $conv->seller->store_name }}
-                    @else
-                        Guest inquiry
-                    @endif
-                </span>
-                <button type="button" wire:click="closeThread" class="text-gray-500 hover:text-gray-700">Close</button>
+            <div class="inbox-thread-header">
+                <div>
+                    <div style="font-weight:700;color:#0F3D22;font-size:0.9375rem;">
+                        @if($conv->type === 'seller-admin' && $conv->seller)
+                            {{ $conv->seller->user->name ?? $conv->seller->store_name }}
+                        @else
+                            <span style="font-style:italic;color:#757575;">Guest inquiry</span>
+                        @endif
+                    </div>
+                    <div style="font-size:0.75rem;color:#9E9E9E;font-style:italic;">{{ ucfirst(str_replace('-', ' ', $conv->type)) }}</div>
+                </div>
+                <button type="button" wire:click="closeThread" class="inbox-close-btn">Close</button>
             </div>
             <div
-                x-data="{
-                    scrollToBottom() {
-                        this.$el.scrollTop = this.$el.scrollHeight;
-                    }
-                }"
-                x-init="
-                    scrollToBottom();
-                    new MutationObserver(() => scrollToBottom()).observe($el, { childList: true, subtree: true });
-                "
-                x-on:scroll-to-bottom.window="
-                    $nextTick(() => scrollToBottom());
-                "
+                x-data="{ scrollToBottom() { this.$el.scrollTop = this.$el.scrollHeight; } }"
+                x-init="scrollToBottom(); new MutationObserver(() => scrollToBottom()).observe($el, { childList: true, subtree: true });"
+                x-on:scroll-to-bottom.window="$nextTick(() => scrollToBottom());"
                 wire:poll.5s
-                class="flex-1 overflow-y-auto p-4 space-y-3"
+                style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:#FAFAFA;"
             >
                 @foreach($conv->messages as $msg)
-                    <div class="flex {{ $msg->sender_type === 'admin' ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-[80%] rounded-lg px-3 py-2 {{ $msg->sender_type === 'admin' ? 'bg-indigo-100' : 'bg-gray-100' }}">
-                            <div class="text-xs text-gray-500 mb-1">{{ $msg->sender_type }} · {{ $msg->created_at?->format('M d, H:i') }}</div>
-                            <div class="text-sm whitespace-pre-wrap">{{ $msg->body }}</div>
+                    <div style="display:flex;justify-content:{{ $msg->sender_type === 'admin' ? 'flex-end' : 'flex-start' }};">
+                        <div>
+                            <div style="font-size:0.6875rem;color:#9E9E9E;font-style:italic;margin-bottom:3px;text-align:{{ $msg->sender_type === 'admin' ? 'right' : 'left' }};">
+                                {{ $msg->sender_type === 'admin' ? 'You (Admin)' : ucfirst($msg->sender_type) }} · {{ $msg->created_at?->format('M d, H:i') }}
+                            </div>
+                            <div class="{{ $msg->sender_type === 'admin' ? 'inbox-bubble-admin' : 'inbox-bubble-other' }}">
+                                {{ $msg->body }}
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
             @if($conv->type === 'seller-admin')
-                <div class="p-3 border-t" x-data="{ body: '' }">
+                <div style="padding:12px 14px;border-top:1px solid #D4E8DA;background:#fff;display:flex;flex-direction:column;gap:8px;" x-data="{ body: '' }">
                     <textarea
                         x-model="body"
                         x-ref="messageInput"
@@ -186,21 +207,27 @@ new class extends Component
                         wire:loading.attr="disabled"
                         wire:target="sendReply"
                         rows="2"
-                        class="w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:opacity-50"
-                        placeholder="Reply... (Enter to send)"></textarea>
-                    <button type="button"
-                            x-on:click="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
-                            wire:loading.attr="disabled"
-                            class="mt-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50">
-                        <span wire:loading.remove wire:target="sendReply">Send</span>
-                        <span wire:loading wire:target="sendReply">Sending...</span>
-                    </button>
+                        class="inbox-reply-area w-full"
+                        placeholder="Reply… (Enter to send)"></textarea>
+                    <div class="flex justify-end">
+                        <button type="button"
+                                x-on:click="if(body.trim() !== '') { @this.set('replyBody', body); @this.sendReply().then(() => { body = ''; $refs.messageInput.focus(); }); }"
+                                wire:loading.attr="disabled"
+                                class="inbox-send-btn">
+                            <span wire:loading.remove wire:target="sendReply">Send</span>
+                            <span wire:loading wire:target="sendReply">Sending…</span>
+                        </button>
+                    </div>
                 </div>
             @else
-                <div class="p-3 border-t text-sm text-gray-500">Guest conversations are read-only. No reply.</div>
+                <div style="padding:12px 14px;border-top:1px solid #D4E8DA;font-size:0.8125rem;color:#9E9E9E;font-style:italic;background:#F5FBF7;">
+                    Guest conversations are read-only.
+                </div>
             @endif
         @else
-            <div class="flex-1 flex items-center justify-center text-gray-500">Select a conversation</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#9E9E9E;font-style:italic;font-size:0.9375rem;">
+                Select a conversation to view messages
+            </div>
         @endif
     </div>
 </div>

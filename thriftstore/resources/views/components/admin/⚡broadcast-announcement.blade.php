@@ -54,49 +54,48 @@ new class extends Component
 };
 ?>
 
-<div class="bg-white rounded-lg shadow p-6">
-    <div class="flex items-center justify-between">
-        <h3 class="font-medium text-gray-900">Broadcast Announcement (to all Sellers)</h3>
-        <span class="text-xs text-gray-500">Shows in sellers’ notification bell</span>
+<div class="set-card" style="border-color:#D4E8DA;">
+    <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+            <div class="set-card-title">Broadcast Announcement</div>
+            <p class="set-hint" style="margin-bottom:0;">Sent to all sellers — shows in their notification bell.</p>
+        </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3">
+    <div class="grid grid-cols-1 gap-3">
         <div>
-            <label class="block text-sm text-gray-600">Title</label>
-            <input type="text" wire:model.defer="title" class="mt-1 rounded border-gray-300 w-full" placeholder="e.g. Subscription fee update" />
-            @error('title') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
+            <label class="set-label">Title</label>
+            <input type="text" wire:model.defer="title" class="set-input" placeholder="e.g. Subscription fee update" />
+            @error('title') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
         </div>
         <div>
-            <label class="block text-sm text-gray-600">Message</label>
-            <textarea wire:model.defer="body" rows="4" class="mt-1 rounded border-gray-300 w-full" placeholder="Write the announcement here..."></textarea>
-            @error('body') <div class="text-sm text-red-600 mt-1">{{ $message }}</div> @enderror
+            <label class="set-label">Message</label>
+            <textarea wire:model.defer="body" rows="4" class="set-textarea" placeholder="Write the announcement here..."></textarea>
+            @error('body') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
         </div>
-        <div class="flex items-center gap-2">
-            <button type="button" wire:click="send" wire:loading.attr="disabled"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-500">
-                Send to all sellers
+        <div class="flex items-center gap-3">
+            <button type="button" wire:click="send" wire:loading.attr="disabled" class="set-btn">
+                <span wire:loading.remove wire:target="send">Send to all sellers</span>
+                <span wire:loading wire:target="send">Sending…</span>
             </button>
-            <span wire:loading class="text-sm text-gray-500">Sending...</span>
         </div>
     </div>
 
-    <div class="mt-6 border-t pt-4">
-        <h4 class="text-sm font-medium text-gray-700">Recent announcements</h4>
-        <div class="mt-2 space-y-2">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #D4E8DA;">
+        <div style="font-size:0.6875rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:10px;">Recent Broadcasts</div>
+        <div class="space-y-2">
             @forelse($this->recent as $a)
-                <div class="p-3 bg-gray-50 rounded border">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="text-sm font-semibold text-gray-800 truncate">{{ $a->title }}</div>
-                            <div class="text-xs text-gray-600 line-clamp-2">{{ $a->body }}</div>
-                        </div>
-                        <div class="text-[11px] text-gray-500 whitespace-nowrap">
-                            {{ $a->created_at?->format('M d, Y g:i A') }}
-                        </div>
+                <div style="padding:12px 14px;background:#F5FBF7;border-radius:12px;border:1px solid #D4E8DA;display:flex;align-items:start;justify-content:space-between;gap:12px;">
+                    <div class="min-w-0">
+                        <div style="font-weight:700;color:#0F3D22;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $a->title }}</div>
+                        <div style="font-size:0.75rem;color:#757575;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ $a->body }}</div>
+                    </div>
+                    <div style="font-size:0.6875rem;color:#9E9E9E;font-style:italic;white-space:nowrap;flex-shrink:0;">
+                        {{ $a->created_at?->format('M d, Y g:i A') }}
                     </div>
                 </div>
             @empty
-                <div class="text-sm text-gray-500">No announcements yet.</div>
+                <div style="font-size:0.875rem;color:#9E9E9E;font-style:italic;">No announcements yet.</div>
             @endforelse
         </div>
     </div>
