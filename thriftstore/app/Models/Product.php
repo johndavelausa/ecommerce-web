@@ -49,8 +49,6 @@ class Product extends Model
             'new'       => 'New',
             'like_new'  => 'Like New',
             'good'      => 'Good',
-            'fair'      => 'Fair',
-            'poor'      => 'Poor',
         ];
     }
 

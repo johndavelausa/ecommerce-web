@@ -18,7 +18,7 @@ new class extends Component
     public string $search = '';
     public string $filterStatus = '';   // '' | 'active' | 'inactive'
     /** B1 v1.4 — Condition filter (seller's own inventory) */
-    public string $filterCondition = ''; // '' | new | like_new | good | fair | poor
+    public string $filterCondition = ''; // '' | new | like_new | good
 
     // form state
     public string $mode = 'list';       // list | create | view | edit
@@ -31,7 +31,7 @@ new class extends Component
     public string $tags = '';
     public string $price = '';
     public string $sale_price = '';
-    public string $condition = 'good';   // new, like_new, good, fair, poor (A1 - v1.3)
+    public string $condition = 'good';   // new, like_new, good (A1 - v1.3)
     public string $delivery_fee = '';    // optional; used when seller delivery_option is per_product (A2 - v1.3)
     public string $low_stock_threshold = '10'; // B1 v1.4 — per-product low stock warning level
     public int    $stock = 0;
@@ -162,7 +162,7 @@ new class extends Component
             'tags'        => ['nullable', 'string', 'max:255'],
             'price'       => ['required', 'numeric', 'min:0'],
             'sale_price'  => ['nullable', 'numeric', 'min:0'],
-            'condition'   => ['required', 'string', 'in:new,like_new,good,fair,poor'],
+            'condition'   => ['required', 'string', 'in:new,like_new,good'],
             'delivery_fee'=> ['nullable', 'numeric', 'min:0'],
             'stock'       => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
