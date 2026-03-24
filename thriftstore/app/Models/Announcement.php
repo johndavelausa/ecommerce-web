@@ -29,7 +29,7 @@ class Announcement extends Model
     public function scopeActivePlatform($query)
     {
         return $query
-            ->where('target_role', 'platform')
+            ->whereIn('target_role', ['platform', 'all'])
             ->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());

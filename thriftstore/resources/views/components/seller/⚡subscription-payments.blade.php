@@ -369,7 +369,31 @@ new class extends Component
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
 
                 {{-- Left: Form --}}
-                <div>
+                <div class="space-y-6">
+                    {{-- Info Row --}}
+                    <div class="flex items-start gap-4 p-4 rounded-xl bg-[#F5FBF7] border border-[#D4E8DA]">
+                        <div class="shrink-0">
+                            <img src="{{ asset('storage/' . \App\Models\SystemSetting::get('gcash_qr_path', 'defaults/gcash-qr.png')) }}" 
+                                 class="w-32 h-32 object-contain rounded-lg border-2 border-white shadow-sm" alt="GCash QR">
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-[#0F3D22] mb-1">GCash Payment QR</h4>
+                            <p class="text-xs text-[#1B7A37] leading-relaxed mb-3">Scan this QR code to pay your subscription fee. After paying, please upload the screenshot below.</p>
+                            
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-[#D4E8DA]">
+                                <svg class="w-4 h-4 text-[#F9C74F]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+                                <span class="text-xs font-bold text-[#424242]">Next Payment Due:</span>
+                                <span class="text-xs font-black text-[#2D9F4E]">
+                                    @if($this->seller?->subscription_due_date)
+                                        {{ $this->seller->subscription_due_date->format('M j, Y') }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="pay-form-row">
                         <label class="pay-label">Payment Type</label>
                         <select wire:model.defer="type" class="pay-input">

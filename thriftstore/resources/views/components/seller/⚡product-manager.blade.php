@@ -30,7 +30,6 @@ new class extends Component
     public string $category = '';
     public string $tags = '';
     public string $price = '';
-    public string $sale_price = '';
     public string $condition = 'good';   // new, like_new, good (A1 - v1.3)
     public string $delivery_fee = '';    // optional; used when seller delivery_option is per_product (A2 - v1.3)
     public string $low_stock_threshold = '10'; // B1 v1.4 — per-product low stock warning level
@@ -120,7 +119,7 @@ new class extends Component
 
     public function showCreate(): void
     {
-        $this->reset(['name','description','category','tags','price','sale_price','condition','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
+        $this->reset(['name','description','category','tags','price','condition','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
         $this->condition = 'good';
         $this->low_stock_threshold = '10';
         $this->is_active = true;
@@ -149,7 +148,6 @@ new class extends Component
         $this->category       = (string) ($product->category ?? '');
         $this->tags           = (string) ($product->tags ?? '');
         $this->price          = (string) $product->price;
-        $this->sale_price     = $product->sale_price !== null ? (string) $product->sale_price : '';
         $this->condition      = (string) ($product->condition ?? 'good');
         $this->delivery_fee   = $product->delivery_fee !== null ? (string) $product->delivery_fee : '';
         $this->stock          = $product->stock;
@@ -167,7 +165,6 @@ new class extends Component
             'category'    => ['required', 'string', 'max:50'],
             'tags'        => ['nullable', 'string', 'max:255'],
             'price'       => ['required', 'numeric', 'min:0'],
-            'sale_price'  => ['nullable', 'numeric', 'min:0'],
             'condition'   => ['required', 'string', 'in:new,like_new,good'],
             'delivery_fee'=> ['nullable', 'numeric', 'min:0'],
             'stock'       => ['required', 'integer', 'min:0'],
@@ -199,7 +196,6 @@ new class extends Component
                     'description' => $this->description,
                     'category'    => $this->category,
                     'tags'        => $this->tags !== '' ? $this->tags : $existing->tags,
-                    'sale_price'  => $this->sale_price !== '' ? $this->sale_price : $existing->sale_price,
                     'condition'   => $this->condition,
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : $existing->delivery_fee,
                     'low_stock_threshold' => (int) $this->low_stock_threshold ?: $existing->low_stock_threshold,
@@ -226,7 +222,6 @@ new class extends Component
                     'category'    => $this->category,
                     'tags'        => $this->tags !== '' ? $this->tags : null,
                     'price'       => $this->price,
-                    'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
                     'condition'   => $this->condition,
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                     'stock'       => $this->stock,
@@ -257,7 +252,6 @@ new class extends Component
                 'category'    => $this->category,
                 'tags'        => $this->tags !== '' ? $this->tags : null,
                 'price'       => $this->price,
-                'sale_price'  => $this->sale_price !== '' ? $this->sale_price : null,
                 'condition'   => $this->condition,
                 'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                 'stock'       => $this->stock,
@@ -539,7 +533,6 @@ new class extends Component
             'is_active'  => 'Status',
             'stock'      => 'Stock',
             'price'      => 'Price',
-            'sale_price' => 'Sale price',
             'name'       => 'Name',
         ];
 
@@ -1112,7 +1105,6 @@ new class extends Component
                         <th>Condition</th>
                         <th>Category</th>
                         <th>Price</th>
-                        <th>Sale Price</th>
                         <th>Stock</th>
                         <th>Views</th>
                         <th>Status</th>
@@ -1143,9 +1135,6 @@ new class extends Component
                         </td>
                         <td class="text-xs text-[#9E9E9E]">{{ $product->category ?? '—' }}</td>
                         <td class="prod-price">₱{{ number_format($product->price, 2) }}</td>
-                        <td class="text-[#2D9F4E]">
-                            {{ $product->sale_price ? '₱' . number_format($product->sale_price, 2) : '—' }}
-                        </td>
                         <td>
                             <span class="{{ $product->stock === 0 ? 'prod-stock-low' : '' }}">
                                 {{ $product->stock }}
@@ -1409,10 +1398,6 @@ new class extends Component
                         <div class="prod-section-title">Price</div>
                         <p class="prod-price text-lg">₱{{ number_format($viewProduct->price, 2) }}</p>
                     </div>
-                    <div class="prod-section-box" style="margin-bottom: 0;">
-                        <div class="prod-section-title">Sale Price</div>
-                        <p class="text-[#2D9F4E] font-semibold text-lg">{{ $viewProduct->sale_price ? '₱' . number_format($viewProduct->sale_price, 2) : '—' }}</p>
-                    </div>
                 </div>
                 <div class="mt-4 prod-section-box" style="margin-bottom: 0;">
                     <div class="prod-section-title">Description</div>
@@ -1503,17 +1488,10 @@ new class extends Component
                     @error('condition') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="prod-form-group">
-                        <label class="prod-label">Price (₱) <span class="text-[#F57C00]">*</span></label>
-                        <input type="number" step="0.01" min="0" wire:model.defer="price" class="prod-input">
-                        @error('price') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
-                    </div>
-                    <div class="prod-form-group">
-                        <label class="prod-label">Sale Price (₱) <span class="text-[#9E9E9E]">(optional)</span></label>
-                        <input type="number" step="0.01" min="0" wire:model.defer="sale_price" class="prod-input">
-                        @error('sale_price') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
-                    </div>
+                <div class="prod-form-group">
+                    <label class="prod-label">Price (₱) <span class="text-[#F57C00]">*</span></label>
+                    <input type="number" step="0.01" min="0" wire:model.defer="price" class="prod-input">
+                    @error('price') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="prod-form-group">

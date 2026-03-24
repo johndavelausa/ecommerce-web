@@ -19,6 +19,20 @@ new class extends Component
     }
 
     #[Computed]
+    public function announcements()
+    {
+        return \App\Models\Announcement::query()
+            ->where(fn($q) => $q->where('target_role', 'seller')->orWhere('target_role', 'all'))
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->orderByDesc('created_at')
+            ->limit(3)
+            ->get();
+    }
+
+    #[Computed]
     public function slaMetrics(): array
     {
         $seller = $this->seller;
@@ -1390,6 +1404,8 @@ new class extends Component
         </div>
     </div>
 
+
+
     {{-- ── Bottom Row: Subscription + Quick Actions ── --}}
     <div class="dash-grid dash-grid-2">
         @if($this->seller)
@@ -1440,5 +1456,6 @@ new class extends Component
             </div>
         </div>
     </div>
+
 </div>
 

@@ -1606,7 +1606,7 @@
 
 /* ── Customer page background ─────────────────────────── */
 .user-bg {
-    background-image: url('/background_img/sellerLogin_background.png');
+    background-image: url('/background_img/userbg.jpeg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

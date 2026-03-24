@@ -7,9 +7,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class BroadcastAnnouncement extends Notification implements ShouldQueue
+class BroadcastAnnouncement extends Notification
 {
-    use Queueable;
+    // Removing Queueable to ensure instant delivery
 
     public function __construct(public Announcement $announcement)
     {

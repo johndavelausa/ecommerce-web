@@ -54,6 +54,24 @@
             ->orderBy('category')
             ->get();
     }
+
+    $latestAnnouncement = null;
+    if ($user) {
+        $targetRoles = ['all'];
+        if (request()->is('seller/*')) {
+            $targetRoles[] = 'seller';
+        } elseif (!request()->is('admin/*')) {
+            $targetRoles[] = 'platform';
+        }
+        
+        $latestAnnouncement = \App\Models\Announcement::whereIn('target_role', $targetRoles)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->latest()
+            ->first();
+    }
 @endphp
 
 <style>
@@ -97,18 +115,6 @@
     .ts-nav-admin .ts-user-btn { background: rgba(249,199,79,0.12); border-color: rgba(249,199,79,0.3); color: rgba(255,255,255,0.9); }
     .ts-nav-admin .ts-user-btn:hover { background: rgba(249,199,79,0.2); border-color: #F9C74F; color: #F9C74F; }
     .ts-nav-admin .ts-vdivider { background: rgba(255,255,255,0.15); }
-    .ts-nav-admin .ts-notif-panel { background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%); border: 1px solid rgba(249,199,79,0.25); box-shadow: 0 10px 36px rgba(15,61,34,0.35); }
-    .ts-nav-admin .ts-notif-header { background: rgba(255,255,255,0.05); border-bottom-color: rgba(255,255,255,0.1); }
-    .ts-nav-admin .ts-notif-label { color: rgba(255,255,255,0.55); }
-    .ts-nav-admin .ts-notif-mark { background: rgba(249,199,79,0.2); color: #F9C74F; }
-    .ts-nav-admin .ts-notif-mark:hover { background: #F9C74F; color: #0F3D22; }
-    .ts-nav-admin .ts-notif-row { border-bottom-color: rgba(255,255,255,0.08); }
-    .ts-nav-admin .ts-notif-row:hover { background: rgba(249,199,79,0.08); }
-    .ts-nav-admin .ts-notif-row-title { color: rgba(255,255,255,0.9); }
-    .ts-nav-admin .ts-notif-row-body { color: rgba(255,255,255,0.55); }
-    .ts-nav-admin .ts-notif-row-time { color: #F9C74F; }
-    .ts-nav-admin .ts-notif-empty { color: rgba(255,255,255,0.4); }
-    .ts-nav-admin .ts-user-menu { background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%); border: 1px solid rgba(249,199,79,0.25); box-shadow: 0 10px 36px rgba(15,61,34,0.35); }
     .ts-nav-admin .ts-user-menu-item { color: rgba(255,255,255,0.85); border-bottom-color: rgba(255,255,255,0.08); }
     .ts-nav-admin .ts-user-menu-item:hover { background: rgba(249,199,79,0.12); color: #F9C74F; }
     .ts-nav-admin .ts-user-menu-item.ts-logout { color: #FF7675; }
@@ -334,75 +340,83 @@
         overflow: hidden;
         font-family: 'Inter', sans-serif;
     }
-    .ts-nav-seller .ts-notif-panel {
-        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
-        border: 1px solid rgba(249,199,79,0.25);
-        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
-    }
     .ts-notif-header {
-        padding: 10px 16px;
-        background: var(--c-bg);
-        border-bottom: 1px solid var(--c-border);
+        padding: 14px 18px;
+        background: #FFFFFF;
+        border-bottom: 1px solid #F0F0F0;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
-    .ts-nav-seller .ts-notif-header {
-        background: rgba(255,255,255,0.05);
-        border-bottom-color: rgba(255,255,255,0.1);
-    }
     .ts-notif-label {
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
-        color: var(--c-muted);
-    }
-    .ts-nav-seller .ts-notif-label {
-        color: rgba(255,255,255,0.55);
+        color: #9E9E9E;
     }
     .ts-notif-mark {
         font-size: 11px;
-        font-weight: 500;
-        color: var(--c-primary);
-        background: var(--c-accent);
-        padding: 3px 9px;
+        font-weight: 600;
+        color: #2D9F4E;
+        background: transparent;
+        padding: 4px 8px;
         border-radius: 6px;
-        border: none;
+        border: 1px solid transparent;
         cursor: pointer;
-        transition: background 0.12s, color 0.12s;
+        transition: all 0.2s;
         font-family: 'Inter', sans-serif;
     }
-    .ts-notif-mark:hover { background: var(--c-primary); color: #fff; }
-    .ts-nav-seller .ts-notif-mark {
-        background: rgba(249,199,79,0.2);
-        color: #F9C74F;
-    }
-    .ts-nav-seller .ts-notif-mark:hover {
-        background: #F9C74F;
-        color: #0F3D22;
-    }
+    .ts-notif-mark:hover { background: #E8F5E9; border-color: #E8F5E9; }
+    
     .ts-notif-row {
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--c-border);
-        transition: background 0.12s;
+        padding: 12px 18px;
+        border-bottom: 1px solid #F8F8F8;
+        transition: background 0.2s;
+        display: flex;
+        gap: 12px;
+        align-items: start;
     }
     .ts-notif-row:last-child { border-bottom: none; }
-    .ts-notif-row:hover { background: var(--c-bg); }
-    .ts-nav-seller .ts-notif-row {
-        border-bottom-color: rgba(255,255,255,0.08);
+    .ts-notif-row:hover { background: #FAFAFA; }
+    
+    .ts-notif-icon-wrap {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-    .ts-nav-seller .ts-notif-row:hover {
-        background: rgba(249,199,79,0.08);
+    .ts-notif-icon-wrap.announcement { background: #FFF9E1; color: #F9C74F; }
+    .ts-notif-icon-wrap.order        { background: #E3F2FD; color: #2196F3; }
+    .ts-notif-icon-wrap.dispute      { background: #FFEBEE; color: #F44336; }
+    .ts-notif-icon-wrap.default      { background: #F5F5F5; color: #9E9E9E; }
+
+    .ts-notif-row-title { font-size: 13px; font-weight: 600; color: #333333; line-height: 1.4; }
+    .ts-notif-row-body  { font-size: 11.5px; color: #757575; margin-top: 1px; line-height: 1.5; word-break: break-all; overflow-wrap: break-word; }
+    .ts-notif-row-time  { font-size: 10px; color: #BDBDBD; margin-top: 4px; font-weight: 500; }
+    
+    .ts-notif-empty     { padding: 32px 20px; font-size: 13px; color: #2D9F4E; font-weight: 500; text-align: center; }
+    
+    .ts-notif-footer {
+        padding: 10px;
+        text-align: center;
+        background: #FAFAFA;
+        border-top: 1px solid #F0F0F0;
     }
-    .ts-notif-row-title { font-size: 12px; font-weight: 600; color: var(--c-text); }
-    .ts-nav-seller .ts-notif-row-title { color: rgba(255,255,255,0.9); }
-    .ts-notif-row-body  { font-size: 11px; color: var(--c-muted); margin-top: 2px; }
-    .ts-nav-seller .ts-notif-row-body { color: rgba(255,255,255,0.55); }
-    .ts-notif-row-time  { font-size: 10px; color: var(--c-secondary); margin-top: 3px; font-weight: 500; }
-    .ts-nav-seller .ts-notif-row-time { color: #F9C74F; }
-    .ts-notif-empty     { padding: 20px 16px; font-size: 12px; color: var(--c-muted); text-align: center; }
-    .ts-nav-seller .ts-notif-empty { color: rgba(255,255,255,0.4); }
+    .ts-notif-footer-link {
+        font-size: 11px;
+        font-weight: 700;
+        color: #9E9E9E;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .ts-notif-footer-link:hover { color: #2D9F4E; }
+
 
     /* ── User trigger button ─────────────────────────────────── */
     .ts-user-btn {
@@ -435,11 +449,6 @@
         overflow: hidden;
         font-family: 'Inter', sans-serif;
     }
-    .ts-nav-seller .ts-user-menu {
-        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
-        border: 1px solid rgba(249,199,79,0.25);
-        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
-    }
     .ts-user-menu-item {
         display: flex;
         align-items: center;
@@ -462,22 +471,6 @@
     .ts-user-menu-item:hover        { background: var(--c-bg); color: var(--c-primary); }
     .ts-user-menu-item.ts-logout    { color: var(--c-danger); }
     .ts-user-menu-item.ts-logout:hover { background: #FFF5F5; color: var(--c-danger); }
-    /* Seller dropdown items */
-    .ts-nav-seller .ts-user-menu-item {
-        color: rgba(255,255,255,0.85);
-        border-bottom-color: rgba(255,255,255,0.08);
-    }
-    .ts-nav-seller .ts-user-menu-item:hover {
-        background: rgba(249,199,79,0.12);
-        color: #F9C74F;
-    }
-    .ts-nav-seller .ts-user-menu-item.ts-logout {
-        color: #FF7675;
-    }
-    .ts-nav-seller .ts-user-menu-item.ts-logout:hover {
-        background: rgba(231,76,60,0.15);
-        color: #FF7675;
-    }
 
     /* ── Auth links ──────────────────────────────────────────── */
     .ts-btn-ghost {
@@ -571,6 +564,13 @@
     }
     .nav-clock-anim { animation: navClockUp 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 </style>
+
+@if($latestAnnouncement)
+    <div style="background: #FFFFFF; color: #424242; padding: 10px 20px; text-align: center; font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif; position: relative; z-index: 100; border-bottom: 1px solid #F0F0F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <span style="color: #F9C74F; margin-right: 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.05em;">ANNOUNCEMENT:</span>
+        <strong style="color: #0F3D22; font-weight: 700;">{{ $latestAnnouncement->title }}</strong> &nbsp; {{ $latestAnnouncement->body }}
+    </div>
+@endif
 
 <nav x-data="{ open: false, wishlistCount: {{ (int) $wishlistCount }}, cartCount: {{ (int) $cartCount }} }"
      x-on:wishlist-updated.window="if ($event.detail && typeof $event.detail.count !== 'undefined') wishlistCount = Number($event.detail.count) || 0"
@@ -766,7 +766,8 @@
                 @if($user)
                     @php
                         $unreadCount = $user->unreadNotifications()->count();
-                        $latestNotifications = $user->unreadNotifications()->latest()->limit(5)->get();
+                        // Show recent notifications including read ones so the dropdown isn't empty
+                        $latestNotifications = $user->notifications()->latest()->limit(5)->get();
                     @endphp
 
                     {{-- Notifications --}}
@@ -798,61 +799,56 @@
                             </div>
                             <div style="max-height:260px;overflow-y:auto;">
                                 @forelse($latestNotifications as $note)
-                                    @php $data = $note->data; @endphp
+                                    @php 
+                                        $data = $note->data;
+                                        $type = $data['type'] ?? (isset($note->type) ? class_basename($note->type) : null);
+                                        $isAnn = $type === 'broadcast_announcement' || $type === 'BroadcastAnnouncement';
+                                        $isOrder = in_array($type, ['new_order', 'order_status_updated']);
+                                        $isDispute = str_contains($type, 'dispute');
+                                    @endphp
                                     <div class="ts-notif-row">
-                                        <div class="ts-notif-row-title">
-                                            @if(($data['type'] ?? null) === 'new_order')
-                                                New order #{{ $data['order_id'] ?? '' }}
-                                            @elseif(($data['type'] ?? null) === 'order_status_updated')
-                                                Order #{{ $data['order_id'] ?? '' }} status updated
-                                            @elseif(($data['type'] ?? null) === 'payment_rejected')
-                                                {{ ucfirst($data['payment_type'] ?? 'payment') }} payment rejected
-                                            @elseif(($data['type'] ?? null) === 'broadcast_announcement')
-                                                Announcement: {{ $data['title'] ?? 'Update' }}
-                                            @elseif(($data['type'] ?? null) === 'wishlist_low_stock')
-                                                Wishlist item low stock
-                                            @elseif(($data['type'] ?? null) === 'order_dispute_updated')
-                                                @if(($data['event'] ?? null) === 'opened')
-                                                    New dispute #{{ $data['dispute_id'] ?? '' }} on order #{{ $data['order_id'] ?? '' }}
-                                                @elseif(($data['event'] ?? null) === 'seller_responded')
-                                                    Seller responded to dispute #{{ $data['dispute_id'] ?? '' }}
-                                                @elseif(($data['event'] ?? null) === 'resolved')
-                                                    Dispute #{{ $data['dispute_id'] ?? '' }} resolved
+                                        <div class="flex-1 min-w-0">
+                                            <div class="ts-notif-row-title">
+                                                @if($type === 'new_order')
+                                                    New order #{{ $data['order_id'] ?? '' }}
+                                                @elseif($type === 'order_status_updated')
+                                                    Order #{{ $data['order_id'] ?? '' }} status updated
+                                                @elseif($type === 'payment_rejected')
+                                                    {{ ucfirst($data['payment_type'] ?? 'payment') }} payment rejected
+                                                @elseif($isAnn)
+                                                    {{ $data['title'] ?? 'Platform Announcement' }}
+                                                @elseif($type === 'wishlist_low_stock')
+                                                    Wishlist item low stock
+                                                @elseif($type === 'order_dispute_updated')
+                                                    Dispute update #{{ $data['dispute_id'] ?? '' }}
+                                                @elseif($type === 'order_sla_alert')
+                                                    SLA alert on order #{{ $data['order_id'] ?? '' }}
                                                 @else
-                                                    Dispute #{{ $data['dispute_id'] ?? '' }} updated
+                                                    System Notification
                                                 @endif
-                                            @elseif(($data['type'] ?? null) === 'order_sla_alert')
-                                                SLA alert on order #{{ $data['order_id'] ?? '' }}
-                                            @elseif(($data['type'] ?? null) === 'seller_payout_released')
-                                                Payout released for order #{{ $data['order_id'] ?? '' }}
-                                            @else
-                                                Notification
-                                            @endif
+                                            </div>
+                                            <div class="ts-notif-row-body">
+                                                @if($type === 'new_order')
+                                                    From {{ $data['customer_name'] ?? 'customer' }} · ₱{{ number_format($data['total_amount'] ?? 0, 2) }}
+                                                @elseif($type === 'order_status_updated')
+                                                    Status: {{ ucfirst($data['status'] ?? '') }}
+                                                @elseif($isAnn)
+                                                    {{ \Illuminate\Support\Str::limit((string) ($data['body'] ?? ''), 85) }}
+                                                @elseif($type === 'wishlist_low_stock')
+                                                    {{ $data['product_name'] ?? 'Product' }} is almost sold out
+                                                @else
+                                                    Click to view details and take action.
+                                                @endif
+                                            </div>
+                                            <div class="ts-notif-row-time">{{ $note->created_at?->diffForHumans() }}</div>
                                         </div>
-                                        <div class="ts-notif-row-body">
-                                            @if(($data['type'] ?? null) === 'new_order')
-                                                From {{ $data['customer_name'] ?? 'customer' }} · ₱{{ number_format($data['total_amount'] ?? 0, 2) }}
-                                            @elseif(($data['type'] ?? null) === 'order_status_updated')
-                                                Status: {{ ucfirst($data['status'] ?? '') }}
-                                            @elseif(($data['type'] ?? null) === 'payment_rejected')
-                                                Reason: {{ $data['reason'] ?? '—' }}
-                                            @elseif(($data['type'] ?? null) === 'broadcast_announcement')
-                                                {{ \Illuminate\Support\Str::limit((string) ($data['body'] ?? ''), 90) }}
-                                            @elseif(($data['type'] ?? null) === 'wishlist_low_stock')
-                                                {{ $data['product_name'] ?? 'Product' }} is almost sold out ({{ $data['stock'] ?? 0 }} left)
-                                            @elseif(($data['type'] ?? null) === 'order_dispute_updated')
-                                                {{ ucfirst(str_replace('_', ' ', (string) ($data['status'] ?? 'updated'))) }} · {{ $data['reason_label'] ?? 'Dispute update' }}
-                                            @elseif(($data['type'] ?? null) === 'order_sla_alert')
-                                                {{ ucfirst((string) ($data['alert_type'] ?? 'alert')) }} · {{ ucfirst((string) ($data['stage'] ?? 'sla')) }} delayed by {{ (int) ($data['delay_hours'] ?? 0) }}h+
-                                            @elseif(($data['type'] ?? null) === 'seller_payout_released')
-                                                Net payout: ₱{{ number_format((float) ($data['net_amount'] ?? 0), 2) }}
-                                            @endif
-                                        </div>
-                                        <div class="ts-notif-row-time">{{ $note->created_at?->diffForHumans() }}</div>
                                     </div>
                                 @empty
                                     <div class="ts-notif-empty">You're all caught up!</div>
                                 @endforelse
+                            </div>
+                            <div class="ts-notif-footer">
+                                <a href="{{ route($notificationsRoute) }}" class="ts-notif-footer-link">View all history</a>
                             </div>
                         </div>
                     </div>

@@ -12,11 +12,14 @@
         style="background-image: url('{{ $homepageBackgroundUrl }}');"
     ></div>
 
-    {{-- New Arrivals (Livewire — no page reload) --}}
+    {{-- Announcements + New Arrivals --}}
     <div class="py-8 lg:py-10">
         <div class="mx-auto w-full max-w-[1440px] px-4 md:px-8 lg:px-12">
+            {{-- Platform Announcements Banner (admin announcements) --}}
+            <livewire:customer.platform-announcements-banner />
+
+            {{-- New Arrivals (Livewire — no page reload) --}}
             <livewire:customer.new-arrivals />
         </div>
     </div>
 </x-app-layout>
-

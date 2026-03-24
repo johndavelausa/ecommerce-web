@@ -1,11 +1,17 @@
 <x-app-layout>
-    <div class="max-w-2xl mx-auto py-12">
-        <h1 class="text-2xl font-bold mb-6">Privacy Policy</h1>
-        <p class="mb-4">Your privacy is important to us. This page explains how we handle your data and protect your information.</p>
-        <ul class="list-disc pl-6 space-y-2">
-            <li>We do not share your personal information with third parties except as required by law.</li>
-            <li>Cookies are used to enhance your experience and for analytics.</li>
-            <li>You can contact us anytime to request deletion of your data.</li>
-        </ul>
+    @php
+        $content = (string) \App\Models\SystemSetting::get('page_privacy_policy', '');
+    @endphp
+    <div class="py-8">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Privacy Policy</h1>
+                @if($content !== '')
+                    <div class="prose prose-sm max-w-none text-gray-700">{!! nl2br(e($content)) !!}</div>
+                @else
+                    <p class="text-gray-500">No content has been set for this page yet. Please check back later.</p>
+                @endif
+            </div>
+        </div>
     </div>
 </x-app-layout>

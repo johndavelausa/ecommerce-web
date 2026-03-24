@@ -902,6 +902,11 @@ new class extends Component
                                 Receipt
                             </a>
                             <button type="button"
+                                    wire:click="openIssueModal({{ $order->id }})"
+                                    class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #EF5350; color:#EF5350;" onmouseover="this.style.background='#FFEBEE';" onmouseout="this.style.background='#FFFFFF';">
+                                Return / Issue
+                            </button>
+                            <button type="button"
                                     wire:click="reorder({{ $order->id }})"
                                     class="inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold transition" style="background:#FFFFFF; border:1px solid #2D9F4E; color:#2D9F4E;" onmouseover="this.style.background='#E8F5E9';this.style.color='#1B7A37';" onmouseout="this.style.background='#FFFFFF';this.style.color='#2D9F4E';">
                                 Re-order

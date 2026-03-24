@@ -11,7 +11,13 @@ class CheckMaintenanceMode
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('admin/*') || $request->is('admin') || auth('admin')->check()) {
+        // Always allow admin routes and admin login
+        if ($request->is('admin/*') || $request->is('admin') || $request->routeIs('admin.login', 'admin.login.store')) {
+            return $next($request);
+        }
+
+        // Allow if already authenticated as admin (so admin can browse site in maintenance)
+        if (auth('admin')->check()) {
             return $next($request);
         }
 

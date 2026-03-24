@@ -12,33 +12,48 @@ new class extends Component
 {
     public string $title = '';
     public string $body = '';
+    public string $target_role = 'seller';
 
     public function send(): void
     {
         $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],
+            'target_role' => ['required', 'in:seller,platform,all'],
         ]);
 
         $admin = Auth::guard('admin')->user();
 
         $announcement = Announcement::query()->create([
             'created_by' => $admin?->id,
-            'target_role' => 'seller',
+            'target_role' => $this->target_role,
             'title' => $this->title,
             'body' => $this->body,
+            'is_active' => true,
         ]);
 
-        // Broadcast to all sellers (users that have a seller profile)
-        User::query()
-            ->whereHas('seller')
-            ->select(['id'])
-            ->orderBy('id')
-            ->chunkById(500, function ($users) use ($announcement) {
-                Notification::send($users, new BroadcastAnnouncement($announcement));
-            });
+        // Broadcast notifications to targeted users
+        if ($this->target_role === 'seller') {
+            // Target sellers only
+            User::query()
+                ->whereHas('seller')
+                ->select(['id'])
+                ->orderBy('id')
+                ->chunkById(500, function ($users) use ($announcement) {
+                    Notification::send($users, new BroadcastAnnouncement($announcement));
+                });
+        } else {
+            // Target ALL users (for 'all' or 'platform' broadcasts)
+            User::query()
+                ->select(['id'])
+                ->orderBy('id')
+                ->chunkById(500, function ($users) use ($announcement) {
+                    Notification::send($users, new BroadcastAnnouncement($announcement));
+                });
+        }
 
-        $this->reset(['title', 'body']);
+        $this->reset(['title', 'body', 'target_role']);
+        $this->target_role = 'seller';
         $this->dispatch('saved');
     }
 
@@ -63,10 +78,20 @@ new class extends Component
     </div>
 
     <div class="grid grid-cols-1 gap-3">
-        <div>
-            <label class="set-label">Title</label>
-            <input type="text" wire:model.defer="title" class="set-input" placeholder="e.g. Subscription fee update" />
-            @error('title') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="set-label">Title</label>
+                <input type="text" wire:model.defer="title" class="set-input" placeholder="e.g. System update" />
+                @error('title') <div class="text-xs mt-1" style="color:#C0392B;">{{ $message }}</div> @enderror
+            </div>
+            <div>
+                <label class="set-label">Send to</label>
+                <select wire:model.defer="target_role" class="set-input">
+                    <option value="seller">Sellers only (Dash + Bell)</option>
+                    <option value="platform">All users (Home Banner)</option>
+                    <option value="all">Everyone (Home + Dash + Bell)</option>
+                </select>
+            </div>
         </div>
         <div>
             <label class="set-label">Message</label>
@@ -75,7 +100,7 @@ new class extends Component
         </div>
         <div class="flex items-center gap-3">
             <button type="button" wire:click="send" wire:loading.attr="disabled" class="set-btn">
-                <span wire:loading.remove wire:target="send">Send to all sellers</span>
+                <span wire:loading.remove wire:target="send">Send Broadcast</span>
                 <span wire:loading wire:target="send">Sending…</span>
             </button>
         </div>

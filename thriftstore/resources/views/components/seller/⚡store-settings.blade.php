@@ -19,6 +19,8 @@ new class extends Component
     public string $store_description = '';
     public string $gcash_number = '';
 
+    public $store_banner = null;
+
     /** B2 v1.4 — Business hours (displayed on public store profile) */
     public string $business_hours = '';
 
@@ -48,6 +50,7 @@ new class extends Component
         $this->is_open = (bool) ($seller?->is_open ?? true);
 
         $this->avatar = null;
+        $this->store_banner = null;
     }
 
     public function save(): void
@@ -71,6 +74,7 @@ new class extends Component
             'business_hours' => ['nullable', 'string', 'max:1000'],
             'gcash_number' => ['nullable', 'digits:11'],
             'avatar' => ['nullable', 'image', 'max:2048'],
+            'store_banner' => ['nullable', 'image', 'max:5120'],
         ];
         $this->validate($rules);
 
@@ -98,13 +102,20 @@ new class extends Component
             $this->emailVerificationSent = false;
         }
 
-        $seller->update([
+        $sellerUpdateData = [
             'store_name' => $this->store_name,
             'store_description' => $this->store_description,
             'gcash_number' => $this->gcash_number,
             'business_hours' => $this->business_hours !== '' ? trim($this->business_hours) : null,
             'is_open' => $this->is_open,
-        ]);
+        ];
+
+        if ($this->store_banner) {
+            $bannerPath = $this->store_banner->store('banners', 'public');
+            $sellerUpdateData['banner_path'] = $bannerPath;
+        }
+
+        $seller->update($sellerUpdateData);
 
         $this->saved = true;
     }
@@ -493,6 +504,23 @@ new class extends Component
                 @error('business_hours') <div class="sst-error">{{ $message }}</div> @enderror
             </div>
 
+
+            {{-- Store Banner --}}
+            <div class="sst-form-row">
+                <label class="sst-label">Store Banner Image</label>
+                @if($currentBanner = Auth::guard('seller')->user()?->seller?->banner_path)
+                    <img src="{{ asset('storage/' . $currentBanner) }}" alt="Current Banner"
+                         class="mb-2 w-full max-h-32 object-cover rounded-xl border border-[#D4E8DA]">
+                @endif
+                <input type="file" wire:model="store_banner" accept="image/*" style="font-size:0.875rem;color:#424242;">
+                <div wire:loading wire:target="store_banner" class="sst-uploading">Uploading…</div>
+                @if($store_banner)
+                    <img src="{{ $store_banner->temporaryUrl() }}" alt="Banner Preview"
+                         class="mt-2 w-full max-h-32 object-cover rounded-xl border border-[#D4E8DA]">
+                @endif
+                <p class="sst-hint">Max 5 MB · JPG, PNG. Shown on your public store page.</p>
+                @error('store_banner') <div class="sst-error">{{ $message }}</div> @enderror
+            </div>
 
             {{-- GCash --}}
             <div class="sst-form-row">

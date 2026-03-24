@@ -17,7 +17,7 @@ new class extends Component
     public string $search = '';
     public string $sort = 'latest';
     public string $availability = 'all';
-    public string $category = '';
+    public array $categories_selected = [];
     public string $seller = '';
     public string $condition = '';
     public ?float $min_price = null;
@@ -29,7 +29,7 @@ new class extends Component
         'search' => ['except' => ''],
         'sort' => ['except' => 'latest'],
         'availability' => ['except' => 'all'],
-        'category' => ['except' => ''],
+        'categories_selected' => ['as' => 'category', 'except' => []],
         'seller' => ['except' => ''],
         'condition' => ['except' => ''],
     ];
@@ -37,7 +37,7 @@ new class extends Component
     public function updatingSearch(): void { $this->resetPage(); }
     public function updatingSort(): void { $this->resetPage(); }
     public function updatingAvailability(): void { $this->resetPage(); }
-    public function updatingCategory(): void { $this->resetPage(); }
+    public function updatingCategoriesSelected(): void { $this->resetPage(); }
     public function updatingSeller(): void { $this->resetPage(); }
     public function updatingCondition(): void { $this->resetPage(); }
     public function updatingMinPrice(): void { $this->resetPage(); }
@@ -46,7 +46,11 @@ new class extends Component
 
     public function toggleCategory(string $cat): void
     {
-        $this->category = ($this->category === $cat) ? '' : $cat;
+        if (in_array($cat, $this->categories_selected)) {
+            $this->categories_selected = array_values(array_filter($this->categories_selected, fn($c) => $c !== $cat));
+        } else {
+            $this->categories_selected[] = $cat;
+        }
         $this->resetPage();
     }
 
@@ -65,7 +69,7 @@ new class extends Component
     {
         $this->search = '';
         $this->availability = 'all';
-        $this->category = '';
+        $this->categories_selected = [];
         $this->seller = '';
         $this->condition = '';
         $this->min_price = null;
@@ -83,7 +87,7 @@ new class extends Component
             'search' => $this->search,
             'sort' => $this->sort,
             'availability' => $this->availability,
-            'category' => $this->category,
+            'category' => $this->categories_selected,
             'seller' => $this->seller,
             'condition' => $this->condition,
             'min_price' => $this->min_price,
@@ -112,8 +116,8 @@ new class extends Component
             $q->where('stock', '>', 0);
         }
 
-        if ($this->category !== '') {
-            $q->where('category', $this->category);
+        if (!empty($this->categories_selected)) {
+            $q->whereIn('category', $this->categories_selected);
         }
 
         if ($this->seller !== '') {
@@ -335,6 +339,7 @@ new class extends Component
 
 @php
     $recent   = $this->recentProducts;
+    $categories_selected = array_flip($this->categories_selected);
     $products = $this->products;
     $wishlist = array_flip($this->wishlistIds);
 @endphp
@@ -396,14 +401,14 @@ new class extends Component
                                         <input
                                             type="checkbox"
                                             wire:click="toggleCategory('{{ $cat }}')"
-                                            {{ $category === $cat ? 'checked' : '' }}
+                                            {{ isset($categories_selected[$cat]) ? 'checked' : '' }}
                                             class="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-gray-300 bg-white transition checked:border-[#2d6c50] checked:bg-[#2d6c50] focus:outline-none focus:ring-2 focus:ring-[#2d6c50]/30"
                                         >
                                         <svg class="pointer-events-none absolute left-0.5 top-0.5 h-3 w-3 text-white opacity-0 peer-checked:opacity-100" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 12 12">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5"/>
                                         </svg>
                                     </div>
-                                    <span class="text-sm text-gray-700 group-hover:text-gray-900 {{ $category === $cat ? 'font-semibold text-gray-900' : '' }}">{{ $cat }}</span>
+                                    <span class="text-sm text-gray-700 group-hover:text-gray-900 {{ isset($categories_selected[$cat]) ? 'font-semibold text-gray-900' : '' }}">{{ $cat }}</span>
                                 </label>
                             @endforeach
                         </div>

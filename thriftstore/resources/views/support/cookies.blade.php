@@ -1,11 +1,17 @@
 <x-app-layout>
-    <div class="max-w-2xl mx-auto py-12">
-        <h1 class="text-2xl font-bold mb-6">Cookies</h1>
-        <p class="mb-4">We use cookies to improve your experience. Cookies help us remember your preferences and analyze site usage.</p>
-        <ul class="list-disc pl-6 space-y-2">
-            <li>Essential cookies are required for site functionality.</li>
-            <li>Analytics cookies help us understand how visitors use our site.</li>
-            <li>You can manage cookie preferences in your browser settings.</li>
-        </ul>
+    @php
+        $content = (string) \App\Models\SystemSetting::get('page_cookie_settings', '');
+    @endphp
+    <div class="py-8">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Cookie Settings</h1>
+                @if($content !== '')
+                    <div class="prose prose-sm max-w-none text-gray-700">{!! nl2br(e($content)) !!}</div>
+                @else
+                    <p class="text-gray-500">No content has been set for this page yet. Please check back later.</p>
+                @endif
+            </div>
+        </div>
     </div>
 </x-app-layout>

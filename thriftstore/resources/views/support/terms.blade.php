@@ -1,11 +1,17 @@
 <x-app-layout>
-    <div class="max-w-2xl mx-auto py-12">
-        <h1 class="text-2xl font-bold mb-6">Terms & Conditions</h1>
-        <p class="mb-4">By using this site, you agree to the following terms and conditions:</p>
-        <ul class="list-disc pl-6 space-y-2">
-            <li>All sales are final unless otherwise stated.</li>
-            <li>Users must provide accurate information during registration.</li>
-            <li>We reserve the right to update these terms at any time.</li>
-        </ul>
+    @php
+        $content = (string) \App\Models\SystemSetting::get('page_terms_of_service', '');
+    @endphp
+    <div class="py-8">
+        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Terms of Service</h1>
+                @if($content !== '')
+                    <div class="prose prose-sm max-w-none text-gray-700">{!! nl2br(e($content)) !!}</div>
+                @else
+                    <p class="text-gray-500">No content has been set for this page yet. Please check back later.</p>
+                @endif
+            </div>
+        </div>
     </div>
 </x-app-layout>
