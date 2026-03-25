@@ -33,7 +33,8 @@ RUN composer install --optimize-autoloader --no-dev
 # 6. Install Node dependencies and build assets
 RUN npm install && npm run build
 
-# 7. Set permissions for Laravel
+# 7. Create storage link and set permissions
+RUN php artisan storage:link
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 # 8. Start the built-in FrankenPHP server
