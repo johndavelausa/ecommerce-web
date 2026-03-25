@@ -31,4 +31,4 @@ RUN npm install && npm run build
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-ENTRYPOINT ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8080"]
+ENTRYPOINT ["php", "-S", "0.0.0.0:8080", "-t", "public"]
