@@ -21,8 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev \
     libcurl4-openssl-dev libssl-dev libexif-dev libintl-perl libicu-dev \
     && docker-php-ext-install \
-        pdo pdo_mysql \
-        gd mbstring xml zip bcmath curl exif intl tokenizer \
+        pdo_mysql \
+        gd zip bcmath exif intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable mod_rewrite for Laravel
@@ -59,7 +59,7 @@ RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions \
 EXPOSE 80
 
 # Entrypoint: run migrations + storage link, then start Apache
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["docker-entrypoint.sh"]
