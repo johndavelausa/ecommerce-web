@@ -158,7 +158,7 @@
         <div class="pt-8 border-t border-white/20">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
                 <div class="text-indigo-100 flex flex-wrap items-center justify-center md:justify-start gap-2">
-                    <span class="font-semibold text-white">&copy; {{ date('Y') }} ThriftStore.</span>
+                    <span class="font-semibold text-white">&copy; {{ date('Y') }} Ukay Hub.</span>
                     <span>All rights reserved.</span>
                     <span class="mx-2 opacity-50">•</span>
                 </div>
