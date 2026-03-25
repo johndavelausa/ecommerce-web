@@ -36,5 +36,6 @@ RUN npm install && npm run build
 # 7. Set permissions for Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# 8. Start the built-in PHP server on Railway's port
-ENTRYPOINT ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+# 8. Start the built-in FrankenPHP server
+# This handles CSS/JS assets correctly and is much faster
+CMD ["frankenphp", "php-server", "-v", "--listen", ":8080", "--root", "public/"]
