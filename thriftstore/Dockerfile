@@ -1,6 +1,6 @@
 FROM dunglas/frankenphp:php8.2-bookworm
 
-# Install system dependencies
+# Install system dependencies + Node.js setup requirements
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
@@ -8,7 +8,12 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     git \
-    curl
+    curl \
+    gnupg
+
+# Install Node.js 22 (This fixes the 127 error)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -17,8 +22,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . /app
 WORKDIR /app
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
+
+# Install Node dependencies and build assets
 RUN npm install && npm run build
 
 # Set permissions
