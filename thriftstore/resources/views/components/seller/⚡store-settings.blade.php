@@ -95,8 +95,9 @@ new class extends Component
             'address' => $this->address,
         ];
         if ($this->avatar) {
-            $avatarPath = $this->avatar->store('avatars', 'public');
-            $userData['avatar'] = $avatarPath;
+            $base64 = base64_encode(file_get_contents($this->avatar->getRealPath()));
+            $mime = $this->avatar->getMimeType();
+            $userData['avatar'] = "data:$mime;base64,$base64";
         }
         $user->update($userData);
 
@@ -125,8 +126,9 @@ new class extends Component
         ];
 
         if ($this->store_banner) {
-            $bannerPath = $this->store_banner->store('banners', 'public');
-            $sellerUpdateData['banner_path'] = $bannerPath;
+            $base64 = base64_encode(file_get_contents($this->store_banner->getRealPath()));
+            $mime = $this->store_banner->getMimeType();
+            $sellerUpdateData['banner_path'] = "data:$mime;base64,$base64";
         }
 
         $seller->update($sellerUpdateData);
@@ -429,7 +431,7 @@ new class extends Component
                 <div class="sst-avatar-wrap">
                     @php($currentAvatar = Auth::guard('seller')->user()?->avatar)
                     @if($currentAvatar)
-                        <img src="{{ asset('storage/' . $currentAvatar) }}" class="sst-avatar-img" alt="Profile photo">
+                        <img src="{{ str_starts_with($currentAvatar, 'data:') ? $currentAvatar : asset('storage/' . $currentAvatar) }}" class="sst-avatar-img" alt="Profile photo">
                     @else
                         <div class="sst-avatar-placeholder">
                             <svg style="width:28px;height:28px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -523,7 +525,7 @@ new class extends Component
             <div class="sst-form-row">
                 <label class="sst-label">Store Banner Image</label>
                 @if($currentBanner = Auth::guard('seller')->user()?->seller?->banner_path)
-                    <img src="{{ asset('storage/' . $currentBanner) }}" alt="Current Banner"
+                    <img src="{{ str_starts_with($currentBanner, 'data:') ? $currentBanner : asset('storage/' . $currentBanner) }}" alt="Current Banner"
                          class="mb-2 w-full max-h-32 object-cover rounded-xl border border-[#D4E8DA]">
                 @endif
                 <input type="file" wire:model="store_banner" accept="image/*" style="font-size:0.875rem;color:#424242;">

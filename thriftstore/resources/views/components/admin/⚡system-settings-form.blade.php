@@ -34,18 +34,20 @@ new class extends Component
 
     public function saveLogo(): void
     {
-        $this->validate(['logo' => 'required|image|max:2048']);
-        $path = $this->logo->store('settings', 'public');
-        SystemSetting::set('logo_path', $path);
+        $this->validate(['logo' => 'required|image|max:1024']); // limit to 1MB for DB storage
+        $base64 = base64_encode(file_get_contents($this->logo->getRealPath()));
+        $mime = $this->logo->getMimeType();
+        SystemSetting::set('logo_path', "data:$mime;base64,$base64");
         $this->reset('logo');
         $this->dispatch('saved');
     }
 
     public function saveBackground(): void
     {
-        $this->validate(['background' => 'required|image|max:5120']);
-        $path = $this->background->store('settings', 'public');
-        SystemSetting::set('background_path', $path);
+        $this->validate(['background' => 'required|image|max:1024']);
+        $base64 = base64_encode(file_get_contents($this->background->getRealPath()));
+        $mime = $this->background->getMimeType();
+        SystemSetting::set('background_path', "data:$mime;base64,$base64");
         $this->reset('background');
         $this->dispatch('saved');
     }
@@ -59,9 +61,10 @@ new class extends Component
 
     public function saveGcashQr(): void
     {
-        $this->validate(['gcashQr' => 'required|image|max:2048']);
-        $path = $this->gcashQr->store('settings', 'public');
-        SystemSetting::set('gcash_qr_path', $path);
+        $this->validate(['gcashQr' => 'required|image|max:1024']);
+        $base64 = base64_encode(file_get_contents($this->gcashQr->getRealPath()));
+        $mime = $this->gcashQr->getMimeType();
+        SystemSetting::set('gcash_qr_path', "data:$mime;base64,$base64");
         $this->reset('gcashQr');
         $this->dispatch('saved');
     }
@@ -105,7 +108,7 @@ new class extends Component
             <p class="set-hint" style="color:#2D9F4E;">New file selected — click Save to apply.</p>
         @else
             @if($currentLogo = \App\Models\SystemSetting::get('logo_path'))
-                <img src="{{ asset('storage/' . $currentLogo) }}" alt="Logo" class="h-16 object-contain mb-3" style="border-radius:8px;border:1px solid #D4E8DA;">
+                <img src="{{ str_starts_with($currentLogo, 'data:') ? $currentLogo : asset('storage/' . $currentLogo) }}" alt="Logo" class="h-16 object-contain mb-3" style="border-radius:8px;border:1px solid #D4E8DA;">
             @endif
         @endif
         <input type="file" wire:model="logo" accept="image/*" class="block text-sm" style="color:#757575;">
@@ -119,7 +122,7 @@ new class extends Component
             <p class="set-hint" style="color:#2D9F4E;">New file selected — click Save to apply.</p>
         @else
             @if($currentBg = \App\Models\SystemSetting::get('background_path'))
-                <img src="{{ asset('storage/' . $currentBg) }}" alt="Background" class="max-h-32 object-cover rounded mb-3" style="border-radius:12px;border:1px solid #D4E8DA;">
+                <img src="{{ str_starts_with($currentBg, 'data:') ? $currentBg : asset('storage/' . $currentBg) }}" alt="Background" class="max-h-32 object-cover rounded mb-3" style="border-radius:12px;border:1px solid #D4E8DA;">
             @endif
         @endif
         <input type="file" wire:model="background" accept="image/*" class="block text-sm" style="color:#757575;">
@@ -139,7 +142,7 @@ new class extends Component
             <div>
                 <label class="set-label">GCash QR Image</label>
                 @if($currentQr = \App\Models\SystemSetting::get('gcash_qr_path'))
-                    <img src="{{ asset('storage/' . $currentQr) }}" alt="GCash QR" class="w-32 h-32 object-contain mt-1 mb-2" style="border-radius:12px;border:1.5px solid #D4E8DA;">
+                    <img src="{{ str_starts_with($currentQr, 'data:') ? $currentQr : asset('storage/' . $currentQr) }}" alt="GCash QR" class="w-32 h-32 object-contain mt-1 mb-2" style="border-radius:12px;border:1.5px solid #D4E8DA;">
                 @endif
                 @if($gcashQr)
                     <p class="set-hint" style="color:#2D9F4E;">New QR selected — click Save.</p>
