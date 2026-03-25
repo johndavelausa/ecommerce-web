@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Wishlist;
 use App\Notifications\WishlistItemLowStock;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -16,8 +17,27 @@ class Product extends Model
     protected static function booted(): void
     {
         static::created(fn () => self::invalidateListingCache());
-        static::updated(fn () => self::invalidateListingCache());
-        static::deleted(fn () => self::invalidateListingCache());
+        
+        static::updated(function (Product $product) {
+            self::invalidateListingCache();
+
+            // Cleanup old file if it was replaced and it wasn't a Base64 string
+            if ($product->wasChanged('image_path')) {
+                $oldPath = $product->getOriginal('image_path');
+                if ($oldPath && !str_starts_with((string) $oldPath, 'data:')) {
+                    Storage::disk('public')->delete((string) $oldPath);
+                }
+            }
+        });
+
+        static::deleted(function (Product $product) {
+            self::invalidateListingCache();
+
+            // Cleanup file on delete if it isn't a Base64 string
+            if ($product->image_path && !str_starts_with((string) $product->image_path, 'data:')) {
+                Storage::disk('public')->delete((string) $product->image_path);
+            }
+        });
     }
 
     public static function invalidateListingCache(): void

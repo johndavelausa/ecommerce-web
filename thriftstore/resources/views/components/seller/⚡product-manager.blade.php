@@ -246,10 +246,7 @@ new class extends Component
             ];
 
             if ($this->image) {
-                // Delete existing file IF it is not a base64 string
-                if ($product->image_path && !str_starts_with($product->image_path, 'data:')) {
-                    Storage::disk('public')->delete($product->image_path);
-                }
+
                 $data['image_path'] = $this->image->store('products', 'public');
             }
 
@@ -321,9 +318,7 @@ new class extends Component
         $productName = $product->name;
         $productId = $product->id;
 
-        if ($product->image_path && !str_starts_with($product->image_path, 'data:')) {
-            Storage::disk('public')->delete($product->image_path);
-        }
+
 
         $product->delete();
         if ($sellerId) {
