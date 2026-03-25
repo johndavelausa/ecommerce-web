@@ -105,4 +105,18 @@ class Seller extends Model
     {
         return $this->hasMany(SellerActivityLog::class)->orderByDesc('created_at');
     }
+
+    public function getBannerUrlAttribute()
+    {
+        if (!$this->banner_path) return null;
+        if (str_starts_with((string) $this->banner_path, 'data:')) return $this->banner_path;
+        return asset('storage/' . $this->banner_path);
+    }
+
+    public function getLogoUrlAttribute()
+    {
+        if (!$this->logo_path) return null;
+        if (str_starts_with((string) $this->logo_path, 'data:')) return $this->logo_path;
+        return asset('storage/' . $this->logo_path);
+    }
 }

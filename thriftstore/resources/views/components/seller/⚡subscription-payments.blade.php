@@ -121,7 +121,9 @@ new class extends Component
             'screenshot'       => ['required', 'image', 'max:5120'],
         ]);
 
-        $path = $this->screenshot->store('payments', 'public');
+        $base64 = base64_encode(file_get_contents($this->screenshot->getRealPath()));
+        $mime = $this->screenshot->getMimeType();
+        $path = "data:$mime;base64,$base64";
 
         Payment::create([
             'seller_id'        => $seller->id,
@@ -373,7 +375,8 @@ new class extends Component
                     {{-- Info Row --}}
                     <div class="flex items-start gap-4 p-4 rounded-xl bg-[#F5FBF7] border border-[#D4E8DA]">
                         <div class="shrink-0">
-                            <img src="{{ asset('storage/' . \App\Models\SystemSetting::get('gcash_qr_path', 'defaults/gcash-qr.png')) }}" 
+                            @php($gcashQr = \App\Models\SystemSetting::get('gcash_qr_path', 'defaults/gcash-qr.png'))
+                            <img src="{{ str_starts_with($gcashQr, 'data:') ? $gcashQr : asset('storage/' . $gcashQr) }}" 
                                  class="w-32 h-32 object-contain rounded-lg border-2 border-white shadow-sm" alt="GCash QR">
                         </div>
                         <div class="flex-1">

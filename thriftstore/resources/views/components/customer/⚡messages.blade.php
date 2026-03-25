@@ -565,7 +565,7 @@ new class extends Component
                                     ->where('sender_type', 'seller')
                                     ->where('is_read', false)
                                     ->exists();
-                                $convImg = $conv->seller?->logo_path ?? $conv->seller?->user?->avatar ?? null;
+                                $convImg = $conv->seller?->logo_url ?? $conv->seller?->user?->avatar_url ?? null;
                                 $convName = $conv->seller?->store_name ?? 'Seller #'.$conv->seller_id;
                             @endphp
                             <li class="msg-conv-item">
@@ -574,7 +574,7 @@ new class extends Component
                                         class="msg-conv-btn {{ $activeConversationId === $conv->id ? 'active' : '' }}">
                                     <div class="msg-conv-avatar" style="{{ $convImg ? 'background:transparent;' : '' }}">
                                         @if($convImg)
-                                            <img src="{{ asset('storage/'.$convImg) }}" alt="">
+                                            <img src="{{ $convImg }}" alt="">
                                         @else
                                             {{ strtoupper(substr($convName, 0, 1)) }}
                                         @endif
@@ -609,12 +609,12 @@ new class extends Component
                     @php
                         $activeConv = $conversations->firstWhere('id', $activeConversationId);
                         $sellerName = $activeConv?->seller?->store_name ?? ('Seller #' . ($activeConv?->seller_id ?? ''));
-                        $sellerImg = $activeConv?->seller?->logo_path ?? $activeConv?->seller?->user?->avatar ?? null;
+                        $sellerImg = $activeConv?->seller?->logo_url ?? $activeConv?->seller?->user?->avatar_url ?? null;
                     @endphp
                     <div class="msg-chat-header">
                         <div class="msg-chat-avatar" style="{{ $sellerImg ? 'background:transparent;' : '' }}">
                             @if($sellerImg)
-                                <img src="{{ asset('storage/'.$sellerImg) }}" alt="{{ $sellerName }}">
+                                <img src="{{ $sellerImg }}" alt="{{ $sellerName }}">
                             @else
                                 {{ strtoupper(substr($sellerName, 0, 1)) }}
                             @endif

@@ -84,4 +84,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Address::class);
     }
+
+    public function getAvatarUrlAttribute()
+    {
+        if (!$this->avatar) return null;
+        if (str_starts_with((string) $this->avatar, 'data:')) return $this->avatar;
+        return asset('storage/' . $this->avatar);
+    }
 }

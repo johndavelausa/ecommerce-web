@@ -201,7 +201,9 @@ new class extends Component
 
                 $existing->notifyWishlistLowStockIfNeeded($oldStock, $newStock);
             } else {
-                $imagePath = $this->image->store('products', 'public');
+                $base64 = base64_encode(file_get_contents($this->image->getRealPath()));
+                $mime = $this->image->getMimeType();
+                $imagePath = "data:$mime;base64,$base64";
 
                 $product = Product::create([
                     'seller_id'   => $seller->id,
@@ -249,7 +251,9 @@ new class extends Component
                 if ($product->image_path) {
                     Storage::disk('public')->delete($product->image_path);
                 }
-                $data['image_path'] = $this->image->store('products', 'public');
+                $base64 = base64_encode(file_get_contents($this->image->getRealPath()));
+                $mime = $this->image->getMimeType();
+                $data['image_path'] = "data:$mime;base64,$base64";
             }
 
             $oldStock = $product->stock;
@@ -1085,7 +1089,7 @@ new class extends Component
                         </td>
                         <td>
                             @if($product->image_path)
-                                <img src="{{ asset('storage/' . $product->image_path) }}"
+                                <img src="{{ $product->image_url }}"
                                      alt="{{ $product->name }}"
                                      class="h-12 w-12 object-cover rounded-lg">
                             @else
@@ -1328,7 +1332,7 @@ new class extends Component
             <div class="prod-section-box" style="padding: 24px;">
                 <div class="flex items-start gap-4 mb-4">
                     @if($viewProduct->image_path)
-                        <img src="{{ asset('storage/' . $viewProduct->image_path) }}" alt="{{ $viewProduct->name }}" class="w-24 h-24 object-cover rounded-xl border border-[#E0E0E0]">
+                        <img src="{{ $viewProduct->image_url }}" alt="{{ $viewProduct->name }}" class="card-img">
                     @else
                         <div class="w-24 h-24 rounded-xl bg-[#FFF9E6] flex items-center justify-center text-[#9E9E9E] text-xs">No image</div>
                     @endif

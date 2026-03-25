@@ -224,8 +224,10 @@ new class extends Component
 
         $sellerResponse = trim($this->sellerDisputeResponseNote);
         if ($this->sellerDisputeEvidence) {
-            $evidencePath = $this->sellerDisputeEvidence->store('disputes/seller', 'public');
-            $sellerResponse .= "\n\nSeller evidence: " . asset('storage/' . $evidencePath);
+            $base64 = base64_encode(file_get_contents($this->sellerDisputeEvidence->getRealPath()));
+            $mime = $this->sellerDisputeEvidence->getMimeType();
+            $path = "data:$mime;base64,$base64";
+            $sellerResponse .= "\n\nSeller evidence (Persistent): " . $path;
         }
 
         $dispute->seller_response_note = $sellerResponse;
@@ -1700,7 +1702,7 @@ new class extends Component
                                     </p>
                                     <p class="desc">{{ $dispute->description }}</p>
                                     @if($dispute->evidence_path)
-                                        <a href="{{ asset('storage/' . $dispute->evidence_path) }}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: #2D9F4E; text-decoration: none; margin-top: 8px;">
+                                        <a href="{{ $dispute->evidence_url }}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; color: #2D9F4E; text-decoration: none; margin-top: 8px;">
                                             <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>

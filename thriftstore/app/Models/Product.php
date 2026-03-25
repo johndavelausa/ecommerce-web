@@ -116,4 +116,21 @@ class Product extends Model
             }
         }
     }
+
+    /**
+     * Get the full URL for the product image. 
+     * Handles both local storage paths and direct Base64 data.
+     */
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image_path) {
+            return null;
+        }
+
+        if (str_starts_with((string) $this->image_path, 'data:')) {
+            return $this->image_path;
+        }
+
+        return asset('storage/' . $this->image_path);
+    }
 }

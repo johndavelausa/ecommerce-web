@@ -614,14 +614,14 @@ new class extends Component
                                         @if($payment->screenshot_path)
                                             <div x-data="{ open: false }">
                                                 <img
-                                                    src="{{ asset('storage/' . $payment->screenshot_path) }}"
+                                                    src="{{ $payment->screenshot_url }}"
                                                     alt="GCash Receipt"
                                                     class="sel-receipt-thumb"
                                                     @click="open = true"
                                                 >
                                                 {{-- Lightbox --}}
                                                 <div x-show="open" x-cloak class="sel-receipt-lightbox" @click="open = false">
-                                                    <img src="{{ asset('storage/' . $payment->screenshot_path) }}" alt="GCash Receipt Full">
+                                                    <img src="{{ $payment->screenshot_url }}" alt="GCash Receipt Full">
                                                 </div>
                                             </div>
                                         @endif
