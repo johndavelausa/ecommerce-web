@@ -13,8 +13,8 @@
             <div class="relative">
                 {{-- Banner (full width within container) --}}
                 <div class="h-48 sm:h-64 bg-gray-200 rounded-t-xl overflow-hidden relative z-10">
-                    @if($seller->banner_path ?? null)
-                        <img src="{{ asset('storage/' . $seller->banner_path) }}" alt="" class="w-full h-full object-cover" loading="lazy">
+                    @if($seller->banner_url)
+                        <img src="{{ $seller->banner_url }}" alt="" class="w-full h-full object-cover" loading="lazy">
                     @else
                         <div class="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">Store banner</div>
                     @endif
@@ -23,10 +23,10 @@
                 {{-- Logo/avatar: Moved OUTSIDE the banner's overflow-hidden container to allow overlap --}}
                 <div class="absolute bottom-[-40px] left-6 sm:left-10 z-30">
                     <div class="relative">
-                        @if($seller->logo_path ?? null)
-                            <img src="{{ asset('storage/' . $seller->logo_path) }}" alt="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white object-cover shadow-md">
-                        @elseif($seller->user && $seller->user->avatar)
-                            <img src="{{ asset('storage/' . $seller->user->avatar) }}" alt="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white object-cover shadow-md">
+                        @if($seller->logo_url)
+                            <img src="{{ $seller->logo_url }}" alt="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white object-cover shadow-md">
+                        @elseif($seller->user && $seller->user->avatar_url)
+                            <img src="{{ $seller->user->avatar_url }}" alt="" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-white object-cover shadow-md">
                         @else
                             <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white bg-gray-300 flex items-center justify-center text-gray-500 text-3xl font-bold shadow-md">
                                 {{ strtoupper(substr($seller->store_name, 0, 1)) }}

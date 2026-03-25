@@ -7,7 +7,7 @@
 
         @php
             $platformLogo = \App\Models\SystemSetting::get('logo_path');
-            $faviconUrl = $platformLogo ? asset('storage/' . $platformLogo) : asset('favicon.ico');
+            $faviconUrl = ($platformLogo && !str_starts_with($platformLogo, 'data:')) ? asset('storage/' . $platformLogo) : ($platformLogo ?: asset('favicon.ico'));
         @endphp
 
         <link rel="icon" type="image/png" href="{{ $faviconUrl }}">

@@ -30,7 +30,7 @@
                         <div class="aspect-square rounded-lg overflow-hidden bg-gray-50 cursor-zoom-in group relative mb-3"
                              @click="lightbox = true">
                             @if($product->image_path)
-                                <img src="{{ asset('storage/' . $product->image_path) }}"
+                                <img src="{{ $product->image_url }}"
                                      alt="{{ $product->name }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                      loading="lazy">
@@ -51,7 +51,7 @@
                         @if($product->image_path)
                             <div class="flex gap-2 mb-4">
                                 <div class="w-14 h-14 rounded border-2 border-[#2D9F4E] overflow-hidden flex-shrink-0 cursor-pointer">
-                                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="" class="w-full h-full object-cover">
+                                    <img src="{{ $product->image_url }}" alt="" class="w-full h-full object-cover">
                                 </div>
                             </div>
                         @endif
@@ -265,11 +265,11 @@
                 <div class="flex flex-col sm:flex-row gap-5 sm:gap-0">
                     {{-- Seller identity --}}
                     <div class="flex items-start gap-4 sm:w-72 sm:border-r sm:border-gray-100 sm:pr-6 flex-shrink-0">
-                        @if($product->seller?->logo_path)
-                            <img src="{{ asset('storage/' . $product->seller->logo_path) }}" alt=""
+                        @if($product->seller?->logo_url)
+                            <img src="{{ $product->seller->logo_url }}" alt=""
                                  class="w-14 h-14 rounded-full object-cover border border-gray-200 flex-shrink-0">
-                        @elseif($product->seller?->user?->avatar)
-                            <img src="{{ asset('storage/' . $product->seller->user->avatar) }}" alt=""
+                        @elseif($product->seller?->user?->avatar_url)
+                            <img src="{{ $product->seller->user->avatar_url }}" alt=""
                                  class="w-14 h-14 rounded-full object-cover border border-gray-200 flex-shrink-0">
                         @else
                             <div class="w-14 h-14 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0 text-gray-400">
@@ -486,7 +486,7 @@
                 &times;
             </button>
             @if($product->image_path)
-                <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}"
+                <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
                      class="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" @click.stop>
             @endif
         </div>

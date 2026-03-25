@@ -590,7 +590,7 @@ new class extends Component
                                 <a href="{{ route('product.show', $product->id) }}" class="absolute inset-0 block">
                                     @if($product->image_path)
                                         <img
-                                            src="{{ asset('storage/'.$product->image_path) }}"
+                                            src="{{ $product->image_url }}"
                                             alt="{{ $product->name }}"
                                             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             loading="lazy"
@@ -739,7 +739,7 @@ new class extends Component
                             <div class="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                                 <a href="{{ route('product.show', $product->id) }}" class="block h-full w-full">
                                     @if($product->image_path)
-                                        <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover" loading="lazy">
+                                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover" loading="lazy">
                                     @else
                                         <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
                                     @endif
@@ -849,7 +849,7 @@ new class extends Component
                     >
                         <div class="relative h-28 overflow-hidden bg-gray-100">
                             @if($product->image_path)
-                                <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
+                                <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                             @else
                                 <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
                             @endif

@@ -273,7 +273,7 @@ new class extends Component
                         <div class="relative h-52 sm:h-56 md:h-60 overflow-hidden bg-gray-100">
                             <a href="{{ route('product.show', $product->id) }}" class="block h-full w-full">
                                 @if($product->image_path)
-                                    <img src="{{ asset('storage/' . $product->image_path) }}"
+                                    <img src="{{ $product->image_url }}"
                                          alt="{{ $product->name }}"
                                          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                          loading="lazy">
@@ -393,7 +393,7 @@ new class extends Component
                                 <a href="{{ route('product.show', $saleProduct->id) }}" class="block">
                                     <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
                                         @if($saleProduct->image_path)
-                                            <img src="{{ asset('storage/' . $saleProduct->image_path) }}"
+                                            <img src="{{ $saleProduct->image_url }}"
                                                  alt="{{ $saleProduct->name }}"
                                                  class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                  loading="lazy">

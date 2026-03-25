@@ -1487,7 +1487,7 @@ new class extends Component
                     @if($mode === 'edit' && $editingId)
                         @php($existingProduct = \App\Models\Product::find($editingId))
                         @if($existingProduct && $existingProduct->image_path)
-                            <img src="{{ asset('storage/' . $existingProduct->image_path) }}" class="mt-2 h-24 w-24 object-cover rounded-lg border border-[#E0E0E0]" alt="Current image">
+                            <img src="{{ $existingProduct->image_url }}" class="mt-2 h-24 w-24 object-cover rounded-lg border border-[#E0E0E0]" alt="Current image">
                         @endif
                     @endif
                     <input type="file" wire:model="image" accept="image/*" class="prod-input mt-2" style="padding: 8px;">

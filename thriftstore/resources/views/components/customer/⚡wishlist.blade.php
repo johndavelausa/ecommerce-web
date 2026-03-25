@@ -149,7 +149,7 @@ new class extends Component
                 {{-- Product image --}}
                 <div class="relative h-44" style="background:#F8F9FA;">
                     @if($product->image_path)
-                        <img src="{{ asset('storage/'.$product->image_path) }}"
+                        <img src="{{ $product->image_url }}"
                              alt="{{ $product->name }}"
                              class="w-full h-full object-cover"
                              loading="lazy">
