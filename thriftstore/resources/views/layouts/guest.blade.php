@@ -6,8 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         @php
-            $platformLogo = \App\Models\SystemSetting::get('logo_path');
-            $faviconUrl = ($platformLogo && !str_starts_with($platformLogo, 'data:')) ? asset('storage/' . $platformLogo) : ($platformLogo ?: asset('favicon.ico'));
+            $faviconUrl = \App\Models\SystemSetting::get_url('logo_path', asset('favicon.ico'));
         @endphp
 
         <link rel="icon" type="image/png" href="{{ $faviconUrl }}">

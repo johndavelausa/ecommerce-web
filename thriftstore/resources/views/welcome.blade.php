@@ -10,10 +10,7 @@
     </head>
     <body class="m-0 p-0 overflow-hidden">
         @php
-            $bgPath = \App\Models\SystemSetting::get('background_path');
-            $bgUrl  = $bgPath
-                ? asset('storage/' . $bgPath)
-                : asset('background_img/gela.jpeg');
+            $bgUrl = \App\Models\SystemSetting::get_url('background_path', asset('background_img/gela.jpeg'));
         @endphp
         <div class="w-screen h-screen bg-cover bg-center bg-no-repeat"
              style="background-image: url('{{ $bgUrl }}');">

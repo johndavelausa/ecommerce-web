@@ -176,4 +176,21 @@ class OrderDispute extends Model
     {
         return $this->belongsTo(User::class, 'resolved_by_admin_id');
     }
+
+    /**
+     * Get the full URL for the evidence image.
+     * Handles both local storage paths and direct Base64 data.
+     */
+    public function getEvidenceUrlAttribute()
+    {
+        if (!$this->evidence_path) {
+            return null;
+        }
+
+        if (str_starts_with((string) $this->evidence_path, 'data:')) {
+            return $this->evidence_path;
+        }
+
+        return asset('storage/' . $this->evidence_path);
+    }
 }

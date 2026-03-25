@@ -31,4 +31,21 @@ class SystemSetting extends Model
             ['value' => is_scalar($value) ? (string) $value : json_encode($value)]
         );
     }
+
+    /**
+     * Get a setting and treat it as a URL (handling Base64 vs Storage paths).
+     */
+    public static function get_url(string $key, ?string $default = null): ?string
+    {
+        $value = self::get($key);
+        if (!$value) {
+            return $default;
+        }
+
+        if (str_starts_with((string) $value, 'data:')) {
+            return $value;
+        }
+
+        return asset('storage/' . $value);
+    }
 }

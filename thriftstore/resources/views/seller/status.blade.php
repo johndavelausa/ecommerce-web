@@ -74,7 +74,7 @@
                                                 <div class="text-gray-500">Pay to Admin GCash:</div>
                                                 <div class="font-bold text-lg text-gray-900">{{ \App\Models\SystemSetting::get('gcash_number', '09XX XXX XXXX') }}</div>
                                             </div>
-                                            <img src="{{ asset('storage/' . \App\Models\SystemSetting::get('gcash_qr_path', 'defaults/gcash-qr.png')) }}" alt="GCash QR" class="w-16 h-16 rounded border">
+                                            <img src="{{ \App\Models\SystemSetting::get_url('gcash_qr_path', asset('defaults/gcash-qr.png')) }}" alt="GCash QR" class="w-16 h-16 rounded border">
                                         </div>
 
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -504,7 +504,11 @@ new class extends Component
                                 @foreach($sellerItems as $row)
                                     <div class="flex items-center gap-3 px-3 py-3">
                                         @if(!empty($row['image_path']))
-                                            <img src="{{ asset('storage/'.$row['image_path']) }}" alt="{{ $row['name'] }}"
+                                            @php
+                                                $checkoutImg = $row['image_path'];
+                                                $checkoutUrl = str_starts_with($checkoutImg, 'data:') ? $checkoutImg : asset('storage/'.$checkoutImg);
+                                            @endphp
+                                            <img src="{{ $checkoutUrl }}" alt="{{ $row['name'] }}"
                                                  class="w-12 h-12 rounded-xl object-cover flex-shrink-0" style="border:1px solid #F5F5F5;">
                                         @else
                                             <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#F8F9FA; border:1px solid #F5F5F5;">

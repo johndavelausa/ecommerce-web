@@ -107,8 +107,8 @@ new class extends Component
         @if($logo)
             <p class="set-hint" style="color:#2D9F4E;">New file selected — click Save to apply.</p>
         @else
-            @if($currentLogo = \App\Models\SystemSetting::get('logo_path'))
-                <img src="{{ str_starts_with($currentLogo, 'data:') ? $currentLogo : asset('storage/' . $currentLogo) }}" alt="Logo" class="h-16 object-contain mb-3" style="border-radius:8px;border:1px solid #D4E8DA;">
+            @if($currentLogo = \App\Models\SystemSetting::get_url('logo_path'))
+                <img src="{{ $currentLogo }}" alt="Logo" class="h-16 object-contain mb-3" style="border-radius:8px;border:1px solid #D4E8DA;">
             @endif
         @endif
         <input type="file" wire:model="logo" accept="image/*" class="block text-sm" style="color:#757575;">
@@ -121,8 +121,8 @@ new class extends Component
         @if($background)
             <p class="set-hint" style="color:#2D9F4E;">New file selected — click Save to apply.</p>
         @else
-            @if($currentBg = \App\Models\SystemSetting::get('background_path'))
-                <img src="{{ str_starts_with($currentBg, 'data:') ? $currentBg : asset('storage/' . $currentBg) }}" alt="Background" class="max-h-32 object-cover rounded mb-3" style="border-radius:12px;border:1px solid #D4E8DA;">
+            @if($currentBg = \App\Models\SystemSetting::get_url('background_path'))
+                <img src="{{ $currentBg }}" alt="Background" class="max-h-32 object-cover rounded mb-3" style="border-radius:12px;border:1px solid #D4E8DA;">
             @endif
         @endif
         <input type="file" wire:model="background" accept="image/*" class="block text-sm" style="color:#757575;">
@@ -141,8 +141,8 @@ new class extends Component
             <hr class="set-divider">
             <div>
                 <label class="set-label">GCash QR Image</label>
-                @if($currentQr = \App\Models\SystemSetting::get('gcash_qr_path'))
-                    <img src="{{ str_starts_with($currentQr, 'data:') ? $currentQr : asset('storage/' . $currentQr) }}" alt="GCash QR" class="w-32 h-32 object-contain mt-1 mb-2" style="border-radius:12px;border:1.5px solid #D4E8DA;">
+                @if($currentQr = \App\Models\SystemSetting::get_url('gcash_qr_path'))
+                    <img src="{{ $currentQr }}" alt="GCash QR" class="w-32 h-32 object-contain mt-1 mb-2" style="border-radius:12px;border:1.5px solid #D4E8DA;">
                 @endif
                 @if($gcashQr)
                     <p class="set-hint" style="color:#2D9F4E;">New QR selected — click Save.</p>

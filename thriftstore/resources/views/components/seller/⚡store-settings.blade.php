@@ -429,9 +429,9 @@ new class extends Component
             <div class="sst-form-row">
                 <label class="sst-label">Profile Photo</label>
                 <div class="sst-avatar-wrap">
-                    @php($currentAvatar = Auth::guard('seller')->user()?->avatar)
-                    @if($currentAvatar)
-                        <img src="{{ str_starts_with($currentAvatar, 'data:') ? $currentAvatar : asset('storage/' . $currentAvatar) }}" class="sst-avatar-img" alt="Profile photo">
+                    @php($user = Auth::guard('seller')->user())
+                    @if($user?->avatar)
+                        <img src="{{ $user->avatar_url }}" class="sst-avatar-img" alt="Profile photo">
                     @else
                         <div class="sst-avatar-placeholder">
                             <svg style="width:28px;height:28px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -524,8 +524,9 @@ new class extends Component
             {{-- Store Banner --}}
             <div class="sst-form-row">
                 <label class="sst-label">Store Banner Image</label>
-                @if($currentBanner = Auth::guard('seller')->user()?->seller?->banner_path)
-                    <img src="{{ str_starts_with($currentBanner, 'data:') ? $currentBanner : asset('storage/' . $currentBanner) }}" alt="Current Banner"
+                @php($seller = Auth::guard('seller')->user()?->seller)
+                @if($seller?->banner_path)
+                    <img src="{{ $seller->banner_url }}" alt="Current Banner"
                          class="mb-2 w-full max-h-32 object-cover rounded-xl border border-[#D4E8DA]">
                 @endif
                 <input type="file" wire:model="store_banner" accept="image/*" style="font-size:0.875rem;color:#424242;">

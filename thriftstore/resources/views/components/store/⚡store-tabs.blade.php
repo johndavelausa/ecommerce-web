@@ -294,7 +294,7 @@ new class extends Component {
                             <div class="relative h-44 bg-gray-100">
                                 <a href="{{ route('product.show', $product->id) }}" class="block w-full h-full">
                                     @if ($product->image_path)
-                                        <img src="{{ asset('storage/' . $product->image_path) }}"
+                                        <img src="{{ $product->image_url }}"
                                             alt="{{ $product->name }}" class="w-full h-full object-cover"
                                             loading="lazy">
                                     @else
@@ -419,7 +419,7 @@ new class extends Component {
                                 <div class="relative h-44 bg-gray-100">
                                     <a href="{{ route('product.show', $product->id) }}" class="block w-full h-full">
                                         @if ($product->image_path)
-                                            <img src="{{ asset('storage/' . $product->image_path) }}"
+                                            <img src="{{ $product->image_url }}"
                                                 alt="{{ $product->name }}" class="w-full h-full object-cover"
                                                 loading="lazy">
                                         @else

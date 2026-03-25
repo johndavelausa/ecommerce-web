@@ -835,7 +835,7 @@ new class extends Component
                     @foreach ($order->items as $item)
                         <div class="px-4 py-3 flex items-start gap-3 {{ !$loop->last ? 'border-b border-gray-50' : '' }}">
                             @if($item->product?->image_path)
-                                <img src="{{ asset('storage/'.$item->product->image_path) }}"
+                                <img src="{{ $item->product->image_url }}"
                                      alt="{{ $item->product->name }}"
                                      class="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-100">
                             @else
@@ -1177,7 +1177,7 @@ new class extends Component
                         <div class="pb-5 border-b border-gray-100 last:border-0 last:pb-0">
                             <div class="flex items-start gap-3 mb-3">
                                 @if($item->product->image_path)
-                                    <img src="{{ asset('storage/'.$item->product->image_path) }}"
+                                    <img src="{{ $item->product->image_url }}"
                                          class="w-14 h-14 rounded-lg object-cover border border-gray-100 flex-shrink-0">
                                 @else
                                     <div class="w-14 h-14 rounded-lg bg-gray-100 flex-shrink-0"></div>
@@ -1371,7 +1371,7 @@ new class extends Component
 
                                     {{-- Evidence --}}
                                     @if($latestIssue->evidence_path)
-                                        <a href="{{ asset('storage/' . $latestIssue->evidence_path) }}" target="_blank"
+                                        <a href="{{ $latestIssue->evidence_url }}" target="_blank"
                                            class="inline-flex items-center gap-1 text-xs text-blue-600 underline mb-2">
                                             View your evidence
                                         </a>

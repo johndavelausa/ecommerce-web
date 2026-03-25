@@ -1,9 +1,6 @@
 <x-app-layout>
     @php
-        $homepageBackgroundPath = \App\Models\SystemSetting::get('background_path');
-        $homepageBackgroundUrl  = $homepageBackgroundPath
-            ? asset('storage/' . $homepageBackgroundPath)
-            : asset('background_img/gela.jpeg');
+        $homepageBackgroundUrl = \App\Models\SystemSetting::get_url('background_path', asset('background_img/gela.jpeg'));
     @endphp
 
     {{-- Hero background image --}}

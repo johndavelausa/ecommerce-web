@@ -35,4 +35,20 @@ class Payment extends Model
     {
         return $this->belongsTo(Seller::class);
     }
+
+    /**
+     * Get the full URL for the payment screenshot.
+     */
+    public function getScreenshotUrlAttribute()
+    {
+        if (!$this->screenshot_path) {
+            return null;
+        }
+
+        if (str_starts_with((string) $this->screenshot_path, 'data:')) {
+            return $this->screenshot_path;
+        }
+
+        return asset('storage/' . $this->screenshot_path);
+    }
 }

@@ -332,7 +332,7 @@ new class extends Component
                                 </button>
                             </div>
                             @if($dispute->evidence_path)
-                                <a href="{{ asset('storage/' . $dispute->evidence_path) }}" target="_blank"
+                                <a href="{{ $dispute->evidence_url }}" target="_blank"
                                    class="inline-block text-indigo-600 hover:text-indigo-800 underline">
                                     Buyer evidence
                                 </a>
