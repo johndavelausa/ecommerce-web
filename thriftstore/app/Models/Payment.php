@@ -42,8 +42,16 @@ class Payment extends Model
     public function getScreenshotUrlAttribute()
     {
         $path = trim((string) $this->screenshot_path);
-        if (!$path) return null;
-        if (str_starts_with($path, 'data:')) return $path;
+        $path = trim($path, '"\''); // Remove potential surrounding quotes
+        if (empty($path)) {
+            return null;
+        }
+
+        // Return directly if it's already a full URL or a data URI
+        if (str_starts_with($path, 'http') || str_starts_with($path, 'data:')) {
+            return $path;
+        }
+
         return asset('storage/' . $path);
     }
 }

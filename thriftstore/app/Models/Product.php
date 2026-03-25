@@ -124,7 +124,16 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         $path = trim((string) $this->image_path);
-        if (str_starts_with($path, 'data:')) {
+        
+        // Remove surrounding quotes if they exist (e.g. from JSON-like storage)
+        $path = trim($path, '"\'');
+
+        if (empty($path)) {
+            return null;
+        }
+
+        // If it's already a full URL or a data URI, return it directly
+        if (str_starts_with($path, 'http') || str_starts_with($path, 'data:')) {
             return $path;
         }
 
