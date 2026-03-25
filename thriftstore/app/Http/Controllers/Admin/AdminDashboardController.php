@@ -19,14 +19,17 @@ class AdminDashboardController extends Controller
     {
         // Total Sales: platform-wide sum of delivered orders (feature v1.2 - Admin Phase 1)
         $totalSales = (float) Order::query()
-            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->sum('total_amount');
 
         // Total Orders: count of all orders platform-wide (feature v1.2 - Admin #2)
         $totalOrders = (int) Order::query()->count();
 
-        // Bad Orders: cancelled, returned, or failed to deliver (feature v1.2 - Admin #5)
-        $badOrdersCount = (int) Order::query()->where('status', 'cancelled')->count();
+        // Bad Orders: cancelled + refunded orders (feature v1.2 - Admin #5)
+        $ordersCancelled = (int) Order::query()->where('status', 'cancelled')->count();
+        $ordersRefunded = (int) Order::query()->where('refund_status', Order::REFUND_STATUS_COMPLETED)->count();
+        $badOrdersCount = $ordersCancelled + $ordersRefunded;
         $badOrdersPercent = $totalOrders > 0 ? round(($badOrdersCount / $totalOrders) * 100, 1) : 0.0;
 
         // Order Status Breakdown: counts by status (feature v1.2 - Admin #3)
@@ -43,11 +46,13 @@ class AdminDashboardController extends Controller
 
         $totalRevenue = (float) Order::query()
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->sum('total_amount');
 
         $monthlyRevenue = Order::query()
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(total_amount) as total")
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->whereNotNull('created_at')
             ->groupBy('ym')
             ->orderBy('ym', 'desc')
@@ -217,7 +222,7 @@ class AdminDashboardController extends Controller
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->leftJoin('sellers', 'sellers.id', '=', 'orders.seller_id')
-            ->whereIn('orders.status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->groupBy('products.id', 'products.name', 'sellers.store_name')
             ->orderByDesc('qty_sold')
             ->limit(5)
@@ -226,7 +231,7 @@ class AdminDashboardController extends Controller
         $topSellers = Order::query()
             ->selectRaw('sellers.id as seller_id, sellers.store_name as store_name, COUNT(orders.id) as completed_orders')
             ->join('sellers', 'sellers.id', '=', 'orders.seller_id')
-            ->whereIn('orders.status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->groupBy('sellers.id', 'sellers.store_name')
             ->orderByDesc('completed_orders')
             ->limit(5)

@@ -7,8 +7,13 @@ use App\Models\Seller;
 use App\Models\SellerActivityLog;
 use App\Models\SellerNote;
 use App\Notifications\PaymentRejectedForSeller;
+use App\Notifications\OrderDisputeUpdated;
+use App\Notifications\OrderCancelledByBuyerNotification;
+use App\Notifications\NewDisputeRaised;
 use App\Notifications\SellerSuspended;
 use App\Notifications\SellerUnsuspended;
+use App\Notifications\SellerAccountApprovedNotification;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Computed;
@@ -124,6 +129,11 @@ new class extends Component
 
             if (!empty($updateData)) {
                 $seller->update($updateData);
+                
+                // Notify seller if approved
+                if (isset($updateData['status']) && $updateData['status'] === 'approved') {
+                    $seller->user?->notify(new SellerAccountApprovedNotification($seller));
+                }
             }
         }
 

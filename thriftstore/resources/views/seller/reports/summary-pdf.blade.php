@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $seller->store_name }} - Sales Report</title>
     <style>
         body { font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif; color: #333; font-size: 11px; line-height: 1.4; margin: 0; padding: 25px; }
@@ -45,11 +46,11 @@
         <div class="kpi-row">
             <div class="kpi-card">
                 <div class="kpi-label">Lifetime Revenue</div>
-                <div class="kpi-value"><span class="currency">&#8369;</span>{{ number_format($totalRevenue, 2) }}</div>
+                <div class="kpi-value"><span class="currency"></span>{{ number_format($totalRevenue, 2) }}</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Revenue ({{ ucfirst($period) }})</div>
-                <div class="kpi-value"><span class="currency">&#8369;</span>{{ number_format($periodSales, 2) }}</div>
+                <div class="kpi-value"><span class="currency"></span>{{ number_format($periodSales, 2) }}</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Completed Orders</div>
@@ -73,7 +74,7 @@
                     @foreach($monthlyRevenue as $index => $row)
                         <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
                             <td>{{ $row->ym }}</td>
-                            <td class="amount"><span class="currency">&#8369;</span>{{ number_format($row->total, 2) }}</td>
+                            <td class="amount"><span class="currency"></span>{{ number_format($row->total, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -110,7 +111,7 @@
                 <td style="color: #C0392B;">{{ $cancelledOrdersCount }}</td>
                 <td class="bold">Average Revenue / Order</td>
                 <td class="amount">
-                    <span class="currency">&#8369;</span>{{ $completedOrdersCount > 0 ? number_format($totalRevenue / $completedOrdersCount, 2) : '0.00' }}
+                    <span class="currency"></span>{{ $completedOrdersCount > 0 ? number_format($totalRevenue / $completedOrdersCount, 2) : '0.00' }}
                 </td>
             </tr>
         </tbody>

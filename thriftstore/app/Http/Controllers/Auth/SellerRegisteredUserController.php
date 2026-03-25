@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Notifications\NewSellerRegistered;
 
 class SellerRegisteredUserController extends Controller
 {
@@ -118,6 +119,12 @@ class SellerRegisteredUserController extends Controller
             'status' => 'pending',
             'paid_at' => now(),
         ]);
+
+        // Notify all admins about new seller registration
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NewSellerRegistered($seller));
+        }
 
         Auth::guard('seller')->login($user);
         return redirect()->route('seller.status');

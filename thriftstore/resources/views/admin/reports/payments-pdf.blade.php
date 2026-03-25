@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Payment History Report</title>
     <style>
         body { font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif; color: #333; font-size: 11px; line-height: 1.4; margin: 0; padding: 20px; }
@@ -57,7 +58,7 @@
                         <div style="font-size: 9px; color: #777;">{{ $p->seller?->user?->email ?? '' }}</div>
                     </td>
                     <td>{{ ucfirst($p->type) }}</td>
-                    <td class="amount"><span class="currency">&#8369;</span>{{ number_format($p->amount, 2) }}</td>
+                    <td class="amount"><span class="currency"></span>{{ number_format($p->amount, 2) }}</td>
                     <td>
                         <span class="status status-{{ $p->status }}">
                             {{ ucfirst($p->status) }}

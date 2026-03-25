@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Seller;
 use App\Models\Address;
 use App\Notifications\NewOrderForSeller;
+use App\Notifications\OrderPlacedNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -334,6 +335,9 @@ new class extends Component
                     if ($sellerUser) {
                         $sellerUser->notify(new NewOrderForSeller($order));
                     }
+                    
+                    // Notify customer about each order placed
+                    $customer->notify(new OrderPlacedNotification($order));
                 }
             });
         } catch (\RuntimeException $e) {

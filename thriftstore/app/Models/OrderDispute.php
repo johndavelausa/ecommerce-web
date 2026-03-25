@@ -81,6 +81,8 @@ class OrderDispute extends Model
         'seller_resolution_action',
         'resolved_at',
         'return_tracking_number',
+        'admin_resolution_note',
+        'resolved_by_admin_id',
     ];
 
     protected function casts(): array
@@ -170,4 +172,8 @@ class OrderDispute extends Model
         return $this->belongsTo(Seller::class, 'seller_id');
     }
 
+    public function resolvedByAdmin()
+    {
+        return $this->belongsTo(User::class, 'resolved_by_admin_id');
+    }
 }

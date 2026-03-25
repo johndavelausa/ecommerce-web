@@ -8,6 +8,9 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use App\Notifications\OrderDisputeUpdated;
+use App\Notifications\OrderCancelledByBuyerNotification;
+use App\Notifications\NewDisputeRaised;
+use App\Notifications\ReviewReceivedNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -140,6 +143,12 @@ new class extends Component
             $sellerUser->notify(new OrderDisputeUpdated($dispute, 'opened'));
         }
 
+        // Notify all admins about new dispute
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NewDisputeRaised($dispute));
+        }
+
         $body = "Return / issue request for Order #{$order->id} (Tracking: ".($order->tracking_number ?? 'N/A')."):\n\n"
               . "Reason: " . (OrderDispute::REASON_CODES[$this->issueReason] ?? 'Issue')
               . "\n"
@@ -245,6 +254,12 @@ new class extends Component
         $order->store_rating = $this->storeRating;
         $order->store_review = $this->storeReview !== '' ? $this->storeReview : null;
         $order->save();
+
+        // Notify seller about store review
+        $sellerUser = $order->seller?->user;
+        if ($sellerUser) {
+            $sellerUser->notify(new ReviewReceivedNotification($order));
+        }
 
         $this->closeRateModal();
     }
@@ -443,6 +458,12 @@ new class extends Component
             $sellerUser->notify(new OrderDisputeUpdated($dispute, 'opened'));
         }
 
+        // Notify all admins about new non-receipt dispute
+        $admins = User::role('admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NewDisputeRaised($dispute));
+        }
+
         $body = "Delivery issue reported for Order #{$order->id} (Tracking: ".($order->tracking_number ?? 'N/A')."):\n\n"
               . "Reason: Parcel not received\n"
               . "Customer indicates they have not received the parcel yet and needs delivery investigation.\n\n"
@@ -531,6 +552,12 @@ new class extends Component
         $order->cancellation_reason_note = null;
         $order->applyCancellationRefundDecision($fromStatus);
         $order->save();
+
+        // Notify seller about buyer cancellation
+        $sellerUser = $order->seller?->user;
+        if ($sellerUser) {
+            $sellerUser->notify(new OrderCancelledByBuyerNotification($order));
+        }
     }
 
     public function openRateProductsModal(int $orderId): void
@@ -612,6 +639,12 @@ new class extends Component
                 'rating'      => (int) $this->productRatings[$productId],
                 'body'        => trim($this->productReviews[$productId] ?? ''),
             ]);
+
+            // Notify seller about product review
+            $sellerUser = $item->product?->seller?->user;
+            if ($sellerUser) {
+                $sellerUser->notify(new ReviewReceivedNotification(null, Review::where('customer_id', $customer->id)->where('product_id', $productId)->where('order_id', $order->id)->latest()->first()));
+            }
         }
 
         $this->closeRateProductsModal();

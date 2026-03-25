@@ -809,7 +809,9 @@
                                     <div class="ts-notif-row">
                                         <div class="flex-1 min-w-0">
                                             <div class="ts-notif-row-title">
-                                                @if($type === 'new_order')
+                                                @if(isset($data['title']))
+                                                    {{ $data['title'] }}
+                                                @elseif($type === 'new_order')
                                                     New order #{{ $data['order_id'] ?? '' }}
                                                 @elseif($type === 'order_status_updated')
                                                     Order #{{ $data['order_id'] ?? '' }} status updated
@@ -821,6 +823,8 @@
                                                     Wishlist item low stock
                                                 @elseif($type === 'order_dispute_updated')
                                                     Dispute update #{{ $data['dispute_id'] ?? '' }}
+                                                @elseif($isDispute)
+                                                    Dispute Alert
                                                 @elseif($type === 'order_sla_alert')
                                                     SLA alert on order #{{ $data['order_id'] ?? '' }}
                                                 @else
@@ -828,7 +832,9 @@
                                                 @endif
                                             </div>
                                             <div class="ts-notif-row-body">
-                                                @if($type === 'new_order')
+                                                @if(isset($data['message']))
+                                                    {{ \Illuminate\Support\Str::limit((string) $data['message'], 85) }}
+                                                @elseif($type === 'new_order')
                                                     From {{ $data['customer_name'] ?? 'customer' }} · ₱{{ number_format($data['total_amount'] ?? 0, 2) }}
                                                 @elseif($type === 'order_status_updated')
                                                     Status: {{ ucfirst($data['status'] ?? '') }}

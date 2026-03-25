@@ -27,6 +27,7 @@ class Reports extends Component
         $totalRevenue = (float) Order::query()
             ->where('seller_id', $sellerId)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->sum('total_amount');
 
         $completedOrdersCount = Order::query()
@@ -36,7 +37,10 @@ class Reports extends Component
 
         $cancelledOrdersCount = Order::query()
             ->where('seller_id', $sellerId)
-            ->where('status', Order::STATUS_CANCELLED)
+            ->where(function($q) {
+                $q->where('status', Order::STATUS_CANCELLED)
+                  ->orWhere('refund_status', Order::REFUND_STATUS_COMPLETED);
+            })
             ->count();
 
         // ── Period-Filtered Metrics ──
@@ -45,6 +49,7 @@ class Reports extends Component
         
         $periodSales = (float) (clone $periodQuery)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->sum('total_amount');
 
         $periodOrdersCount = (int) (clone $periodQuery)->count();
@@ -53,6 +58,7 @@ class Reports extends Component
         $monthlyRevenue = Order::query()
             ->where('seller_id', $sellerId)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(total_amount) as total")
             ->groupBy('ym')
             ->orderBy('ym', 'desc')

@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Business Summary Report</title>
     <style>
         body { font-family: 'DejaVu Sans', 'Helvetica', 'Arial', sans-serif; color: #333; font-size: 11px; line-height: 1.4; margin: 0; padding: 25px; }
@@ -46,11 +47,11 @@
         <div class="kpi-row">
             <div class="kpi-card">
                 <div class="kpi-label">Total Profit (Fees)</div>
-                <div class="kpi-value"><span class="currency">&#8369;</span>{{ number_format($totalProfit, 2) }}</div>
+                <div class="kpi-value"><span class="currency"></span>{{ number_format($totalProfit, 2) }}</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Period Sales</div>
-                <div class="kpi-value"><span class="currency">&#8369;</span>{{ number_format($totalSalesFiltered, 2) }}</div>
+                <div class="kpi-value"><span class="currency"></span>{{ number_format($totalSalesFiltered, 2) }}</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Completed Orders</div>
@@ -78,7 +79,7 @@
                     @foreach($revenueByMonth as $index => $row)
                         <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
                             <td>{{ $row->ym }}</td>
-                            <td class="amount"><span class="currency">&#8369;</span>{{ number_format($row->total, 2) }}</td>
+                            <td class="amount"><span class="currency"></span>{{ number_format($row->total, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -98,7 +99,7 @@
                     @foreach($profitByMonth as $index => $row)
                         <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
                             <td>{{ $row->ym }}</td>
-                            <td class="amount"><span class="currency">&#8369;</span>{{ number_format($row->total, 2) }}</td>
+                            <td class="amount"><span class="currency"></span>{{ number_format($row->total, 2) }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -118,7 +119,7 @@
             </tr>
             <tr>
                 <td class="bold">Pending Fees</td>
-                <td class="amount" style="color: #616161;"><span class="currency">&#8369;</span>{{ number_format($totalPendingFees, 2) }}</td>
+                <td class="amount" style="color: #616161;"><span class="currency"></span>{{ number_format($totalPendingFees, 2) }}</td>
                 <td class="bold">Refund Filter applied</td>
                 <td>{{ ucfirst($refundDisputeFilter) }}</td>
             </tr>
@@ -126,7 +127,7 @@
                 <td class="bold">Cancelled Orders</td>
                 <td style="color: #C0392B;">{{ $cancelledCount }}</td>
                 <td class="bold">Total Cumulative Revenue</td>
-                <td class="amount"><span class="currency">&#8369;</span>{{ number_format($totalRevenue, 2) }}</td>
+                <td class="amount"><span class="currency"></span>{{ number_format($totalRevenue, 2) }}</td>
             </tr>
         </tbody>
     </table>

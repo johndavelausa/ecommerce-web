@@ -238,22 +238,26 @@ new class extends Component
             ->whereIn('status', [Order::STATUS_READY_TO_SHIP, Order::STATUS_PROCESSING])
             ->count();
 
-        // Bad Orders: cancelled + reported problematic (v1.2 - Seller #7); for now cancelled only
-        $badOrdersCount = $ordersCancelled;
+        // Bad Orders: cancelled + refunded orders (v1.2 - Seller #7)
+        $refundedOrdersCount = (clone $orderBase)
+            ->where('refund_status', Order::REFUND_STATUS_COMPLETED)
+            ->count();
+        $badOrdersCount = $ordersCancelled + $refundedOrdersCount;
         $badOrdersPercent = $ordersTotal > 0 ? round(($badOrdersCount / $ordersTotal) * 100, 1) : 0.0;
 
         $ordersCompleted = (clone $orderBase)
-            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->count();
 
         $earningsTotal = (float) Order::query()
             ->where('seller_id', $seller->id)
-            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->sum('total_amount');
 
         $earningsMonth = (float) Order::query()
             ->where('seller_id', $seller->id)
-            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
             ->sum('total_amount');
 
@@ -275,7 +279,8 @@ new class extends Component
         $topProductData = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->selectRaw('order_items.product_id, SUM(order_items.quantity) as total_sold')
             ->groupBy('order_items.product_id')
             ->orderByDesc('total_sold')
@@ -319,7 +324,7 @@ new class extends Component
         $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
         $revenues = Order::query()
             ->where('seller_id', $seller->id)
-            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
             ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->groupBy('date')
@@ -341,7 +346,8 @@ new class extends Component
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->selectRaw('products.name, SUM(order_items.price_at_purchase * order_items.quantity) as total_revenue, SUM(order_items.quantity) as total_qty')
             ->groupBy('order_items.product_id', 'products.name')
             ->orderByDesc('total_revenue')
@@ -463,7 +469,8 @@ new class extends Component
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
             ->selectRaw('products.name, SUM(order_items.quantity) as total_sold')
             ->groupBy('order_items.product_id', 'products.name')
             ->orderByDesc('total_sold')
@@ -915,8 +922,8 @@ new class extends Component
             </div>
             <div class="dash-kpi-body">
                 <div class="dash-kpi-label">Earnings</div>
-                <div class="dash-kpi-value" style="color:#2D9F4E;">&#8369;{{ number_format($this->stats['earnings_month'], 0) }}</div>
-                <div class="dash-kpi-sub">Lifetime &#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div>
+                <div class="dash-kpi-value" style="color:#2D9F4E;">{{ number_format($this->stats['earnings_month'], 0) }}</div>
+                <div class="dash-kpi-sub">Lifetime {{ number_format($this->stats['earnings_total'], 0) }}</div>
             </div>
         </div>
         {{-- Net Profit --}}
@@ -926,7 +933,7 @@ new class extends Component
             </div>
             <div class="dash-kpi-body">
                 <div class="dash-kpi-label">Net Profit</div>
-                <div class="dash-kpi-value">&#8369;{{ number_format($this->stats['net_profit'], 0) }}</div>
+                <div class="dash-kpi-value">{{ number_format($this->stats['net_profit'], 0) }}</div>
                 <div class="dash-kpi-sub">{{ $this->stats['orders_completed'] }} completed orders</div>
             </div>
         </div>
@@ -983,7 +990,7 @@ new class extends Component
                         <span style="font-size:0.6rem;font-weight:700;color:#9E9E9E;text-transform:uppercase;letter-spacing:0.07em;">7-Day Sales Trend</span>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-size:1rem;font-weight:800;color:#2D9F4E;line-height:1;">&#8369;{{ number_format($this->stats['avg_order_value'], 0) }}</div>
+                        <div style="font-size:1rem;font-weight:800;color:#2D9F4E;line-height:1;">{{ number_format($this->stats['avg_order_value'], 0) }}</div>
                         <div style="font-size:0.6rem;color:#BDBDBD;">avg / order</div>
                     </div>
                 </div>
@@ -1024,7 +1031,7 @@ new class extends Component
                 </div>
                 <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid #F5F5F5;">
                     <div><div style="font-size:0.6rem;color:#BDBDBD;">Completed</div><div style="font-size:0.8125rem;font-weight:700;color:#2D9F4E;">{{ $this->stats['orders_completed'] }}</div></div>
-                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Total Revenue</div><div style="font-size:0.8125rem;font-weight:700;color:#212121;">&#8369;{{ number_format($this->stats['earnings_total'], 0) }}</div></div>
+                    <div><div style="font-size:0.6rem;color:#BDBDBD;">Total Revenue</div><div style="font-size:0.8125rem;font-weight:700;color:#212121;">{{ number_format($this->stats['earnings_total'], 0) }}</div></div>
                 </div>
             </div>
         </div>
@@ -1416,7 +1423,7 @@ new class extends Component
                                 <div class="dash-subscription-item" style="padding-left:14px;padding-right:14px;">
                                     <div>
                                         <span class="dash-subscription-date">{{ $p->created_at->format('F Y') }}</span>
-                                        <span class="dash-subscription-amount">&#8369;{{ number_format($p->amount, 2) }}</span>
+                                        <span class="dash-subscription-amount">{{ number_format($p->amount, 2) }}</span>
                                     </div>
                                     <span class="dash-subscription-status {{ $p->status }}">{{ ucfirst($p->status) }}</span>
                                 </div>

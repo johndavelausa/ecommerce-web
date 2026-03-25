@@ -595,20 +595,10 @@ new class extends Component
                             </div>
                         @endif
 
-                        {{-- Disputes (if exists) --}}
-                        @if(!$order->disputes->isEmpty())
-                            <div style="padding:12px;background:#FFEBEE;border-radius:12px;border:1px solid #FFCDD2;">
-                                <div style="font-size:0.6875rem;font-weight:700;color:#C0392B;text-transform:uppercase;letter-spacing:0.05em;font-style:italic;margin-bottom:8px;">⚠ Active Disputes ({{ count($order->disputes) }})</div>
-                                <div style="font-size:0.75rem;color:#C0392B;">This order has {{ count($order->disputes) }} dispute(s). Review details in disputes section.</div>
-                            </div>
-                        @endif
                     </div>
 
                     {{-- Receipt Footer --}}
-                    <div style="padding:14px 20px;border-top:1px solid #D4E8DA;background:#F5FBF7;border-radius:0 0 20px 20px;display:flex;justify-content:space-between;gap:8px;">
-                        <button type="button" wire:click="openOverrideModal({{ $order->id }})" class="ord-modal-btn ord-modal-btn-amber">
-                            Override Status
-                        </button>
+                    <div style="padding:14px 20px;border-top:1px solid #D4E8DA;background:#F5FBF7;border-radius:0 0 20px 20px;display:flex;justify-content:flex-end;gap:8px;">
                         <button type="button" wire:click="closeDetails" class="ord-modal-btn">
                             Close
                         </button>

@@ -99,15 +99,15 @@
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
                     <div class="rep-metric">
                         <div class="rep-metric-label">Total Profit (Fees)</div>
-                        <div class="rep-metric-value">&#8369;{{ number_format($totalProfit ?? 0, 2) }}</div>
+                        <div class="rep-metric-value">{{ number_format($totalProfit ?? 0, 2) }}</div>
                     </div>
                     <div class="rep-metric">
                         <div class="rep-metric-label">Total Revenue (Orders)</div>
-                        <div class="rep-metric-value">&#8369;{{ number_format($totalRevenue ?? 0, 2) }}</div>
+                        <div class="rep-metric-value">{{ number_format($totalRevenue ?? 0, 2) }}</div>
                     </div>
                     <div class="rep-metric">
                         <div class="rep-metric-label">Total Sales (Period)</div>
-                        <div class="rep-metric-value">&#8369;{{ number_format($totalSalesFiltered ?? 0, 2) }}</div>
+                        <div class="rep-metric-value">{{ number_format($totalSalesFiltered ?? 0, 2) }}</div>
                     </div>
                 </div>
 
@@ -142,7 +142,7 @@
                             <thead><tr><th>Month</th><th class="right">Amount</th></tr></thead>
                             <tbody>
                                 @forelse($profitByMonth ?? [] as $row)
-                                    <tr><td>{{ $row->ym }}</td><td class="right">&#8369;{{ number_format((float)$row->total, 2) }}</td></tr>
+                                    <tr><td>{{ $row->ym }}</td><td class="right">{{ number_format((float)$row->total, 2) }}</td></tr>
                                 @empty
                                     <tr class="empty-row"><td colspan="2">No data</td></tr>
                                 @endforelse
@@ -155,7 +155,7 @@
                             <thead><tr><th>Month</th><th class="right">Amount</th></tr></thead>
                             <tbody>
                                 @forelse($revenueByMonth ?? [] as $row)
-                                    <tr><td>{{ $row->ym }}</td><td class="right">&#8369;{{ number_format((float)$row->total, 2) }}</td></tr>
+                                    <tr><td>{{ $row->ym }}</td><td class="right">{{ number_format((float)$row->total, 2) }}</td></tr>
                                 @empty
                                     <tr class="empty-row"><td colspan="2">No data</td></tr>
                                 @endforelse
@@ -170,11 +170,11 @@
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:14px;">
                         <div class="rep-summary-item">
                             <div class="rep-summary-key">GCash (Seller Fees)</div>
-                            <div class="rep-summary-val">&#8369;{{ number_format($gcashTotal ?? 0, 2) }}</div>
+                            <div class="rep-summary-val">{{ number_format($gcashTotal ?? 0, 2) }}</div>
                         </div>
                         <div class="rep-summary-item">
                             <div class="rep-summary-key">Cash (COD Orders)</div>
-                            <div class="rep-summary-val">&#8369;{{ number_format($cashTotal ?? 0, 2) }}</div>
+                            <div class="rep-summary-val">{{ number_format($cashTotal ?? 0, 2) }}</div>
                         </div>
                     </div>
                 </div>
@@ -216,7 +216,7 @@
                         <thead><tr><th>Date</th><th>Customer</th><th class="right">Amount</th></tr></thead>
                         <tbody>
                             @forelse($cancelledOrders ?? [] as $o)
-                                <tr><td>{{ $o->cancelled_at?->format('Y-m-d H:i') }}</td><td>{{ $o->customer->name ?? '—' }}</td><td class="right">&#8369;{{ number_format($o->total_amount, 2) }}</td></tr>
+                                <tr><td>{{ $o->cancelled_at?->format('Y-m-d H:i') }}</td><td>{{ $o->customer->name ?? '—' }}</td><td class="right">{{ number_format($o->total_amount, 2) }}</td></tr>
                             @empty
                                 <tr class="empty-row"><td colspan="3">No cancellations</td></tr>
                             @endforelse
@@ -250,11 +250,11 @@
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:14px;">
                         <div class="rep-summary-item">
                             <div class="rep-summary-key">Total Fees Collected</div>
-                            <div class="rep-summary-val">&#8369;{{ number_format($totalProfit ?? 0, 2) }}</div>
+                            <div class="rep-summary-val">{{ number_format($totalProfit ?? 0, 2) }}</div>
                         </div>
                         <div class="rep-summary-item">
                             <div class="rep-summary-key">Pending Fees</div>
-                            <div class="rep-summary-val">&#8369;{{ number_format($totalPendingFees ?? 0, 2) }}</div>
+                            <div class="rep-summary-val">{{ number_format($totalPendingFees ?? 0, 2) }}</div>
                         </div>
                         <div class="rep-summary-item">
                             <div class="rep-summary-key">Active Product Listings</div>

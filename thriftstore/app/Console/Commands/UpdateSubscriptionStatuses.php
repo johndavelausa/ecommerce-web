@@ -32,6 +32,9 @@ class UpdateSubscriptionStatuses extends Command
                 foreach ($sellers as $seller) {
                     $due = Carbon::parse($seller->subscription_due_date)->startOfDay();
 
+                    $oldStatus = (string) $seller->subscription_status;
+                    $status = 'active';
+
                     if ($today->lessThanOrEqualTo($due)) {
                         $status = 'active';
                     } elseif ($today->lessThanOrEqualTo($due->copy()->addDays(7))) {
@@ -48,6 +51,11 @@ class UpdateSubscriptionStatuses extends Command
                     }
 
                     $seller->update($updates);
+
+                    // Notify seller if status changed to critical levels
+                    if ($oldStatus !== $status && in_array($status, ['grace_period', 'lapsed'], true)) {
+                        $seller->user?->notify(new \App\Notifications\SubscriptionStatusNotification($seller, $status));
+                    }
                 }
             });
 
