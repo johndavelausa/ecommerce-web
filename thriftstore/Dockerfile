@@ -25,8 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd zip bcmath exif intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable mod_rewrite for Laravel
-RUN a2enmod rewrite
+# Enable mod_rewrite for Laravel and fix MPM conflict
+RUN a2dismod mpm_event || true && a2enmod mpm_prefork && a2enmod rewrite
 
 # Set document root to Laravel public/
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
