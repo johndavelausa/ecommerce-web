@@ -27,8 +27,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Fix MPM conflict and enable mod_rewrite
 # AFTER (fixed)
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
-    a2enmod mpm_prefork && \
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.load \
+    /etc/apache2/mods-enabled/mpm_event.conf \
+    /etc/apache2/mods-enabled/mpm_worker.load \
+    /etc/apache2/mods-enabled/mpm_worker.conf \
+    /etc/apache2/mods-enabled/mpm_prefork.load \
+    /etc/apache2/mods-enabled/mpm_prefork.conf && \
+    ln -s /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load && \
+    ln -s /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf && \
     a2enmod rewrite
 
 # Set document root to Laravel public/
@@ -43,14 +49,15 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# Copy dependency manifests first (keeps composer cached)
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
 # Copy app source
 COPY . .
 
 # Copy built Vite assets from node-builder stage
 COPY --from=node-builder /app/public/build ./public/build
-
-# Install PHP dependencies (no dev)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
 # Storage & permissions
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions \
