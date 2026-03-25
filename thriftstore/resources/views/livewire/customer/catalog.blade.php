@@ -488,10 +488,7 @@ new class extends Component
                                 <input
                                     type="number"
                                     x-model.number="maxVal"
-                                    @change="
-                                        $wire.set('max_price', $event.target.value > 0 ? Number($event.target.value) : null);
-                                        $el.closest('[x-data]').__x.$data.maxVal = Number($event.target.value);
-                                    "
+                                    @change="$wire.set('max_price', $event.target.value > 0 ? Number($event.target.value) : null)"
                                     min="0"
                                     placeholder="Max"
                                     class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2d6c50] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2d6c50]"
@@ -509,15 +506,6 @@ new class extends Component
                         </div>
                         <span class="text-sm text-gray-700">On sale only</span>
                     </label>
-
-                    {{-- Apply Filters button --}}
-                    <button
-                        type="button"
-                        wire:click="applyFilters"
-                        class="w-full rounded-xl bg-[#2d6c50] py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#245840] active:scale-[0.98]"
-                    >
-                        Apply Filters
-                    </button>
 
                 </div>
             </div>
@@ -885,4 +873,5 @@ new class extends Component
         </section>
     @endif
 
+</div>
 </div>

@@ -40,9 +40,9 @@ new class extends Component
     public function updatingCategoriesSelected(): void { $this->resetPage(); }
     public function updatingSeller(): void { $this->resetPage(); }
     public function updatingCondition(): void { $this->resetPage(); }
-    public function updatingMinPrice(): void { $this->resetPage(); }
-    public function updatingMaxPrice(): void { $this->resetPage(); }
-    public function updatedOnSaleOnly(): void { $this->resetPage(); }
+    public function updatedMinPrice(): void { Cache::increment('products.listing.version'); $this->resetPage(); }
+    public function updatedMaxPrice(): void { Cache::increment('products.listing.version'); $this->resetPage(); }
+    public function updatedOnSaleOnly(): void { Cache::increment('products.listing.version'); $this->resetPage(); }
 
     public function toggleCategory(string $cat): void
     {
@@ -62,6 +62,7 @@ new class extends Component
 
     public function applyFilters(): void
     {
+        Cache::increment('products.listing.version');
         $this->resetPage();
     }
 
@@ -76,10 +77,10 @@ new class extends Component
         $this->max_price = null;
         $this->on_sale_only = false;
         $this->sort = 'latest';
+        Cache::increment('products.listing.version');
         $this->resetPage();
     }
 
-    #[Computed]
     public function getProductsProperty()
     {
         $version = Cache::get('products.listing.version', 0);
@@ -434,63 +435,6 @@ new class extends Component
                         </div>
                     </div>
 
-                    {{-- PRICE RANGE --}}
-                    <div
-                        x-data="{
-                            minVal: {{ (int) ($this->min_price ?? 0) }},
-                            maxVal: {{ (int) ($this->max_price ?? 5000) }},
-                            maxLimit: 10000
-                        }"
-                    >
-                        <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Price Range</h4>
-
-                        {{-- Slider track --}}
-                        <div class="relative mb-4">
-                            <input
-                                type="range"
-                                x-model.number="maxVal"
-                                :min="0"
-                                :max="maxLimit"
-                                step="50"
-                                @change="$wire.set('max_price', $event.target.value > 0 ? Number($event.target.value) : null)"
-                                class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-[#2D9F4E]"
-                                style="background: linear-gradient(to right, #2D9F4E 0%, #2D9F4E calc(var(--val, 50%) * 100%), #e5e7eb calc(var(--val, 50%) * 100%), #e5e7eb 100%)"
-                                x-init="$el.style.setProperty('--val', maxVal / maxLimit)"
-                                @input="$el.style.setProperty('--val', $event.target.value / maxLimit)"
-                            >
-                        </div>
-
-                        {{-- Min / Max inputs --}}
-                        <div class="flex items-center gap-2">
-                            <div class="relative flex-1">
-                                <span class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500">₱</span>
-                                <input
-                                    type="number"
-                                    x-model.number="minVal"
-                                    @change="$wire.set('min_price', $event.target.value > 0 ? Number($event.target.value) : null)"
-                                    min="0"
-                                    placeholder="0"
-                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2D9F4E] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]"
-                                >
-                            </div>
-                            <span class="shrink-0 text-xs text-gray-400">to</span>
-                            <div class="relative flex-1">
-                                <span class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-500">₱</span>
-                                <input
-                                    type="number"
-                                    x-model.number="maxVal"
-                                    @change="
-                                        $wire.set('max_price', $event.target.value > 0 ? Number($event.target.value) : null);
-                                        $el.closest('[x-data]').__x.$data.maxVal = Number($event.target.value);
-                                    "
-                                    min="0"
-                                    placeholder="Max"
-                                    class="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-6 pr-2 text-sm focus:border-[#2D9F4E] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#2D9F4E]"
-                                >
-                            </div>
-                        </div>
-                    </div>
-
                     {{-- On Sale toggle --}}
                     <label class="flex cursor-pointer items-center gap-2.5">
                         <div class="relative">
@@ -501,14 +445,6 @@ new class extends Component
                         <span class="text-sm text-gray-700">On sale only</span>
                     </label>
 
-                    {{-- Apply Filters button --}}
-                    <button
-                        type="button"
-                        wire:click="applyFilters"
-                        class="w-full rounded-xl bg-[#2D9F4E] py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#1B7A37] active:scale-[0.98]"
-                    >
-                        Apply Filters
-                    </button>
 
                 </div>
             </div>

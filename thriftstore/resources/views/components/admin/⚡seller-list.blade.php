@@ -417,7 +417,16 @@ new class extends Component
     .sel-modal-btn-danger:hover { background: #A02622; }
     .sel-detail-label { font-size: 0.8125rem; color: #757575; font-style: italic; }
     .sel-detail-value { font-size: 0.9375rem; font-weight: 600; color: #0F3D22; }
-    .sel-payment-card { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 12px 14px; }
+    .sel-payment-card { background: #fff; border-radius: 14px; border: 1.5px solid #D4E8DA; padding: 14px 16px; box-shadow: 0 1px 4px rgba(15,61,34,0.06); }
+    .sel-payment-card + .sel-payment-card { margin-top: 10px; }
+    .sel-payment-approve-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 16px; border-radius: 50px; font-size: 0.8125rem; font-weight: 700; background: linear-gradient(135deg, #0F3D22 0%, #1B7A37 100%); color: #fff; border: none; cursor: pointer; transition: all 0.15s; }
+    .sel-payment-approve-btn:hover { box-shadow: 0 4px 12px rgba(15,61,34,0.25); }
+    .sel-payment-reject-btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 16px; border-radius: 50px; font-size: 0.8125rem; font-weight: 700; background: #fff; color: #C0392B; border: 1.5px solid #f5c6cb; cursor: pointer; transition: all 0.15s; }
+    .sel-payment-reject-btn:hover { background: #FFEBEE; }
+    .sel-receipt-thumb { width: 100%; border-radius: 10px; border: 1.5px solid #D4E8DA; object-fit: contain; max-height: 220px; cursor: zoom-in; transition: opacity 0.15s; margin-top: 12px; }
+    .sel-receipt-thumb:hover { opacity: 0.9; }
+    .sel-receipt-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+    .sel-receipt-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
     .sel-note-card { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 10px 12px; }
     .sel-activity-log { background: #F5FBF7; border-radius: 12px; border: 1px solid #D4E8DA; padding: 10px 12px; }
 </style>
@@ -571,21 +580,62 @@ new class extends Component
                                 <div class="sel-section-title">Payments ({{ count($seller->payments) }})</div>
                                 @forelse($seller->payments as $payment)
                                     <div class="sel-payment-card">
+                                        {{-- Header row: type + amount + status badge --}}
                                         <div class="flex justify-between items-start gap-2">
                                             <div class="flex-1">
-                                                <div style="color:#0F3D22;font-weight:600;">{{ ucfirst($payment->type) }} — ₱{{ number_format($payment->amount, 2) }}</div>
-                                                <div class="text-xs mt-1" style="color:#9E9E9E;font-style:italic;">Ref: {{ $payment->reference_number }}</div>
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span style="color:#0F3D22;font-weight:700;font-size:0.9375rem;">{{ ucfirst($payment->type) }}</span>
+                                                    <span style="color:#1B7A37;font-weight:800;font-size:1rem;">₱{{ number_format($payment->amount, 2) }}</span>
+                                                </div>
+                                                <div class="mt-1 flex items-center gap-2 flex-wrap">
+                                                    <span style="color:#9E9E9E;font-size:0.75rem;">Ref:</span>
+                                                    <span style="color:#424242;font-size:0.75rem;font-family:monospace;font-weight:600;">{{ $payment->reference_number }}</span>
+                                                </div>
+                                                @if($payment->created_at)
+                                                    <div class="mt-0.5" style="color:#BDBDBD;font-size:0.7rem;">{{ $payment->created_at->format('M d, Y · h:i A') }}</div>
+                                                @endif
                                             </div>
-                                            <span class="px-2 py-0.5 text-xs rounded flex-shrink-0" style="background:{{ $payment->status === 'approved' ? '#E8F5E9' : ($payment->status === 'rejected' ? '#FFEBEE' : '#FFF9E3') }};color:{{ $payment->status === 'approved' ? '#1B7A37' : ($payment->status === 'rejected' ? '#C0392B' : '#F57C00') }};">{{ $payment->status }}</span>
+                                            <span class="sel-status-badge flex-shrink-0
+                                                {{ $payment->status === 'approved' ? 'sel-status-approved' : ($payment->status === 'rejected' ? 'sel-status-rejected' : 'sel-status-pending') }}"
+                                            >{{ ucfirst($payment->status) }}</span>
                                         </div>
-                                        @if($payment->status === 'pending')
-                                            <div class="flex gap-2 mt-2">
-                                                <button wire:click="approvePayment({{ $payment->id }})" class="text-xs font-600 hover:underline flex-1" style="color:#1B7A37;">✓ Approve</button>
-                                                <button wire:click="rejectPayment({{ $payment->id }})" class="text-xs font-600 hover:underline flex-1" style="color:#C0392B;">✕ Reject</button>
+
+                                        {{-- GCash receipt image --}}
+                                        @if($payment->screenshot_path)
+                                            <div x-data="{ open: false }">
+                                                <img
+                                                    src="{{ asset('storage/' . $payment->screenshot_path) }}"
+                                                    alt="GCash Receipt"
+                                                    class="sel-receipt-thumb"
+                                                    @click="open = true"
+                                                >
+                                                {{-- Lightbox --}}
+                                                <div x-show="open" x-cloak class="sel-receipt-lightbox" @click="open = false">
+                                                    <img src="{{ asset('storage/' . $payment->screenshot_path) }}" alt="GCash Receipt Full">
+                                                </div>
                                             </div>
                                         @endif
-                                        @if($payment->screenshot_path)
-                                            <img src="{{ asset('storage/' . $payment->screenshot_path) }}" alt="Screenshot" class="max-w-xs rounded border mt-2" style="border-color:#D4E8DA;max-height:120px;">
+
+                                        {{-- Approve / Reject buttons --}}
+                                        @if($payment->status === 'pending')
+                                            <div class="flex gap-2 mt-3">
+                                                <button wire:click="approvePayment({{ $payment->id }})" wire:confirm="Approve this payment?" class="sel-payment-approve-btn flex-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 111.414-1.414L8.414 12.172l7.879-7.879a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                                    Approve
+                                                </button>
+                                                <button wire:click="rejectPayment({{ $payment->id }})" class="sel-payment-reject-btn flex-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                                                    Reject
+                                                </button>
+                                            </div>
+                                        @endif
+
+                                        {{-- Rejection reason --}}
+                                        @if($payment->status === 'rejected' && !empty($payment->rejection_reason))
+                                            <div class="mt-2 rounded-lg px-3 py-2" style="background:#FFF5F5;border:1px solid #f5c6cb;">
+                                                <span style="font-size:0.75rem;color:#C0392B;font-weight:600;">Reason: </span>
+                                                <span style="font-size:0.75rem;color:#757575;">{{ $payment->rejection_reason }}</span>
+                                            </div>
                                         @endif
                                     </div>
                                 @empty
