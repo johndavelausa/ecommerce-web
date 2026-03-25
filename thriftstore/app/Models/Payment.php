@@ -41,14 +41,9 @@ class Payment extends Model
      */
     public function getScreenshotUrlAttribute()
     {
-        if (!$this->screenshot_path) {
-            return null;
-        }
-
-        if (str_starts_with((string) $this->screenshot_path, 'data:')) {
-            return $this->screenshot_path;
-        }
-
-        return asset('storage/' . $this->screenshot_path);
+        $path = trim((string) $this->screenshot_path);
+        if (!$path) return null;
+        if (str_starts_with($path, 'data:')) return $path;
+        return asset('storage/' . $path);
     }
 }

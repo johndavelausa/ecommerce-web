@@ -123,14 +123,11 @@ class Product extends Model
      */
     public function getImageUrlAttribute()
     {
-        if (!$this->image_path) {
-            return null;
+        $path = trim((string) $this->image_path);
+        if (str_starts_with($path, 'data:')) {
+            return $path;
         }
 
-        if (str_starts_with((string) $this->image_path, 'data:')) {
-            return $this->image_path;
-        }
-
-        return asset('storage/' . $this->image_path);
+        return asset('storage/' . $path);
     }
 }

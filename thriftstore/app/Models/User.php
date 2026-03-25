@@ -87,8 +87,9 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute()
     {
-        if (!$this->avatar) return null;
-        if (str_starts_with((string) $this->avatar, 'data:')) return $this->avatar;
-        return asset('storage/' . $this->avatar);
+        $path = trim((string) $this->avatar);
+        if (!$path) return null;
+        if (str_starts_with($path, 'data:')) return $path;
+        return asset('storage/' . $path);
     }
 }

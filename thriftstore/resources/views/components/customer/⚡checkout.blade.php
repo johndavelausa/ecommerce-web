@@ -505,7 +505,7 @@ new class extends Component
                                     <div class="flex items-center gap-3 px-3 py-3">
                                         @if(!empty($row['image_path']))
                                             @php
-                                                $checkoutImg = $row['image_path'];
+                                                $checkoutImg = trim((string)($row['image_path'] ?? ''));
                                                 $checkoutUrl = str_starts_with($checkoutImg, 'data:') ? $checkoutImg : asset('storage/'.$checkoutImg);
                                             @endphp
                                             <img src="{{ $checkoutUrl }}" alt="{{ $row['name'] }}"

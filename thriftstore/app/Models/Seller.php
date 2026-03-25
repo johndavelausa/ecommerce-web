@@ -108,15 +108,17 @@ class Seller extends Model
 
     public function getBannerUrlAttribute()
     {
-        if (!$this->banner_path) return null;
-        if (str_starts_with((string) $this->banner_path, 'data:')) return $this->banner_path;
-        return asset('storage/' . $this->banner_path);
+        $path = trim((string) $this->banner_path);
+        if (!$path) return null;
+        if (str_starts_with($path, 'data:')) return $path;
+        return asset('storage/' . $path);
     }
 
     public function getLogoUrlAttribute()
     {
-        if (!$this->logo_path) return null;
-        if (str_starts_with((string) $this->logo_path, 'data:')) return $this->logo_path;
-        return asset('storage/' . $this->logo_path);
+        $path = trim((string) $this->logo_path);
+        if (!$path) return null;
+        if (str_starts_with($path, 'data:')) return $path;
+        return asset('storage/' . $path);
     }
 }

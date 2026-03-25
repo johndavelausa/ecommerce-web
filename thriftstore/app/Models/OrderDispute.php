@@ -183,14 +183,9 @@ class OrderDispute extends Model
      */
     public function getEvidenceUrlAttribute()
     {
-        if (!$this->evidence_path) {
-            return null;
-        }
-
-        if (str_starts_with((string) $this->evidence_path, 'data:')) {
-            return $this->evidence_path;
-        }
-
-        return asset('storage/' . $this->evidence_path);
+        $path = trim((string) $this->evidence_path);
+        if (!$path) return null;
+        if (str_starts_with($path, 'data:')) return $path;
+        return asset('storage/' . $path);
     }
 }

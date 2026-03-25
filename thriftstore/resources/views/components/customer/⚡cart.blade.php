@@ -144,7 +144,8 @@ new class extends Component
                 <div class="bg-white rounded-2xl p-4 flex items-center gap-4 transition" style="border:1px solid #F5F5F5;">
                     {{-- Image --}}
                     @if(!empty($row['image_path']))
-                        <img src="{{ str_starts_with((string)$row['image_path'], 'data:') ? $row['image_path'] : asset('storage/'.$row['image_path']) }}" loading="lazy"
+                        @php $cartImg = trim((string)$row['image_path']); @endphp
+                        <img src="{{ str_starts_with($cartImg, 'data:') ? $cartImg : asset('storage/'.$cartImg) }}" loading="lazy"
                              alt="{{ $row['name'] }}"
                              class="w-20 h-20 rounded-xl object-cover flex-shrink-0" style="border:1px solid #F5F5F5;">
                     @else
