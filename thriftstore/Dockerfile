@@ -26,7 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Fix MPM conflict and enable mod_rewrite
-RUN rm -f /etc/apache2/mods-enabled/mpm_event.load && \
+# AFTER (fixed)
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true && \
     a2enmod mpm_prefork && \
     a2enmod rewrite
 
