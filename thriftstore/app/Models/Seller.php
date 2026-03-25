@@ -109,7 +109,6 @@ class Seller extends Model
     public function getBannerUrlAttribute()
     {
         $path = trim((string) $this->banner_path);
-        $path = trim($path, '"\'');
         if (empty($path)) {
             return null;
         }
@@ -122,7 +121,6 @@ class Seller extends Model
     public function getLogoUrlAttribute()
     {
         $path = trim((string) $this->logo_path);
-        $path = trim($path, '"\'');
         if (empty($path)) {
             return null;
         }

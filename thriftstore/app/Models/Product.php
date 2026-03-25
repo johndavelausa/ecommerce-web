@@ -125,14 +125,12 @@ class Product extends Model
     {
         $path = trim((string) $this->image_path);
         
-        // Remove surrounding quotes if they exist (e.g. from JSON-like storage)
-        $path = trim($path, '"\'');
-
+        // Return null if empty
         if (empty($path)) {
             return null;
         }
 
-        // If it's already a full URL or a data URI, return it directly
+        // Return directly if it's already a full URL or a base64 data URI
         if (str_starts_with($path, 'http') || str_starts_with($path, 'data:')) {
             return $path;
         }

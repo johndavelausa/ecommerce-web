@@ -38,7 +38,6 @@ class SystemSetting extends Model
     public static function get_url(string $key, ?string $default = null): ?string
     {
         $value = trim((string) self::get($key));
-        $value = trim($value, '"\'');
         if (empty($value)) {
             return $default;
         }
