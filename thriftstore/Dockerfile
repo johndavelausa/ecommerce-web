@@ -20,8 +20,8 @@ RUN docker-php-ext-install pdo pdo_mysql bcmath zip
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs
 
-# 3. Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# 3. Get latest Composer (Pinning to version 2 for build stability)
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # 4. Setup working directory
 WORKDIR /app
