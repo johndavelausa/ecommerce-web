@@ -201,9 +201,7 @@ new class extends Component
 
                 $existing->notifyWishlistLowStockIfNeeded($oldStock, $newStock);
             } else {
-                $base64 = base64_encode(file_get_contents($this->image->getRealPath()));
-                $mime = $this->image->getMimeType();
-                $imagePath = "data:$mime;base64,$base64";
+                $imagePath = $this->image->store('products', 'public');
 
                 $product = Product::create([
                     'seller_id'   => $seller->id,
@@ -248,12 +246,11 @@ new class extends Component
             ];
 
             if ($this->image) {
-                if ($product->image_path) {
+                // Delete existing file IF it is not a base64 string
+                if ($product->image_path && !str_starts_with($product->image_path, 'data:')) {
                     Storage::disk('public')->delete($product->image_path);
                 }
-                $base64 = base64_encode(file_get_contents($this->image->getRealPath()));
-                $mime = $this->image->getMimeType();
-                $data['image_path'] = "data:$mime;base64,$base64";
+                $data['image_path'] = $this->image->store('products', 'public');
             }
 
             $oldStock = $product->stock;
@@ -324,7 +321,7 @@ new class extends Component
         $productName = $product->name;
         $productId = $product->id;
 
-        if ($product->image_path) {
+        if ($product->image_path && !str_starts_with($product->image_path, 'data:')) {
             Storage::disk('public')->delete($product->image_path);
         }
 
