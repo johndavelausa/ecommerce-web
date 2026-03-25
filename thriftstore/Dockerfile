@@ -21,8 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev libzip-dev \
     libcurl4-openssl-dev libssl-dev libexif-dev libintl-perl libicu-dev \
     && docker-php-ext-install \
-        pdo_mysql \
-        gd zip bcmath exif intl \
+    pdo_mysql \
+    gd zip bcmath exif intl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable mod_rewrite for Laravel and fix MPM conflict
@@ -51,7 +51,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 
 # Storage & permissions
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions \
-             storage/framework/views bootstrap/cache \
+    storage/framework/views bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
