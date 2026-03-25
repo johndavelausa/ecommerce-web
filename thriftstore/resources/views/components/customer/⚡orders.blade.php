@@ -11,6 +11,8 @@ use App\Notifications\OrderDisputeUpdated;
 use App\Notifications\OrderCancelledByBuyerNotification;
 use App\Notifications\NewDisputeRaised;
 use App\Notifications\ReviewReceivedNotification;
+use App\Notifications\OrderReceivedByBuyerNotification;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Component;
@@ -406,6 +408,12 @@ new class extends Component
         $order->status = \App\Models\Order::STATUS_RECEIVED;
         $order->received_at = now();
         $order->save();
+
+        // Notify seller about buyer marking as received
+        $sellerUser = $order->seller?->user;
+        if ($sellerUser) {
+            $sellerUser->notify(new OrderReceivedByBuyerNotification($order));
+        }
     }
 
     public function reportNotReceived(int $id): void
