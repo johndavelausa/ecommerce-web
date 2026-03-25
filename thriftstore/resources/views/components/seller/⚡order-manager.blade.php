@@ -171,11 +171,10 @@ new class extends Component
         $dispute->resolved_at = now();
         $dispute->save();
 
-        if ($action === 'refund') {
-            $order = $dispute->order;
-            if ($order) {
-                $order->refund_status = 'pending';
-                $order->save();
+        if ($dispute->order) {
+            $dispute->order->recordStatusHistory(null, 'dispute_seller_responded', null, 'Seller provided an explanation for the reported delivery issue.');
+            if ($action === 'refund') {
+                $dispute->order->recordStatusHistory(null, 'dispute_refund_pending', null, 'Seller approved a refund for this order.');
             }
         }
 
@@ -189,8 +188,9 @@ new class extends Component
         $this->viewOrder($orderId);
     }
 
-    public function confirmSellerDisputeResponse(): void
+    public function confirmSellerDisputeResponse(?int $disputeId = null): void
     {
+        $id = $disputeId ?? $this->sellerDisputeId;
         $this->validate([
             'sellerDisputeResponseNote' => ['required', 'string', 'max:2000'],
             'sellerDisputeEvidence' => ['nullable', 'file', 'max:4096', 'mimes:jpg,jpeg,png,webp,pdf'],
@@ -200,14 +200,14 @@ new class extends Component
         ]);
 
         $seller = $this->seller;
-        if (! $seller || ! $this->sellerDisputeId) {
+        if (! $seller || ! $id) {
             $this->closeSellerDisputeModal();
             return;
         }
 
         $dispute = OrderDispute::query()
             ->where('seller_id', $seller->id)
-            ->find($this->sellerDisputeId);
+            ->find($id);
 
         if (! $dispute || ! in_array($dispute->status, [OrderDispute::STATUS_OPEN, OrderDispute::STATUS_SELLER_REVIEW], true)) {
             $this->closeSellerDisputeModal();
@@ -233,6 +233,10 @@ new class extends Component
         $dispute->status = OrderDispute::STATUS_SELLER_REVIEW;
         $dispute->save();
 
+        if ($dispute->order) {
+            $dispute->order->recordStatusHistory(null, 'dispute_seller_responded', null, 'Seller responded to the reported issue.');
+        }
+
         $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'seller_responded'));
 
         User::query()
@@ -250,7 +254,150 @@ new class extends Component
             'status' => $dispute->status,
         ]);
 
+        // Force order details to refresh so UI updates
+        $orderId = $dispute->order_id;
         $this->closeSellerDisputeModal();
+        $this->closeDetails();
+        $this->viewOrder($orderId);
+        $this->sellerDisputeResponseNote = '';
+    }
+
+    /** Dispute resolution: seller requests customer to return the item */
+    public function disputeRequestReturn(int $disputeId): void
+    {
+        $seller = $this->seller;
+        if (! $seller) return;
+
+        $dispute = OrderDispute::query()
+            ->where('seller_id', $seller->id)
+            ->whereIn('status', [OrderDispute::STATUS_OPEN, OrderDispute::STATUS_SELLER_REVIEW])
+            ->findOrFail($disputeId);
+
+        $dispute->status = OrderDispute::STATUS_RETURN_REQUESTED;
+        $dispute->seller_resolution_action = 'return';
+        $dispute->seller_responded_at = $dispute->seller_responded_at ?? now();
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->recordStatusHistory(null, 'dispute_return_requested', null, 'Return approved. A courier is coming to pick up the item at the customer location.');
+        }
+
+        $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'return_requested'));
+
+        $orderId = $dispute->order_id;
+        $this->closeDetails();
+        $this->viewOrder($orderId);
+    }
+
+    /** Dispute resolution: seller issues a direct refund (no return needed) */
+    public function disputeIssueRefund(int $disputeId): void
+    {
+        $seller = $this->seller;
+        if (! $seller) return;
+
+        $dispute = OrderDispute::query()
+            ->where('seller_id', $seller->id)
+            ->whereIn('status', [OrderDispute::STATUS_OPEN, OrderDispute::STATUS_SELLER_REVIEW])
+            ->findOrFail($disputeId);
+
+        $dispute->status = OrderDispute::STATUS_REFUND_PENDING;
+        $dispute->seller_resolution_action = 'refund';
+        $dispute->seller_responded_at = $dispute->seller_responded_at ?? now();
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->refund_status = 'pending';
+            $dispute->order->recordStatusHistory(null, 'dispute_refund_pending', null, 'Seller approved the refund request.');
+            $dispute->order->save();
+        }
+
+        $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'refund_initiated'));
+
+        $orderId = $dispute->order_id;
+        $this->closeDetails();
+        $this->viewOrder($orderId);
+    }
+
+    /** Dispute resolution: seller marks return as in transit (manual step) */
+    public function disputeMarkReturnInTransit(int $disputeId): void
+    {
+        $seller = $this->seller;
+        if (! $seller) return;
+
+        $dispute = OrderDispute::query()
+            ->where('seller_id', $seller->id)
+            ->where('status', OrderDispute::STATUS_RETURN_REQUESTED)
+            ->findOrFail($disputeId);
+
+        $dispute->status = OrderDispute::STATUS_RETURN_IN_TRANSIT;
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->recordStatusHistory(null, 'dispute_return_shipped', null, 'Courier has received the item and is on the way back to the seller.');
+        }
+
+        $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'return_in_transit'));
+
+        $orderId = $dispute->order_id;
+        $this->closeDetails();
+        $this->viewOrder($orderId);
+    }
+
+    /** Dispute resolution: seller confirms returned item received → move to refund_pending */
+    public function disputeConfirmReturnReceived(int $disputeId): void
+    {
+        $seller = $this->seller;
+        if (! $seller) return;
+
+        $dispute = OrderDispute::query()
+            ->where('seller_id', $seller->id)
+            ->where('status', OrderDispute::STATUS_RETURN_IN_TRANSIT)
+            ->findOrFail($disputeId);
+
+        $dispute->status = OrderDispute::STATUS_REFUND_PENDING;
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->applyDisputeRefundDecision($dispute->status);
+            $dispute->order->recordStatusHistory(null, 'dispute_refund_pending', null, 'Seller accepted the request and approved a refund.');
+            $dispute->order->save();
+        }
+
+        $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'return_received_refund_pending'));
+
+        $orderId = $dispute->order_id;
+        $this->closeDetails();
+        $this->viewOrder($orderId);
+    }
+
+    /** Dispute resolution: seller marks refund as completed (GCash sent, etc.) */
+    public function disputeMarkRefundComplete(int $disputeId): void
+    {
+        $seller = $this->seller;
+        if (! $seller) return;
+
+        $dispute = OrderDispute::query()
+            ->where('seller_id', $seller->id)
+            ->where('status', OrderDispute::STATUS_REFUND_PENDING)
+            ->findOrFail($disputeId);
+
+        $dispute->status = OrderDispute::STATUS_REFUND_COMPLETED;
+        $dispute->resolved_at = now();
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->refund_status = 'completed';
+            $dispute->order->refunded_at = now();
+            $dispute->order->refund_reason_code = 'dispute_resolved';
+            $dispute->order->recordStatusHistory(null, 'dispute_refund_completed', null, 'Seller marked the refund as completed.');
+            $dispute->order->save();
+        }
+
+        $dispute->customer?->notify(new OrderDisputeUpdated($dispute, 'refund_completed'));
+
+        $orderId = $dispute->order_id;
+        $this->closeDetails();
+        $this->viewOrder($orderId);
     }
 
     /** B3 v1.4 — Mark shipped modal with optional estimated delivery date */
@@ -1569,33 +1716,91 @@ new class extends Component
                                             @endif
                                         </div>
                                     @endif
+                                    {{-- ── Step 1: Seller needs to respond (open / seller_review with no resolution yet) ── --}}
                                     @if(in_array($dispute->status, [\App\Models\OrderDispute::STATUS_OPEN, \App\Models\OrderDispute::STATUS_SELLER_REVIEW], true))
-                                        @if($dispute->reason_code === 'parcel_not_received' && !$dispute->seller_response_note)
-                                            <div class="ord-transit-box" style="margin-top: 12px; background: linear-gradient(135deg, #FFF9E3 0%, #FFECB3 100%); border-color: #F9C74F;">
-                                                <div class="title" style="color: #F57C00;">
-                                                    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                                    </svg>
-                                                    Customer reported: Item not received
-                                                </div>
-                                                <p style="font-size: 0.8125rem; color: #616161; margin-bottom: 10px;">Provide explanation about what happened:</p>
-                                                <select wire:model.defer="sellerExplanationCodes.{{ $dispute->id }}" class="ord-input" style="margin-bottom: 8px; font-size: 0.8125rem;">
-                                                    <option value="">Select reason...</option>
-                                                    @foreach(\App\Models\OrderDispute::SELLER_EXPLANATION_CODES as $code => $label)
-                                                        <option value="{{ $code }}">{{ $label }}</option>
-                                                    @endforeach
-                                                </select>
-                                                @error("sellerExplanationCodes.{$dispute->id}") <p style="font-size: 0.75rem; color: #E53935; margin: 4px 0;">{{ $message }}</p> @enderror
-                                                <textarea wire:model.defer="sellerExplanationNotes.{{ $dispute->id }}" placeholder="Additional details..." class="ord-input" rows="2" style="margin-bottom: 10px; font-size: 0.8125rem;"></textarea>
-                                                <button type="button" wire:click="respondToNonReceipt({{ $dispute->id }}, 'no_refund')" class="ord-action-btn primary" style="margin-bottom: 0;">
-                                                    Acknowledge & Respond
+                                        @if(!$dispute->seller_response_note)
+                                            <form wire:submit.prevent="confirmSellerDisputeResponse({{ $dispute->id }})" class="ord-form-group" style="margin-top: 12px;">
+                                                <label class="ord-label" for="sellerDisputeResponseNote-{{ $dispute->id }}">Seller Response Note <span style="color: #E53935;">*</span></label>
+                                                <textarea id="sellerDisputeResponseNote-{{ $dispute->id }}"
+                                                    wire:model.defer="sellerDisputeResponseNote"
+                                                    class="ord-input"
+                                                    rows="3"
+                                                    maxlength="2000"
+                                                    placeholder="Write your response to the dispute..."
+                                                    style="margin-bottom: 8px;"></textarea>
+                                                @error('sellerDisputeResponseNote') <p style="font-size: 0.75rem; color: #E53935; margin: 4px 0;">{{ $message }}</p> @enderror
+                                                <button type="submit" class="ord-btn-view" style="margin-top: 6px;">
+                                                    Submit Response
                                                 </button>
-                                            </div>
-                                        @else
-                                            <button type="button" wire:click="openSellerDisputeModal({{ $dispute->id }})" class="ord-btn-view" style="margin-top: 10px;">
-                                                {{ $dispute->seller_response_note ? 'Update Response' : 'Submit Response' }}
-                                            </button>
+                                                @if (session()->has('message'))
+                                                    <div style="margin-top: 8px; color: #2D9F4E; font-size: 0.8125rem;">{{ session('message') }}</div>
+                                                @endif
+                                            </form>
                                         @endif
+                                        {{-- Resolution actions (available once seller has responded) --}}
+                                        @if($dispute->seller_response_note)
+                                            <div style="margin-top: 12px; padding: 14px; background: #F5FBF7; border: 1px solid #D4E8DA; border-radius: 10px;">
+                                                <p style="font-size: 0.75rem; font-weight: 700; color: #0F3D22; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 10px;">Choose Resolution</p>
+                                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                                    <button type="button" wire:click="disputeRequestReturn({{ $dispute->id }})"
+                                                            wire:confirm="Ask the customer to return the item?"
+                                                            style="padding: 8px 14px; background: #FFF3E0; border: 1px solid #FFB74D; color: #E65100; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer;">
+                                                        📦 Request Return
+                                                    </button>
+                                                    <button type="button" wire:click="disputeIssueRefund({{ $dispute->id }})"
+                                                            wire:confirm="Issue a refund to the customer? This cannot be undone."
+                                                            style="padding: 8px 14px; background: #E8F5E9; border: 1px solid #81C784; color: #1B7A37; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer;">
+                                                        💳 Issue Refund
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                    {{-- ── Step 2: Waiting for courier ── --}}
+                                    @elseif($dispute->status === \App\Models\OrderDispute::STATUS_RETURN_REQUESTED)
+                                        <div style="margin-top: 12px; padding: 12px 14px; background: #FFF9E3; border: 1px solid #F9C74F; border-radius: 10px;">
+                                            <p style="font-size: 0.8125rem; font-weight: 700; color: #B45309; margin: 0 0 4px;">
+                                                ⏳ Waiting for courier collection
+                                            </p>
+                                            <p style="font-size: 0.75rem; color: #616161; margin: 0;">A courier has been notified to pick up the item from the customer. Click "Mark as Picked Up" once the parcel is in transit.</p>
+                                            
+                                            <button type="button" wire:click="disputeMarkReturnInTransit({{ $dispute->id }})"
+                                                    wire:confirm="Confirm that the courier has picked up the parcel?"
+                                                    style="margin-top: 10px; padding: 9px 16px; background: linear-gradient(135deg, #3949AB, #1565C0); color: #fff; border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; width: 100%;">
+                                                🚚 Mark as Picked Up
+                                            </button>
+                                        </div>
+
+                                    {{-- ── Step 3: Courier in transit ── --}}
+                                    @elseif($dispute->status === \App\Models\OrderDispute::STATUS_RETURN_IN_TRANSIT)
+                                        <div style="margin-top: 12px; padding: 12px 14px; background: #E3F2FD; border: 1px solid #1E88E5; border-radius: 10px; margin-bottom: 10px;">
+                                            <p style="font-size: 0.8125rem; font-weight: 700; color: #1565C0; margin: 0 0 4px;">🚚 Item is being returned</p>
+                                            <p style="font-size: 0.75rem; color: #616161; margin: 0;">The courier has picked up the item. Please click the button below once you have received and inspected it.</p>
+                                        </div>
+                                        <button type="button" wire:click="disputeConfirmReturnReceived({{ $dispute->id }})"
+                                                wire:confirm="Confirm that you have received the returned parcel?"
+                                                style="padding: 9px 16px; background: linear-gradient(135deg, #2D9F4E, #1B7A37); color: #fff; border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; width: 100%;">
+                                            ✅ I've Received the Return
+                                        </button>
+
+                                    {{-- ── Step 4: Seller has item, needs to process refund ── --}}
+                                    @elseif($dispute->status === \App\Models\OrderDispute::STATUS_REFUND_PENDING)
+                                        <div style="margin-top: 12px; padding: 12px 14px; background: #FFF9E3; border: 1px solid #F9C74F; border-radius: 10px; margin-bottom: 10px;">
+                                            <p style="font-size: 0.8125rem; font-weight: 700; color: #B45309; margin: 0 0 4px;">⏳ Refund Pending</p>
+                                            <p style="font-size: 0.75rem; color: #616161; margin: 0;">Send the refund to the customer via GCash or agreed method, then mark it as complete.</p>
+                                        </div>
+                                        <button type="button" wire:click="disputeMarkRefundComplete({{ $dispute->id }})"
+                                                wire:confirm="Confirm you have sent the refund to the customer?"
+                                                style="padding: 9px 16px; background: linear-gradient(135deg, #2D9F4E, #1B7A37); color: #fff; border: none; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; width: 100%;">
+                                            💳 Mark Refund as Sent
+                                        </button>
+
+                                    {{-- ── Step 5: Resolved ── --}}
+                                    @elseif(in_array($dispute->status, [\App\Models\OrderDispute::STATUS_REFUND_COMPLETED, \App\Models\OrderDispute::STATUS_CLOSED], true))
+                                        <div style="margin-top: 12px; padding: 12px 14px; background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 10px; text-align: center;">
+                                            <p style="font-size: 0.875rem; font-weight: 700; color: #1B7A37; margin: 0;">✔ Dispute Resolved</p>
+                                            <p style="font-size: 0.75rem; color: #616161; margin: 4px 0 0;">{{ \App\Models\OrderDispute::statusLabel($dispute->status) }}</p>
+                                        </div>
                                     @endif
                                 </div>
                             @endforeach

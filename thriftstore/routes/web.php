@@ -94,6 +94,7 @@ Route::middleware(['auth:seller'])->prefix('seller')->group(function () {
     })->middleware(['seller.approved'])->name('seller.orders.print');
     Route::view('/payments', 'seller.payments')->middleware(['seller.approved'])->name('seller.payments');
     Route::view('/reports', 'seller.reports')->middleware(['seller.approved'])->name('seller.reports');
+    Route::get('/reports/export', [App\Http\Controllers\Seller\SellerReportsController::class, 'export'])->middleware(['seller.approved'])->name('seller.reports.export');
     Route::view('/messages', 'seller.messages')->name('seller.messages');
     Route::post('/notifications/read-all', function () {
         $user = auth('seller')->user();

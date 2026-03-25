@@ -83,6 +83,20 @@
             <span>Products</span>
         </a>
 
+        {{-- Reports --}}
+        @php $active = request()->routeIs('seller.reports*'); @endphp
+        <a href="{{ route('seller.reports') }}"
+           class="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+           style="{{ $active
+               ? 'background: rgba(249,199,79,0.15); color: #F9C74F; border-left: 3px solid #F9C74F;'
+               : 'color: rgba(255,255,255,0.65); border-left: 3px solid transparent;' }}
+               @if(!$active) onmouseover=\"this.style.background='rgba(255,255,255,0.06)';this.style.color='#fff';\" onmouseout=\"this.style.background='';this.style.color='rgba(255,255,255,0.65)';\" @endif">
+            <svg style="width:18px;height:18px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            <span>Reports</span>
+        </a>
+
         {{-- Divider --}}
         <div class="my-3" style="border-top: 1px solid rgba(255,255,255,0.07);"></div>
         <p class="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em]" style="color: rgba(255,255,255,0.3);">Engagement</p>

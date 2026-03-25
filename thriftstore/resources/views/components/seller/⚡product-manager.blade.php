@@ -17,8 +17,6 @@ new class extends Component
     // list state
     public string $search = '';
     public string $filterStatus = '';   // '' | 'active' | 'inactive'
-    /** B1 v1.4 — Condition filter (seller's own inventory) */
-    public string $filterCondition = ''; // '' | new | like_new | good
 
     // form state
     public string $mode = 'list';       // list | create | view | edit
@@ -61,7 +59,6 @@ new class extends Component
     protected $queryString = [
         'search'          => ['except' => ''],
         'filterStatus'    => ['except' => ''],
-        'filterCondition' => ['except' => ''],
     ];
 
     #[Computed]
@@ -85,10 +82,6 @@ new class extends Component
             $q->where('is_active', true);
         } elseif ($this->filterStatus === 'inactive') {
             $q->where('is_active', false);
-        }
-
-        if ($this->filterCondition !== '') {
-            $q->where('condition', $this->filterCondition);
         }
 
         return $q->paginate(20);
@@ -115,12 +108,10 @@ new class extends Component
 
     public function updatingSearch(): void { $this->resetPage(); }
     public function updatingFilterStatus(): void { $this->resetPage(); }
-    public function updatingFilterCondition(): void { $this->resetPage(); }
 
     public function showCreate(): void
     {
-        $this->reset(['name','description','category','tags','price','condition','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
-        $this->condition = 'good';
+        $this->reset(['name','description','category','tags','price','delivery_fee','stock','is_active','image','editingId','low_stock_threshold']);
         $this->low_stock_threshold = '10';
         $this->is_active = true;
         $this->mode = 'create';
@@ -148,7 +139,6 @@ new class extends Component
         $this->category       = (string) ($product->category ?? '');
         $this->tags           = (string) ($product->tags ?? '');
         $this->price          = (string) $product->price;
-        $this->condition      = (string) ($product->condition ?? 'good');
         $this->delivery_fee   = $product->delivery_fee !== null ? (string) $product->delivery_fee : '';
         $this->stock          = $product->stock;
         $this->low_stock_threshold = (string) ($product->low_stock_threshold ?? 10);
@@ -165,7 +155,6 @@ new class extends Component
             'category'    => ['required', 'string', 'max:50'],
             'tags'        => ['nullable', 'string', 'max:255'],
             'price'       => ['required', 'numeric', 'min:0'],
-            'condition'   => ['required', 'string', 'in:new,like_new,good'],
             'delivery_fee'=> ['nullable', 'numeric', 'min:0'],
             'stock'       => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0'],
@@ -196,7 +185,6 @@ new class extends Component
                     'description' => $this->description,
                     'category'    => $this->category,
                     'tags'        => $this->tags !== '' ? $this->tags : $existing->tags,
-                    'condition'   => $this->condition,
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : $existing->delivery_fee,
                     'low_stock_threshold' => (int) $this->low_stock_threshold ?: $existing->low_stock_threshold,
                     'is_active'   => $this->is_active,
@@ -222,7 +210,6 @@ new class extends Component
                     'category'    => $this->category,
                     'tags'        => $this->tags !== '' ? $this->tags : null,
                     'price'       => $this->price,
-                    'condition'   => $this->condition,
                     'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                     'stock'       => $this->stock,
                     'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
@@ -252,7 +239,6 @@ new class extends Component
                 'category'    => $this->category,
                 'tags'        => $this->tags !== '' ? $this->tags : null,
                 'price'       => $this->price,
-                'condition'   => $this->condition,
                 'delivery_fee'=> $this->delivery_fee !== '' ? $this->delivery_fee : null,
                 'stock'       => $this->stock,
                 'low_stock_threshold' => (int) ($this->low_stock_threshold ?: 10),
@@ -1053,27 +1039,6 @@ new class extends Component
                     </div>
                 </div>
 
-                {{-- Condition Dropdown --}}
-                <div class="prod-dropdown-wrap" x-data="{ open: false }" @click.away="open = false">
-                    <button type="button" @click="open = !open" class="prod-dropdown-trigger" :class="{ 'active': open }">
-                        <span>{{ $filterCondition === '' ? 'All conditions' : \App\Models\Product::conditionOptions()[$filterCondition] ?? $filterCondition }}</span>
-                        <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-                    <div x-show="open" x-cloak x-transition class="prod-dropdown-panel">
-                        <div wire:click="$set('filterCondition', '')" @click="open = false" class="prod-dropdown-item {{ $filterCondition === '' ? 'selected' : '' }}">
-                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span>All conditions</span>
-                        </div>
-                        @foreach(\App\Models\Product::conditionOptions() as $value => $label)
-                            <div wire:click="$set('filterCondition', '{{ $value }}')" @click="open = false" class="prod-dropdown-item {{ $filterCondition === $value ? 'selected' : '' }}">
-                                <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                <span>{{ $label }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
             </div>
             <div class="flex gap-2">
                 <button type="button" wire:click="openBulkStockModal"
@@ -1420,20 +1385,19 @@ new class extends Component
     ============================================================ --}}
     @elseif($mode === 'create' || $mode === 'edit')
     <div class="prod-container">
-        <div class="flex items-center gap-3 mb-5">
-            <button type="button" wire:click="backToList" class="prod-btn-ghost" style="padding: 8px 12px; font-size: 0.75rem;">
+        <div class="flex items-center gap-4 mb-6">
+            <button type="button" wire:click="backToList" class="prod-btn-ghost" style="padding: 7px 14px; font-size: 0.8125rem; flex-shrink: 0;">
                 <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Back to products
+                Back
             </button>
-            <div class="prod-gradient-line"></div>
             <div>
-                <h3 class="font-bold text-[#212121]">{{ $mode === 'create' ? 'Add New Product' : 'Edit Product' }}</h3>
+                <h3 style="font-size: 1.125rem; font-weight: 800; color: #0F3D22;">{{ $mode === 'create' ? 'Add New Product' : 'Edit Product' }}</h3>
                 @if($mode === 'edit' && $editingId)
                     @php($editProduct = \App\Models\Product::find($editingId))
                     @if($editProduct)
-                        <p class="text-xs text-[#9E9E9E]">Views: {{ $editProduct->views ?? 0 }}</p>
+                        <p class="text-xs" style="color: #9E9E9E; margin-top: 1px;">{{ $editProduct->name }}</p>
                     @endif
                 @endif
             </div>
@@ -1476,16 +1440,6 @@ new class extends Component
                         <input type="text" wire:model.defer="tags" class="prod-input" placeholder="vintage, denim, bundle">
                         @error('tags') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                     </div>
-                </div>
-
-                <div class="prod-form-group">
-                    <label class="prod-label">Condition <span class="text-[#F57C00]">*</span></label>
-                    <select wire:model.defer="condition" class="prod-input">
-                        @foreach(\App\Models\Product::conditionOptions() as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('condition') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="prod-form-group">

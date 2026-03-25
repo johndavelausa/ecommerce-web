@@ -373,6 +373,15 @@ class Order extends Model
             self::STATUS_RECEIVED         => 'Customer Confirmed Receipt',
             self::STATUS_COMPLETED        => 'Order Completed',
             self::STATUS_CANCELLED        => 'Order Cancelled',
+            // Dispute events
+            'dispute_opened'              => 'Return/Issue Requested',
+            'dispute_seller_responded'    => 'Seller Responded',
+            'dispute_return_requested'    => 'Courier Coming to Collect Item',
+            'dispute_return_shipped'      => 'Courier in Transit',
+            'dispute_return_received'     => 'Item Returned to Seller',
+            'dispute_refund_pending'      => 'Refund Processing',
+            'dispute_refund_completed'    => 'Refund Completed',
+            'dispute_closed'              => 'Dispute Resolved',
         ];
 
         $timeline = [];
@@ -383,8 +392,8 @@ class Order extends Model
                 $timeline[] = [
                     'type'        => 'status',
                     'title'       => $statusTitles[$toStatus] ?? ucwords(str_replace('_', ' ', $toStatus)),
-                    'description' => null,
-                    'location'    => null,
+                    'description' => $history->description,
+                    'location'    => $history->location,
                     'occurred_at' => $history->created_at,
                 ];
             }

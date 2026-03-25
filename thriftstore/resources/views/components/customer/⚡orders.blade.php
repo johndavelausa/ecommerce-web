@@ -54,7 +54,7 @@ new class extends Component
 
         $order = Order::query()
             ->where('customer_id', $customer->id)
-            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->findOrFail($orderId);
 
         $this->issueOrderId = $order->id;
@@ -81,7 +81,7 @@ new class extends Component
         }
 
         $this->validate([
-            'issueReason'   => ['required', 'string', 'in:item_not_as_described,damaged_item,wrong_item,missing_items,other'],
+            'issueReason'   => ['required', 'string', 'in:item_not_as_described,damaged_item,wrong_item,missing_items,parcel_not_received,other'],
             'issueBody'     => ['required', 'string', 'max:2000'],
             'issueEvidence' => ['nullable', 'file', 'max:4096', 'mimes:jpg,jpeg,png,webp,pdf'],
         ]);
@@ -89,7 +89,7 @@ new class extends Component
         $order = Order::query()
             ->with('seller')
             ->where('customer_id', $customer->id)
-            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->findOrFail($this->issueOrderId);
 
         $hasActiveDispute = $order->disputes()
@@ -133,6 +133,8 @@ new class extends Component
             'status'        => OrderDispute::STATUS_OPEN,
         ]);
 
+        $order->recordStatusHistory(null, 'dispute_opened', null, 'The customer has requested a return/refund for this order.');
+
         $sellerUser = $order->seller->user;
         if ($sellerUser) {
             $sellerUser->notify(new OrderDisputeUpdated($dispute, 'opened'));
@@ -156,6 +158,43 @@ new class extends Component
         $conv->update(['updated_at' => now()]);
 
         $this->closeIssueModal();
+    }
+
+    public string $returnTrackingNumber = '';
+
+    public function submitReturnTracking(int $disputeId): void
+    {
+        $this->validate([
+            'returnTrackingNumber' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9\-]+$/'],
+        ], [
+            'returnTrackingNumber.regex' => 'Tracking number may only contain letters, numbers, and hyphens.',
+        ]);
+
+        $customer = Auth::guard('web')->user();
+        if (! $customer) {
+            return;
+        }
+
+        $dispute = OrderDispute::query()
+            ->where('customer_id', $customer->id)
+            ->where('status', OrderDispute::STATUS_RETURN_REQUESTED)
+            ->findOrFail($disputeId);
+
+        $dispute->return_tracking_number = trim($this->returnTrackingNumber);
+        $dispute->status = OrderDispute::STATUS_RETURN_IN_TRANSIT;
+        $dispute->save();
+
+        if ($dispute->order) {
+            $dispute->order->recordStatusHistory(null, 'dispute_return_shipped', null, 'The customer has shipped the return item via courier (Tracking: ' . $dispute->return_tracking_number . ').');
+        }
+
+        $sellerUser = $dispute->seller?->user;
+        if ($sellerUser) {
+            $sellerUser->notify(new OrderDisputeUpdated($dispute, 'return_in_transit'));
+        }
+
+        $this->returnTrackingNumber = '';
+        $this->resetErrorBag('returnTrackingNumber');
     }
 
     public function openRateModal(int $orderId): void
@@ -396,6 +435,8 @@ new class extends Component
             'description' => 'Customer reported that the parcel was not received while the order is marked out for delivery.',
             'status'      => OrderDispute::STATUS_OPEN,
         ]);
+
+        $order->recordStatusHistory(null, 'dispute_opened', null, 'The customer has reported that the parcel was not received.');
 
         $sellerUser = $order->seller->user;
         if ($sellerUser) {
@@ -1259,40 +1300,95 @@ new class extends Component
                         @endphp
 
                         <div class="bg-white mx-3 mt-3 mb-4 rounded-xl overflow-hidden shadow-sm">
-                            {{-- Show delivery issue at top if exists --}}
+                            {{-- Dispute / Return Status Panel --}}
                             @if($latestIssue)
-                                <div class="flex items-stretch px-4 border-b border-gray-50">
-                                    <div class="w-16 flex-shrink-0 flex flex-col justify-start pt-4 pr-2 text-right">
-                                        <span class="text-xs font-semibold text-red-600">
-                                            {{ $latestIssue->created_at->isToday() ? 'Today' : $latestIssue->created_at->format('M j') }}
-                                        </span>
-                                        <span class="text-[11px] text-red-500 mt-0.5">
-                                            {{ $latestIssue->created_at->format('g:i A') }}
-                                        </span>
-                                    </div>
-                                    <div class="flex flex-col items-center w-8 flex-shrink-0">
-                                        <div class="mt-4 flex-shrink-0">
-                                            <div class="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
-                                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                                                </svg>
-                                            </div>
+                                <div class="px-4 pt-4 pb-3 border-b border-gray-100">
+                                    {{-- Header row --}}
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                            </svg>
                                         </div>
-                                        <div class="flex-1 w-px bg-gray-200 mt-1.5 mb-0 min-h-[24px]"></div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-bold text-red-700">Return / Issue Submitted</p>
+                                            <p class="text-[11px] text-gray-400 mt-0.5">
+                                                {{ \App\Models\OrderDispute::REASON_CODES[$latestIssue->reason_code] ?? ucfirst(str_replace('_', ' ', $latestIssue->reason_code)) }}
+                                                · {{ $latestIssue->created_at->format('M j, g:i A') }}
+                                            </p>
+                                        </div>
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-full
+                                            {{ in_array($latestIssue->status, ['refund_completed','closed']) ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700' }}">
+                                            {{ \App\Models\OrderDispute::statusLabel($latestIssue->status) }}
+                                        </span>
                                     </div>
-                                    <div class="flex-1 min-w-0 py-4 pl-2">
-                                        <p class="text-sm leading-snug font-bold text-red-700">
-                                            Customer reported: Item not received
-                                        </p>
-                                        @if($latestIssue->seller_response_note)
-                                            <div class="mt-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                                                <p class="text-[10px] font-semibold text-blue-700 mb-1">Seller's Response:</p>
-                                                <p class="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{{ $latestIssue->seller_response_note }}</p>
-                                            </div>
-                                        @else
-                                            <p class="text-xs text-red-600 mt-1">Waiting for seller response...</p>
-                                        @endif
-                                    </div>
+
+                                    {{-- Description --}}
+                                    <p class="text-xs text-gray-600 leading-relaxed mb-2">{{ $latestIssue->description }}</p>
+
+                                    {{-- Evidence --}}
+                                    @if($latestIssue->evidence_path)
+                                        <a href="{{ asset('storage/' . $latestIssue->evidence_path) }}" target="_blank"
+                                           class="inline-flex items-center gap-1 text-xs text-blue-600 underline mb-2">
+                                            View your evidence
+                                        </a>
+                                    @endif
+
+                                    {{-- ── Status-specific panels ── --}}
+
+                                    @if($latestIssue->seller_response_note)
+                                        <div class="mt-2 px-3 py-3 bg-green-50 rounded-lg border-l-4 border-green-500 mb-2 shadow-sm">
+                                            <p class="text-[10px] font-bold text-green-700 uppercase tracking-wider mb-1">Seller's Response:</p>
+                                            <p class="text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">{{ $latestIssue->seller_response_note }}</p>
+                                        </div>
+                                    @endif
+
+                                    {{-- open: waiting for seller --}}
+                                    @if($latestIssue->status === \App\Models\OrderDispute::STATUS_OPEN && !$latestIssue->seller_response_note)
+                                        <div class="mt-2 px-3 py-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p class="text-xs text-yellow-800">⏳ Waiting for seller to respond to your request...</p>
+                                        </div>
+
+                                    {{-- seller_review: seller responded, choosing resolution --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_SELLER_REVIEW)
+                                        <div class="mt-2 px-3 py-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p class="text-xs text-yellow-800">⏳ Seller is reviewing your request and choosing a resolution...</p>
+                                        </div>
+
+                                    {{-- return_requested: customer must ship item back --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_RETURN_REQUESTED)
+                                        <div class="mt-3 px-3 py-3 bg-orange-50 rounded-lg border border-orange-200">
+                                            <p class="text-xs font-bold text-orange-800 mb-1">📦 Courier Pickup: Prepare your item</p>
+                                            <p class="text-xs text-gray-600">The seller has approved your return. Please prepare the items; a courier is coming to your house to collect the parcel. You will be notified once the item is picked up.</p>
+                                        </div>
+
+                                    {{-- return_in_transit: waiting for seller to confirm receipt --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_RETURN_IN_TRANSIT)
+                                        <div class="mt-2 px-3 py-2 bg-yellow-50 rounded-lg border border-yellow-200 text-center">
+                                            <p class="text-xs text-yellow-800 font-bold">🚚 Item has been picked up by courier</p>
+                                            <p class="text-[10px] text-yellow-700 mt-1">The item is on its way back to the seller. You will be notified once it is received.</p>
+                                        </div>
+
+                                    {{-- refund_pending: seller processing refund --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_REFUND_PENDING)
+                                        <div class="mt-2 px-3 py-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <p class="text-xs font-bold text-yellow-800 mb-1">💳 Refund in progress</p>
+                                            <p class="text-xs text-yellow-700">The seller is processing your refund. You will be notified once it is sent.</p>
+                                        </div>
+
+                                    {{-- refund_completed: done --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_REFUND_COMPLETED)
+                                        <div class="mt-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200 text-center">
+                                            <p class="text-sm font-bold text-green-700">✅ Refund Completed</p>
+                                            <p class="text-xs text-green-600 mt-1">The seller has sent your refund. If you have not received it, please contact the seller.</p>
+                                        </div>
+
+                                    {{-- closed --}}
+                                    @elseif($latestIssue->status === \App\Models\OrderDispute::STATUS_CLOSED)
+                                        <div class="mt-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                            <p class="text-sm font-bold text-gray-600">Dispute Closed</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
                             

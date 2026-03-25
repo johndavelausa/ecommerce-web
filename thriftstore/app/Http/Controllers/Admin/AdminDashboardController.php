@@ -19,7 +19,7 @@ class AdminDashboardController extends Controller
     {
         // Total Sales: platform-wide sum of delivered orders (feature v1.2 - Admin Phase 1)
         $totalSales = (float) Order::query()
-            ->where('status', 'delivered')
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->sum('total_amount');
 
         // Total Orders: count of all orders platform-wide (feature v1.2 - Admin #2)
@@ -42,12 +42,12 @@ class AdminDashboardController extends Controller
             ->sum('amount');
 
         $totalRevenue = (float) Order::query()
-            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->sum('total_amount');
 
         $monthlyRevenue = Order::query()
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(total_amount) as total")
-            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->whereNotNull('created_at')
             ->groupBy('ym')
             ->orderBy('ym', 'desc')
@@ -79,9 +79,13 @@ class AdminDashboardController extends Controller
             ->where('status', '!=', 'cancelled')
             ->sum('total_amount');
 
-        // A1 - v1.4: Average Order Value (delivered only)
-        $deliveredCount = (int) Order::query()->where('status', 'delivered')->count();
-        $deliveredSum = (float) Order::query()->where('status', 'delivered')->sum('total_amount');
+        // A1 - v1.4: Average Order Value (successful only)
+        $deliveredCount = (int) Order::query()
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->count();
+        $deliveredSum = (float) Order::query()
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->sum('total_amount');
         $averageOrderValue = $deliveredCount > 0 ? round($deliveredSum / $deliveredCount, 2) : 0.0;
 
         // A1 - v1.4: New Orders Today
@@ -213,7 +217,7 @@ class AdminDashboardController extends Controller
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->leftJoin('sellers', 'sellers.id', '=', 'orders.seller_id')
-            ->where('orders.status', 'delivered')
+            ->whereIn('orders.status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->groupBy('products.id', 'products.name', 'sellers.store_name')
             ->orderByDesc('qty_sold')
             ->limit(5)
@@ -222,7 +226,7 @@ class AdminDashboardController extends Controller
         $topSellers = Order::query()
             ->selectRaw('sellers.id as seller_id, sellers.store_name as store_name, COUNT(orders.id) as completed_orders')
             ->join('sellers', 'sellers.id', '=', 'orders.seller_id')
-            ->where('orders.status', 'delivered')
+            ->whereIn('orders.status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->groupBy('sellers.id', 'sellers.store_name')
             ->orderByDesc('completed_orders')
             ->limit(5)

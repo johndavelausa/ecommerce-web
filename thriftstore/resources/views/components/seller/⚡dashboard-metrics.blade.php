@@ -246,20 +246,16 @@ new class extends Component
             ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->count();
 
-        $earningsTotal = (float) OrderItem::query()
-            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
-            ->value('total') ?? 0;
+        $earningsTotal = (float) Order::query()
+            ->where('seller_id', $seller->id)
+            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->sum('total_amount');
 
-        $earningsMonth = (float) OrderItem::query()
-            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->whereBetween('orders.created_at', [now()->startOfMonth(), now()->endOfMonth()])
-            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
-            ->value('total') ?? 0;
+        $earningsMonth = (float) Order::query()
+            ->where('seller_id', $seller->id)
+            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('total_amount');
 
         // Store rating: average rating across all product reviews for this seller (v1.2 - Seller #9)
         $storeRatingAvg = (float) Review::query()
@@ -271,13 +267,8 @@ new class extends Component
             ->where('products.seller_id', $seller->id)
             ->count();
 
-        // Net Profit: sum of price_at_purchase × qty for received/completed orders (delivery fee excluded)
-        $netProfit = (float) OrderItem::query()
-            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->selectRaw('SUM(order_items.price_at_purchase * order_items.quantity) as total')
-            ->value('total') ?? 0;
+        // Net Profit: total_amount of received/completed orders (includes delivery fees)
+        $netProfit = $earningsTotal;
 
         $avgOrderValue = $ordersCompleted > 0 ? round($earningsTotal / $ordersCompleted, 2) : 0.0;
 
@@ -326,12 +317,11 @@ new class extends Component
             return ['labels' => [], 'data' => []];
         }
         $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
-        $revenues = OrderItem::query()
-            ->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.seller_id', $seller->id)
-            ->whereIn('orders.status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->whereBetween('orders.created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
-            ->selectRaw('DATE(orders.created_at) as date, SUM(order_items.price_at_purchase * order_items.quantity) as total')
+        $revenues = Order::query()
+            ->where('seller_id', $seller->id)
+            ->whereIn('status', [Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->groupBy('date')
             ->pluck('total', 'date');
         return [
