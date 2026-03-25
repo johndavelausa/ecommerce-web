@@ -6,8 +6,8 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Run migrations
-php artisan migrate --force
+# TEMPORARILY DISABLED MIGRATIONS TO FIX HEALTHCHECK
+# php artisan migrate --force
 
 # Link storage
 php artisan storage:link || true
