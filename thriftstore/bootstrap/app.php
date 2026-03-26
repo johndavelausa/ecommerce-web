@@ -15,7 +15,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', \App\Http\Middleware\UpdateLastActiveAt::class);
-        $middleware->appendToGroup('web', \App\Http\Middleware\CheckMaintenanceMode::class);
 
         $middleware->trustProxies(at: '*');
 

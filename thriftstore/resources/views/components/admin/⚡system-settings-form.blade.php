@@ -18,9 +18,6 @@ new class extends Component
     public string $page_terms_of_service = '';
     public string $page_cookie_settings = '';
 
-    /** A4 v1.4 — Maintenance mode */
-    public bool $maintenance_mode = false;
-    public string $maintenance_message = '';
 
     public function mount(): void
     {
@@ -28,8 +25,6 @@ new class extends Component
         $this->page_privacy_policy = (string) SystemSetting::get('page_privacy_policy', '');
         $this->page_terms_of_service = (string) SystemSetting::get('page_terms_of_service', '');
         $this->page_cookie_settings = (string) SystemSetting::get('page_cookie_settings', '');
-        $this->maintenance_mode = (bool) (int) SystemSetting::get('maintenance_mode', 0);
-        $this->maintenance_message = (string) SystemSetting::get('maintenance_message', 'We are currently under maintenance. Please check back soon.');
     }
 
     public function saveLogo(): void
@@ -71,20 +66,6 @@ new class extends Component
         $this->dispatch('saved');
     }
 
-    public function saveMaintenance(): void
-    {
-        \Illuminate\Support\Facades\Log::info('Saving maintenance settings: ' . ($this->maintenance_mode ? 'ON' : 'OFF'));
-        
-        SystemSetting::set('maintenance_mode', $this->maintenance_mode ? '1' : '0');
-        SystemSetting::set('maintenance_message', $this->maintenance_message);
-        
-        $this->dispatch('toast', [
-            'type' => 'success',
-            'message' => 'Maintenance mode updated successfully.'
-        ]);
-
-        $this->dispatch('saved');
-    }
 };
 ?>
 
@@ -179,27 +160,5 @@ new class extends Component
         </div>
     </div>
 
-    {{-- A4 v1.4 — Maintenance mode --}}
-    <div class="set-card" style="border-color:#FFCDD2;background:#FFFBFB;" x-data="{ saved: false }" x-on:saved.window="saved = true; setTimeout(() => saved = false, 2000)">
-        <div class="set-card-title" style="color:#C0392B;">Maintenance Mode</div>
-        <div x-show="saved" x-cloak class="mb-3 p-2 bg-green-100 text-green-700 text-xs font-bold rounded-lg border border-green-200">
-            ✓ Maintenance settings saved.
-        </div>
-        <p class="set-hint">When enabled, all non-admin users see the message below.</p>
-        <div class="space-y-3">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model="maintenance_mode" class="set-checkbox">
-                <span style="font-size:0.875rem;color:#424242;font-weight:600;">Maintenance mode enabled</span>
-            </label>
-            <div>
-                <label class="set-label">Message shown to users</label>
-                <textarea wire:model="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
-            </div>
-            <button type="button" wire:click="saveMaintenance" wire:loading.attr="disabled" class="set-btn w-full" style="background:linear-gradient(135deg,#A02622,#C0392B);">
-                <span wire:loading.remove wire:target="saveMaintenance">Save maintenance settings</span>
-                <span wire:loading wire:target="saveMaintenance">Saving settings...</span>
-            </button>
-        </div>
-    </div>
 
 </div>
