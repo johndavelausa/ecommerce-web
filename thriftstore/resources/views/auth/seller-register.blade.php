@@ -289,7 +289,7 @@
                             <div class="seller-grid seller-grid-2">
                                 <div class="seller-field seller-field-full">
                                     <x-input-label for="name" :value="__('Full Name')" />
-                                    <x-text-input id="name" x-model="form.name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" x-bind:required="step === 1" autofocus autocomplete="name" placeholder="John Dave Lausa" />
+                                    <x-text-input id="name" x-model="form.name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" x-bind:required="step === 1" autofocus autocomplete="name" placeholder="Ukay Hub" />
                                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                 </div>
 
@@ -310,7 +310,7 @@
 
                                 <div class="seller-field seller-field-full">
                                     <x-input-label for="email" :value="__('Email Address')" />
-                                    <x-text-input id="email" x-model="form.email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" x-bind:required="step === 1" autocomplete="email" placeholder="johndavelausa@gmail.com" />
+                                    <x-text-input id="email" x-model="form.email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" x-bind:required="step === 1" autocomplete="email" placeholder="ukayhub@gmail.com" />
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
 
