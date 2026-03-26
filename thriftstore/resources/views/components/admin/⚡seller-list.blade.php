@@ -347,17 +347,7 @@ new class extends Component
         ]);
     }
 
-    /** A2 v1.4 — Verified seller badge: admin can toggle */
-    public function toggleVerified(int $sellerId): void
-    {
-        $seller = Seller::query()->findOrFail($sellerId);
-        $seller->update(['is_verified' => ! $seller->is_verified]);
-        SellerActivityLog::log($sellerId, 'verified_toggled', [
-            'is_verified' => $seller->is_verified,
-            'admin_id' => Auth::guard('admin')->id(),
-        ]);
-        $this->dispatch('seller-updated');
-    }
+
 
     /** A2 v1.4 — Add admin note (internal only) */
     public function addSellerNote(): void
@@ -396,7 +386,7 @@ new class extends Component
     .sel-status-pending { background: #FFF9E3; color: #F57C00; }
     .sel-status-rejected { background: #FFEBEE; color: #C0392B; }
     .sel-status-suspended { background: #FFF3E0; color: #E65100; }
-    .sel-verified { background: #E3F2FD; color: #1565C0; padding: 4px 8px; border-radius: 50px; font-size: 0.7rem; font-weight: 600; margin-left: 6px; }
+
     .sel-action-btn { font-size: 0.8125rem; font-weight: 600; text-decoration: none; transition: all 0.15s; }
     .sel-action-view { color: #2D9F4E; }
     .sel-action-view:hover { color: #1B7A37; text-decoration: underline; }
@@ -475,9 +465,7 @@ new class extends Component
                         <td>{{ $seller->store_name }}</td>
                         <td>
                             <span class="sel-status-badge {{ $seller->status === 'approved' ? 'sel-status-approved' : ($seller->status === 'rejected' ? 'sel-status-rejected' : ($seller->status === 'suspended' ? 'sel-status-suspended' : 'sel-status-pending')) }}">{{ ucfirst($seller->status) }}</span>
-                            @if($seller->is_verified ?? false)
-                                <span class="sel-verified" title="Verified seller">✓ Verified</span>
-                            @endif
+
                         </td>
                         <td style="font-style:italic;color:#757575;">
                             @php($last = $seller->user?->last_active_at)
@@ -535,17 +523,9 @@ new class extends Component
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center gap-2 flex-1">
                                     <h3 class="sel-modal-title">{{ $seller->user->name }}</h3>
-                                    @if($seller->is_verified ?? false)
-                                        <span class="sel-verified">✓ Verified</span>
-                                    @endif
                                 </div>
                                 <button wire:click="closeDetail" class="text-gray-400 hover:text-gray-600 ml-2" style="font-size:1.5rem;line-height:1;">&times;</button>
                             </div>
-                            @if($seller->status === 'approved')
-                                <button wire:click="toggleVerified({{ $seller->id }})" class="text-xs font-600 mt-2 hover:underline" style="color:{{ $seller->is_verified ? '#F57C00' : '#2D9F4E' }};">
-                                    {{ $seller->is_verified ? '✓ Remove verified badge' : '○ Mark as verified' }}
-                                </button>
-                            @endif
                         </div>
 
                         {{-- Body --}}
