@@ -30,9 +30,13 @@ class AdminDashboardController extends Controller
         $totalOrders = (int) Order::query()->count();
 
         // Bad Orders: cancelled + refunded orders (feature v1.2 - Admin #5)
-        $ordersCancelled = (int) Order::query()->where('status', 'cancelled')->count();
-        $ordersRefunded = (int) Order::query()->where('refund_status', Order::REFUND_STATUS_COMPLETED)->count();
-        $badOrdersCount = $ordersCancelled + $ordersRefunded;
+        // Correctly handle duplicates by using an OR condition instead of adding counts
+        $badOrdersCount = (int) Order::query()
+            ->where(function($q) {
+                $q->where('status', 'cancelled')
+                  ->orWhere('refund_status', Order::REFUND_STATUS_COMPLETED);
+            })
+            ->count();
         $badOrdersPercent = $totalOrders > 0 ? round(($badOrdersCount / $totalOrders) * 100, 1) : 0.0;
 
         // Order Status Breakdown: counts by status (feature v1.2 - Admin #3)
@@ -159,7 +163,8 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
             ->count();
 
-        $returnedOrders = (int) OrderDispute::query()
+        // Dispute-based returns/refunds
+        $disputeReturnedOrderIds = OrderDispute::query()
             ->whereIn('status', [
                 OrderDispute::STATUS_RETURN_REQUESTED,
                 OrderDispute::STATUS_RETURN_IN_TRANSIT,
@@ -167,8 +172,17 @@ class AdminDashboardController extends Controller
                 OrderDispute::STATUS_REFUND_PENDING,
                 OrderDispute::STATUS_REFUND_COMPLETED,
             ])
-            ->distinct('order_id')
-            ->count('order_id');
+            ->pluck('order_id')
+            ->toArray();
+
+        // Direct refunds on the Order model
+        $directRefundedOrderIds = Order::query()
+            ->where('refund_status', Order::REFUND_STATUS_COMPLETED)
+            ->pluck('id')
+            ->toArray();
+
+        // Unique set of all returned/refunded orders
+        $returnedOrders = (int) count(array_unique(array_merge($disputeReturnedOrderIds, $directRefundedOrderIds)));
 
         $sellerAcceptanceRate = $slaScope > 0 ? round(($acceptedOrders / $slaScope) * 100, 1) : 0.0;
         $onTimeShipRate = $shipmentScope > 0 ? round(($onTimeShipments / $shipmentScope) * 100, 1) : 0.0;

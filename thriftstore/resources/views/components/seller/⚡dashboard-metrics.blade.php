@@ -123,7 +123,8 @@ new class extends Component
             ])
             ->count();
 
-        $returnedOrders = (int) OrderDispute::query()
+        // Dispute-based returns/refunds for this seller
+        $disputeReturnedOrderIds = OrderDispute::query()
             ->where('seller_id', $seller->id)
             ->whereIn('status', [
                 OrderDispute::STATUS_RETURN_REQUESTED,
@@ -132,8 +133,18 @@ new class extends Component
                 OrderDispute::STATUS_REFUND_PENDING,
                 OrderDispute::STATUS_REFUND_COMPLETED,
             ])
-            ->distinct('order_id')
-            ->count('order_id');
+            ->pluck('order_id')
+            ->toArray();
+
+        // Direct refunds on the Order model for this seller
+        $directRefundedOrderIds = Order::query()
+            ->where('seller_id', $seller->id)
+            ->where('refund_status', Order::REFUND_STATUS_COMPLETED)
+            ->pluck('id')
+            ->toArray();
+
+        // Unique set of all returned/refunded orders for metric
+        $returnedOrders = (int) count(array_unique(array_merge($disputeReturnedOrderIds, $directRefundedOrderIds)));
 
         return [
             'acceptance_rate' => $acceptanceScope > 0 ? round(($acceptedOrders / $acceptanceScope) * 100, 1) : 0.0,
@@ -239,10 +250,13 @@ new class extends Component
             ->count();
 
         // Bad Orders: cancelled + refunded orders (v1.2 - Seller #7)
-        $refundedOrdersCount = (clone $orderBase)
-            ->where('refund_status', Order::REFUND_STATUS_COMPLETED)
+        // Deduplicate in case a cancelled order is also marked as refunded
+        $badOrdersCount = (int) (clone $orderBase)
+            ->where(function ($q) {
+                $q->where('status', 'cancelled')
+                  ->orWhere('refund_status', Order::REFUND_STATUS_COMPLETED);
+            })
             ->count();
-        $badOrdersCount = $ordersCancelled + $refundedOrdersCount;
         $badOrdersPercent = $ordersTotal > 0 ? round(($badOrdersCount / $ordersTotal) * 100, 1) : 0.0;
 
         $ordersCompleted = (clone $orderBase)

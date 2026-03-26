@@ -133,9 +133,6 @@
                     <li><a href="{{ route('support.cookies') }}"
                             class="text-indigo-100 hover:text-white text-sm transition-colors hover:translate-x-1 inline-block transform duration-200">Cookies</a>
                     </li>
-                    <li><a href="#"
-                            class="text-indigo-100 hover:text-white text-sm transition-colors hover:translate-x-1 inline-block transform duration-200">Guidelines</a>
-                    </li>
                 </ul>
             </div>
 

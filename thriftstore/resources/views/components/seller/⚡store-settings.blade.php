@@ -338,7 +338,7 @@ new class extends Component
         font-size: 0.875rem;
         color: #424242;
     }
-    .sst-radio-label:has(input:checked) {
+    .sst-radio-label.is-selected {
         border-color: #2D9F4E;
         background: #EAF7EE;
         color: #1B7A37;
@@ -550,22 +550,22 @@ new class extends Component
             <div class="sst-form-row">
                 <div class="sst-section-title">Delivery Settings</div>
                 <div class="sst-radio-group">
-                    <label class="sst-radio-label">
-                        <input type="radio" wire:model.live="delivery_option" value="free">
+                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'free'])>
+                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="free">
                         <div>
                             <div style="font-weight:600;">Free delivery</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">No delivery charge for all orders</div>
                         </div>
                     </label>
-                    <label class="sst-radio-label">
-                        <input type="radio" wire:model.live="delivery_option" value="flat_rate">
+                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'flat_rate'])>
+                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="flat_rate">
                         <div>
                             <div style="font-weight:600;">Flat rate per order</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">One fixed fee for the entire order</div>
                         </div>
                     </label>
-                    <label class="sst-radio-label">
-                        <input type="radio" wire:model.live="delivery_option" value="per_product">
+                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'per_product'])>
+                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="per_product">
                         <div>
                             <div style="font-weight:600;">Per product</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">Set a delivery fee on each product individually</div>
