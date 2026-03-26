@@ -4,10 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Seller extends Model
 {
     use HasFactory;
+    
+    protected static function booted(): void
+    {
+        static::updated(function (Seller $seller) {
+            foreach (['banner_path', 'logo_path'] as $field) {
+                if ($seller->wasChanged($field)) {
+                    $old = $seller->getOriginal($field);
+                    if ($old && !str_starts_with((string) $old, 'data:')) {
+                        Storage::disk('public')->delete((string) $old);
+                    }
+                }
+            }
+        });
+
+        static::deleted(function (Seller $seller) {
+            foreach (['banner_path', 'logo_path'] as $field) {
+                if ($seller->$field && !str_starts_with((string) $seller->$field, 'data:')) {
+                    Storage::disk('public')->delete((string) $seller->$field);
+                }
+            }
+        });
+    }
 
     protected $fillable = [
         'user_id',

@@ -34,10 +34,8 @@ new class extends Component
 
     public function saveLogo(): void
     {
-        $this->validate(['logo' => 'required|image|max:1024']); // limit to 1MB for DB storage
-        $base64 = base64_encode(file_get_contents($this->logo->getRealPath()));
-        $mime = $this->logo->getMimeType();
-        SystemSetting::set('logo_path', "data:$mime;base64,$base64");
+        $this->validate(['logo' => 'required|image|max:1024']);
+        SystemSetting::set_file('logo_path', $this->logo, 'site');
         $this->reset('logo');
         $this->dispatch('saved');
     }
@@ -45,9 +43,7 @@ new class extends Component
     public function saveBackground(): void
     {
         $this->validate(['background' => 'required|image|max:1024']);
-        $base64 = base64_encode(file_get_contents($this->background->getRealPath()));
-        $mime = $this->background->getMimeType();
-        SystemSetting::set('background_path', "data:$mime;base64,$base64");
+        SystemSetting::set_file('background_path', $this->background, 'site');
         $this->reset('background');
         $this->dispatch('saved');
     }
@@ -62,9 +58,7 @@ new class extends Component
     public function saveGcashQr(): void
     {
         $this->validate(['gcashQr' => 'required|image|max:1024']);
-        $base64 = base64_encode(file_get_contents($this->gcashQr->getRealPath()));
-        $mime = $this->gcashQr->getMimeType();
-        SystemSetting::set('gcash_qr_path', "data:$mime;base64,$base64");
+        SystemSetting::set_file('gcash_qr_path', $this->gcashQr, 'site');
         $this->reset('gcashQr');
         $this->dispatch('saved');
     }

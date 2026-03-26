@@ -12,11 +12,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles;
+    
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if ($user->wasChanged('avatar')) {
+                $old = $user->getOriginal('avatar');
+                if ($old && !str_starts_with((string) $old, 'data:')) {
+                    Storage::disk('public')->delete((string) $old);
+                }
+            }
+        });
+
+        static::deleted(function (User $user) {
+            if ($user->avatar && !str_starts_with((string) $user->avatar, 'data:')) {
+                Storage::disk('public')->delete((string) $user->avatar);
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

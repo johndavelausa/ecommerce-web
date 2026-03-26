@@ -429,7 +429,7 @@
                                     <div class="seller-admin-title">Seller registration fee (₱200 via GCash)</div>
                                     <p>GCash Number: <span>{{ \App\Models\SystemSetting::get('gcash_number', 'Not set') }}</span></p>
                                 </div>
-                                <img class="seller-admin-qr" src="{{ asset('storage/' . \App\Models\SystemSetting::get('gcash_qr_path', 'defaults/gcash-qr.png')) }}" alt="GCash QR">
+                                <img class="seller-admin-qr" src="{{ \App\Models\SystemSetting::get_url('gcash_qr_path', asset('storage/defaults/gcash-qr.png')) }}" alt="GCash QR">
                             </div>
 
                             <div class="seller-grid seller-grid-2">

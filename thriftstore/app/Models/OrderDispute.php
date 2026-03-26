@@ -4,10 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class OrderDispute extends Model
 {
     use HasFactory;
+    
+    protected static function booted(): void
+    {
+        static::updated(function (OrderDispute $dispute) {
+            if ($dispute->wasChanged('evidence_path')) {
+                $old = $dispute->getOriginal('evidence_path');
+                if ($old && !str_starts_with((string) $old, 'data:')) {
+                    Storage::disk('public')->delete((string) $old);
+                }
+            }
+        });
+
+        static::deleted(function (OrderDispute $dispute) {
+            if ($dispute->evidence_path && !str_starts_with((string) $dispute->evidence_path, 'data:')) {
+                Storage::disk('public')->delete((string) $dispute->evidence_path);
+            }
+        });
+    }
 
     public const STATUS_OPEN = 'open';
     public const STATUS_SELLER_REVIEW = 'seller_review';

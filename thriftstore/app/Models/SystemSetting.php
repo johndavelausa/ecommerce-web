@@ -33,6 +33,19 @@ class SystemSetting extends Model
     }
 
     /**
+     * Store a file for a setting and delete the old one if it exists.
+     */
+    public static function set_file(string $key, $file, string $folder = 'site'): void
+    {
+        $old = self::get($key);
+        if ($old && !str_starts_with((string) $old, 'data:')) {
+             \Illuminate\Support\Facades\Storage::disk('public')->delete((string) $old);
+        }
+        $path = $file->store($folder, 'public');
+        self::set($key, $path);
+    }
+
+    /**
      * Get a setting and treat it as a URL (handling Base64 vs Storage paths).
      */
     public static function get_url(string $key, ?string $default = null): ?string

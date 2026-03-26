@@ -95,9 +95,7 @@ new class extends Component
             'address' => $this->address,
         ];
         if ($this->avatar) {
-            $base64 = base64_encode(file_get_contents($this->avatar->getRealPath()));
-            $mime = $this->avatar->getMimeType();
-            $userData['avatar'] = "data:$mime;base64,$base64";
+            $userData['avatar'] = $this->avatar->store('avatars', 'public');
         }
         $user->update($userData);
 
@@ -126,9 +124,7 @@ new class extends Component
         ];
 
         if ($this->store_banner) {
-            $base64 = base64_encode(file_get_contents($this->store_banner->getRealPath()));
-            $mime = $this->store_banner->getMimeType();
-            $sellerUpdateData['banner_path'] = "data:$mime;base64,$base64";
+            $sellerUpdateData['banner_path'] = $this->store_banner->store('banners', 'public');
         }
 
         $seller->update($sellerUpdateData);

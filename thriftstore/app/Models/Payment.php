@@ -4,10 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Payment extends Model
 {
     use HasFactory;
+    
+    protected static function booted(): void
+    {
+        static::updated(function (Payment $payment) {
+            if ($payment->wasChanged('screenshot_path')) {
+                $old = $payment->getOriginal('screenshot_path');
+                if ($old && !str_starts_with((string) $old, 'data:')) {
+                    Storage::disk('public')->delete((string) $old);
+                }
+            }
+        });
+
+        static::deleted(function (Payment $payment) {
+            if ($payment->screenshot_path && !str_starts_with((string) $payment->screenshot_path, 'data:')) {
+                Storage::disk('public')->delete((string) $payment->screenshot_path);
+            }
+        });
+    }
 
     protected $fillable = [
         'seller_id',

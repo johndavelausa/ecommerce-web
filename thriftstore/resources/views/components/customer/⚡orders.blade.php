@@ -125,9 +125,7 @@ new class extends Component
 
         $evidencePath = null;
         if ($this->issueEvidence) {
-            $base64 = base64_encode(file_get_contents($this->issueEvidence->getRealPath()));
-            $mime = $this->issueEvidence->getMimeType();
-            $evidencePath = "data:$mime;base64,$base64";
+            $evidencePath = $this->issueEvidence->store('disputes', 'public');
         }
 
         $dispute = OrderDispute::create([

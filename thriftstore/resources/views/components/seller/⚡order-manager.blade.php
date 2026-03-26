@@ -224,10 +224,8 @@ new class extends Component
 
         $sellerResponse = trim($this->sellerDisputeResponseNote);
         if ($this->sellerDisputeEvidence) {
-            $base64 = base64_encode(file_get_contents($this->sellerDisputeEvidence->getRealPath()));
-            $mime = $this->sellerDisputeEvidence->getMimeType();
-            $path = "data:$mime;base64,$base64";
-            $sellerResponse .= "\n\nSeller evidence (Persistent): " . $path;
+            $path = $this->sellerDisputeEvidence->store('disputes', 'public');
+            $sellerResponse .= "\n\nSeller evidence (Persistent): " . asset('storage/' . $path);
         }
 
         $dispute->seller_response_note = $sellerResponse;

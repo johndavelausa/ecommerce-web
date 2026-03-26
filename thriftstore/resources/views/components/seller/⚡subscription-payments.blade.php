@@ -121,10 +121,8 @@ new class extends Component
             'screenshot'       => ['required', 'image', 'max:5120'],
         ]);
 
-        $base64 = base64_encode(file_get_contents($this->screenshot->getRealPath()));
-        $mime = $this->screenshot->getMimeType();
-        $path = "data:$mime;base64,$base64";
-
+        $path = $this->screenshot->store('payments', 'public');
+ 
         Payment::create([
             'seller_id'        => $seller->id,
             'type'             => $this->type,
