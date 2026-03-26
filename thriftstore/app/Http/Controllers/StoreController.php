@@ -38,7 +38,12 @@ class StoreController extends Controller
 
         $completedOrdersCount = (int) Order::query()
             ->where('seller_id', $seller->id)
-            ->whereIn('status', ['delivered', 'shipped'])
+            ->whereIn('status', [
+                Order::STATUS_SHIPPED,
+                Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
+                Order::STATUS_COMPLETED
+            ])
             ->count();
 
         return view('store.show', [

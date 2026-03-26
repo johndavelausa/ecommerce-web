@@ -64,6 +64,7 @@ new class extends Component
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
                 Order::STATUS_CANCELLED,
             ])
@@ -74,6 +75,7 @@ new class extends Component
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->count();
@@ -83,6 +85,7 @@ new class extends Component
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->count();
@@ -92,6 +95,7 @@ new class extends Component
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->whereNotNull('shipped_at')
@@ -107,6 +111,7 @@ new class extends Component
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
                 Order::STATUS_CANCELLED,
             ])
@@ -119,6 +124,7 @@ new class extends Component
         $returnScope = (clone $orderBase)
             ->whereIn('status', [
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->count();
