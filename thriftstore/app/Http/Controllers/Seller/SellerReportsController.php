@@ -64,9 +64,9 @@ class SellerReportsController extends Controller
             ->limit(12)
             ->get();
 
-        // Top products
+        // Top products by quantity
         $topProducts = OrderItem::query()
-            ->selectRaw('products.name as name, SUM(order_items.quantity) as qty')
+            ->selectRaw('products.name as name, SUM(order_items.quantity) as qty, SUM(order_items.quantity * order_items.price_at_purchase) as revenue')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $sellerId)
@@ -74,6 +74,28 @@ class SellerReportsController extends Controller
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('qty')
             ->limit(10)
+            ->get();
+
+        // Detailed product performance for the period
+        $productPerformance = OrderItem::query()
+            ->selectRaw('products.name as name, SUM(order_items.quantity) as qty, SUM(order_items.quantity * order_items.price_at_purchase) as revenue')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('orders.seller_id', $sellerId)
+            ->whereIn('orders.status', $successStatuses);
+        $this->applyPeriodFilter($productPerformance, $period);
+        $productPerformance = $productPerformance->groupBy('products.id', 'products.name')
+            ->orderByDesc('revenue')
+            ->get();
+
+        // Recent feedback
+        $recentFeedback = \App\Models\Review::query()
+            ->with(['customer', 'product'])
+            ->whereHas('product', function($q) use ($sellerId) {
+                $q->where('seller_id', $sellerId);
+            })
+            ->orderByDesc('created_at')
+            ->limit(15)
             ->get();
 
         $pdf = Pdf::loadView('seller.reports.summary-pdf', [
@@ -85,6 +107,8 @@ class SellerReportsController extends Controller
             'periodSales' => $periodSales,
             'monthlyRevenue' => $monthlyRevenue,
             'topProducts' => $topProducts,
+            'productPerformance' => $productPerformance,
+            'recentFeedback' => $recentFeedback,
             'exportedAt' => now(),
         ]);
 
@@ -93,18 +117,26 @@ class SellerReportsController extends Controller
 
     private function applyPeriodFilter($query, $period)
     {
+        $column = 'orders.created_at';
+        // If it's a simple Order query without joins, we might just use 'created_at' but 'orders.created_at' is safer if joined.
+        // However, if it's NOT joined, 'orders.created_at' will fail. 
+        // Let's use a smarter approach or just detect if it's an Order query.
+        
+        // Actually, in this controller, we mostly join orders.
+        // Let's just use whereDate and similar but be careful.
+        
         switch ($period) {
             case 'daily':
-                $query->whereDate('created_at', Carbon::today());
+                $query->whereDate($query->getModel()->getTable() . '.created_at', Carbon::today());
                 break;
             case 'weekly':
-                $query->where('created_at', '>=', Carbon::now()->subWeek());
+                $query->where($query->getModel()->getTable() . '.created_at', '>=', Carbon::now()->subWeek());
                 break;
             case 'monthly':
-                $query->where('created_at', '>=', Carbon::now()->subMonth());
+                $query->where($query->getModel()->getTable() . '.created_at', '>=', Carbon::now()->subMonth());
                 break;
             case 'yearly':
-                $query->where('created_at', '>=', Carbon::now()->subYear());
+                $query->where($query->getModel()->getTable() . '.created_at', '>=', Carbon::now()->subYear());
                 break;
         }
     }

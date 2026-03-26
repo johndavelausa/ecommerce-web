@@ -314,6 +314,21 @@ new class extends Component
                     Filter by date range and status to see your own orders and earnings only.
                 </p>
             </div>
+            <div class="flex items-center gap-2">
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" type="button" class="inline-flex items-center px-4 py-2 bg-[#2D9F4E] text-white rounded-lg text-sm font-semibold hover:bg-[#1B7A37] transition shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Download PDF Report
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
+                        <a href="{{ route('seller.reports.export', ['period' => 'daily']) }}" target="_blank" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#2D9F4E]">Daily Report</a>
+                        <a href="{{ route('seller.reports.export', ['period' => 'weekly']) }}" target="_blank" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#2D9F4E]">Weekly Report</a>
+                        <a href="{{ route('seller.reports.export', ['period' => 'monthly']) }}" target="_blank" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#2D9F4E]">Monthly Report</a>
+                        <a href="{{ route('seller.reports.export', ['period' => 'yearly']) }}" target="_blank" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#2D9F4E]">Yearly Report</a>
+                    </div>
+                </div>
+            </div>
             <div class="flex flex-wrap gap-3 text-sm">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 uppercase tracking-wide">From</label>

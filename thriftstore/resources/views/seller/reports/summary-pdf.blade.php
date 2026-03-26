@@ -103,6 +103,59 @@
         <div class="clear"></div>
     </div>
 
+    <div class="section-title">Product Sales ({{ ucfirst($period) }})</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th style="text-align: right;">Quantity Sold</th>
+                <th style="text-align: right;">Total Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($productPerformance as $index => $row)
+                <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
+                    <td>{{ $row->name }}</td>
+                    <td style="text-align: right;">{{ number_format($row->qty) }}</td>
+                    <td class="amount text-right" style="text-align: right;"><span class="currency">₱</span>{{ number_format($row->revenue, 2) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #999;">No product sales recorded for this period.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">Latest Customer Feedback</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Customer / Product</th>
+                <th>Rating</th>
+                <th>Comment</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($recentFeedback as $index => $review)
+                <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
+                    <td style="white-space: nowrap;">{{ $review->created_at->format('Y-m-d') }}</td>
+                    <td>
+                        <span class="bold">{{ $review->customer->name ?? 'Buyer' }}</span><br>
+                        <span style="color: #666; font-size: 8px;">Product: {{ $review->product->name ?? '—' }}</span>
+                    </td>
+                    <td style="color: #F9C74F; font-size: 14px;">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</td>
+                    <td>{{ $review->body ?: 'No comment provided.' }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #999;">No product reviews yet.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
     <div class="section-title">Summary Observations</div>
     <table style="margin-top: 0;">
         <tbody>
@@ -111,7 +164,7 @@
                 <td style="color: #C0392B;">{{ $cancelledOrdersCount }}</td>
                 <td class="bold">Average Revenue / Order</td>
                 <td class="amount">
-                    <span class="currency"></span>{{ $completedOrdersCount > 0 ? number_format($totalRevenue / $completedOrdersCount, 2) : '0.00' }}
+                    <span class="currency">₱</span>{{ $completedOrdersCount > 0 ? (isset($totalRevenue) ? number_format($totalRevenue / $completedOrdersCount, 2) : '0.00') : '0.00' }}
                 </td>
             </tr>
         </tbody>
