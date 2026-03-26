@@ -352,88 +352,8 @@ new class extends Component
         </section>
     @endif
 
-    <section class="mx-auto w-full max-w-[1440px] px-4 pb-14 md:px-8 lg:px-12">
-        <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#236c4c] via-[#2b7a57] to-[#2f815d] px-6 py-8 shadow-[0_24px_55px_rgba(13,45,30,0.25)] md:px-10 md:py-10"
-             style="background-color:#2b7a57;background-image:linear-gradient(135deg,#236c4c 0%,#2b7a57 48%,#2f815d 100%);border:1px solid rgba(255,255,255,0.12);box-shadow:0 24px 55px rgba(13,45,30,0.25);">
-            <div class="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
-            <div class="pointer-events-none absolute -left-16 bottom-0 h-40 w-40 rounded-full bg-[#9fd4ba]/20 blur-2xl"></div>
+    {{-- Flash Sale removed --}}
 
-            <div class="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-                <div class="max-w-xl">
-                    <span class="inline-flex rounded-full bg-rose-500 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.24em] text-white">
-                        Flash Sale
-                    </span>
-                    <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-white md:text-5xl">On Sale Now</h2>
-                    <p class="mt-3 text-sm text-emerald-50/90 md:text-2xl">
-                        Limited stock clearance. Grab your favorites before they disappear.
-                    </p>
-                </div>
-
-                <a href="{{ route('catalog') }}?sort=on_sale"
-                   class="inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-bold text-[#1f6a49] shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
-                    Shop All Sale
-                    <span aria-hidden="true" class="text-base">→</span>
-                </a>
-            </div>
-
-            <div class="relative mt-8">
-                @if($this->saleProducts->isNotEmpty())
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        @foreach($this->saleProducts as $saleProduct)
-                            @php
-                                $originalPrice = (float) $saleProduct->price;
-                                $salePrice = (float) $saleProduct->sale_price;
-                                $discountPercent = $originalPrice > 0
-                                    ? (int) round((($originalPrice - $salePrice) / $originalPrice) * 100)
-                                    : 0;
-                                $discountPercent = max($discountPercent, 1);
-                            @endphp
-
-                            <article class="group overflow-hidden rounded-2xl bg-white shadow-[0_16px_30px_rgba(5,20,12,0.18)] transition-transform duration-300 hover:-translate-y-1">
-                                <a href="{{ route('product.show', $saleProduct->id) }}" class="block">
-                                    <div class="relative aspect-[4/5] overflow-hidden bg-gray-100">
-                                        @if($saleProduct->image_path)
-                                            <img src="{{ $saleProduct->image_url }}"
-                                                 alt="{{ $saleProduct->name }}"
-                                                 class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                 loading="lazy">
-                                        @else
-                                            <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
-                                        @endif
-
-                                        <span class="absolute right-3 top-3 rounded-xl bg-rose-600 px-2.5 py-1 text-xs font-bold text-white">
-                                            -{{ $discountPercent }}%
-                                        </span>
-                                    </div>
-
-                                    <div class="p-4">
-                                        <h3 class="line-clamp-2 text-xl font-extrabold text-slate-800">{{ $saleProduct->name }}</h3>
-                                        <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                            {{ $saleProduct->seller?->store_name ?? 'Ukay Hub Seller' }}
-                                        </p>
-
-                                        <div class="mt-3 flex items-baseline gap-2">
-                                            <span class="text-3xl font-extrabold text-rose-600">₱{{ number_format($salePrice, 0) }}</span>
-                                            <span class="text-sm font-semibold text-slate-400 line-through">₱{{ number_format($originalPrice, 0) }}</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            </article>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="rounded-2xl border border-dashed border-white/40 bg-white/10 px-5 py-12 text-center backdrop-blur-sm">
-                        <p class="text-xl font-bold text-white">No sale products right now.</p>
-                        <p class="mt-2 text-sm text-emerald-50/85">Check back soon for fresh markdowns from our sellers.</p>
-                        <a href="{{ route('catalog') }}"
-                           class="mt-5 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#1f6a49] transition hover:bg-emerald-100">
-                            Browse Catalog
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </section>
 
     <div x-cloak x-show="toastOpen" x-transition.opacity.duration.150ms
          class="fixed right-4 top-20 z-[80]">
