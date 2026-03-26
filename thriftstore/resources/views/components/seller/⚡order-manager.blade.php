@@ -319,7 +319,7 @@ new class extends Component
         $dispute->save();
 
         if ($dispute->order) {
-            $dispute->order->refund_status = 'pending';
+            $dispute->order->applyDisputeRefundDecision(OrderDispute::STATUS_REFUND_PENDING);
             $dispute->order->recordStatusHistory(null, 'dispute_refund_pending', null, 'Seller approved the refund request.');
             $dispute->order->save();
         }
@@ -399,9 +399,7 @@ new class extends Component
         $dispute->save();
 
         if ($dispute->order) {
-            $dispute->order->refund_status = 'completed';
-            $dispute->order->refunded_at = now();
-            $dispute->order->refund_reason_code = 'dispute_resolved';
+            $dispute->order->applyDisputeRefundDecision(OrderDispute::STATUS_REFUND_COMPLETED);
             $dispute->order->recordStatusHistory(null, 'dispute_refund_completed', null, 'Seller marked the refund as completed.');
             $dispute->order->save();
         }

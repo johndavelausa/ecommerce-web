@@ -145,6 +145,13 @@ class Order extends Model
             $this->refund_reason_code = self::REFUND_REASON_DISPUTE_APPROVED;
             $this->refunded_at = null;
 
+            // Mark order as cancelled for reporting/dashboard consistency
+            $this->status = self::STATUS_CANCELLED;
+            if (!$this->cancelled_at) {
+                $this->cancelled_at = \Illuminate\Support\Carbon::now();
+                $this->cancelled_by_type = 'system';
+            }
+
             return;
         }
 
@@ -152,6 +159,13 @@ class Order extends Model
             $this->refund_status = self::REFUND_STATUS_COMPLETED;
             $this->refund_reason_code = self::REFUND_REASON_DISPUTE_COMPLETED;
             $this->refunded_at = $this->refunded_at ?: \Illuminate\Support\Carbon::now();
+
+            // Ensure status is cancelled
+            $this->status = self::STATUS_CANCELLED;
+            if (!$this->cancelled_at) {
+                $this->cancelled_at = \Illuminate\Support\Carbon::now();
+                $this->cancelled_by_type = 'system';
+            }
 
             return;
         }
