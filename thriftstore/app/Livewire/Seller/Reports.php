@@ -27,12 +27,20 @@ class Reports extends Component
         $totalRevenue = (float) Order::query()
             ->where('seller_id', $sellerId)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->sum('total_amount');
 
         $completedOrdersCount = Order::query()
             ->where('seller_id', $sellerId)
             ->whereIn('status', $successStatuses)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->count();
 
         $cancelledOrdersCount = Order::query()
@@ -49,16 +57,30 @@ class Reports extends Component
         
         $periodSales = (float) (clone $periodQuery)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->sum('total_amount');
 
-        $periodOrdersCount = (int) (clone $periodQuery)->count();
+        $periodOrdersCount = (int) (clone $periodQuery)
+            ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
+            ->count();
 
         // ── Charts Data (Last 6 Months) ──
         $monthlyRevenue = Order::query()
             ->where('seller_id', $sellerId)
             ->whereIn('status', array_merge([Order::STATUS_SHIPPED], $successStatuses))
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(total_amount) as total")
             ->groupBy('ym')
             ->orderBy('ym', 'desc')
@@ -73,6 +95,10 @@ class Reports extends Component
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $sellerId)
             ->whereIn('orders.status', $successStatuses)
+            ->where(function($q) {
+                $q->whereNull('orders.refund_status')
+                  ->orWhere('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('qty')
             ->limit(5)

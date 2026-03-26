@@ -261,6 +261,10 @@ new class extends Component
 
         $ordersCompleted = (clone $orderBase)
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->count();
 
         $earningsTotal = (float) Order::query()
@@ -346,6 +350,11 @@ new class extends Component
         $revenues = Order::query()
             ->where('seller_id', $seller->id)
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
             ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
             ->groupBy('date')
@@ -368,7 +377,11 @@ new class extends Component
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
             ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('orders.refund_status')
+                  ->orWhere('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('orders.refund_status', '');
+            })
             ->selectRaw('products.name, SUM(order_items.price_at_purchase * order_items.quantity) as total_revenue, SUM(order_items.quantity) as total_qty')
             ->groupBy('order_items.product_id', 'products.name')
             ->orderByDesc('total_revenue')
@@ -491,7 +504,11 @@ new class extends Component
             ->join('products', 'products.id', '=', 'order_items.product_id')
             ->where('orders.seller_id', $seller->id)
             ->whereIn('orders.status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('orders.refund_status')
+                  ->orWhere('orders.refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('orders.refund_status', '');
+            })
             ->selectRaw('products.name, SUM(order_items.quantity) as total_sold')
             ->groupBy('order_items.product_id', 'products.name')
             ->orderByDesc('total_sold')
