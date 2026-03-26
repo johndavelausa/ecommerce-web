@@ -76,6 +76,8 @@ new class extends Component
         \Illuminate\Support\Facades\Log::info('Saving maintenance settings: ' . ($this->maintenance_mode ? 'ON' : 'OFF'));
         
         SystemSetting::set('maintenance_mode', $this->maintenance_mode ? '1' : '0');
+        SystemSetting::set('maintenance_message', $this->maintenance_message);
+        
         $this->dispatch('toast', [
             'type' => 'success',
             'message' => 'Maintenance mode updated successfully.'
@@ -179,7 +181,7 @@ new class extends Component
 
     {{-- A4 v1.4 — Maintenance mode --}}
     <div class="set-card" style="border-color:#FFCDD2;background:#FFFBFB;" x-data="{ saved: false }" x-on:saved.window="saved = true; setTimeout(() => saved = false, 2000)">
-        <div class="set-card-title" style="color:#C0392B;">Maintenance Mod</div>
+        <div class="set-card-title" style="color:#C0392B;">Maintenance Mode</div>
         <div x-show="saved" x-cloak class="mb-3 p-2 bg-green-100 text-green-700 text-xs font-bold rounded-lg border border-green-200">
             ✓ Maintenance settings saved.
         </div>
