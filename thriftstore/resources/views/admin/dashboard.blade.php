@@ -222,6 +222,63 @@
                     </div>
                 </div>
 
+                {{-- ── Live Activity ── --}}
+                <div class="adm-section-label">Live Activity</div>
+                <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;">
+                    <div class="adm-group-card" style="padding:0;overflow:hidden;">
+                        <div class="adm-group-title" style="padding:16px 20px 0;">
+                            <span class="adm-group-dot" style="background:#2D9F4E;box-shadow:0 0 8px rgba(45,159,78,0.6);"></span>
+                            Customers Active Today
+                        </div>
+                        <div class="adm-table-card" style="border:none;box-shadow:none;border-radius:0;">
+                            <table class="adm-table">
+                                <thead>
+                                    <tr>
+                                        <th>Customer</th>
+                                        <th>Email</th>
+                                        <th class="right">Last Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($activeCustomersToday as $customer)
+                                        <tr>
+                                            <td>
+                                                <div style="display:flex;align-items:center;gap:8px;">
+                                                    <div style="width:28px;height:28px;border-radius:50%;background:#F5FBF7;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:900;color:#1B7A37;border:1px solid #D4E8DA;">
+                                                        {{ strtoupper(substr($customer->name ?? '?', 0, 1)) }}
+                                                    </div>
+                                                    <span style="font-weight:700;">{{ $customer->name }}</span>
+                                                </div>
+                                            </td>
+                                            <td style="font-size:0.75rem;color:#757575;">{{ $customer->email }}</td>
+                                            <td class="right" style="font-size:0.75rem;color:#0F3D22;">
+                                                @if($customer->last_active_at)
+                                                    {{ $customer->last_active_at->diffForHumans() }}
+                                                    <span style="display:block;font-size:0.6rem;color:#9E9E9E;">{{ $customer->last_active_at->format('H:i') }}</span>
+                                                @else
+                                                    <span style="color:#BDBDBD;">—</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr class="empty-row">
+                                            <td colspan="3" style="text-align:center;padding:30px;">
+                                                <div style="font-size:1.5rem;margin-bottom:8px;">💤</div>
+                                                No customers logged in yet today.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        @if($activeCustomersToday->count() > 0)
+                            <div style="padding:12px;text-align:center;border-top:1px solid #F0F7F2;background:#FBFDFB;">
+                                <a href="{{ route('admin.customers') }}" style="font-size:0.6875rem;color:#1B7A37;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;">View All Customers →</a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 {{-- ── SLA & Fees ── --}}
                 <div class="adm-section-label">SLA &amp; Fees</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">

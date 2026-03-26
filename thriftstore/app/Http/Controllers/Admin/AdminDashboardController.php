@@ -221,6 +221,12 @@ class AdminDashboardController extends Controller
             : 0.0;
 
         $totalCustomers = (int) User::query()->whereHas('roles', fn ($q) => $q->where('name', 'customer'))->count();
+        $activeCustomersToday = User::query()
+            ->whereHas('roles', fn ($q) => $q->where('name', 'customer'))
+            ->whereDate('last_active_at', Carbon::today())
+            ->orderByDesc('last_active_at')
+            ->limit(10)
+            ->get();
 
         $unreadMessages = (int) Message::query()
             ->where('is_read', false)
@@ -296,6 +302,7 @@ class AdminDashboardController extends Controller
             'returnRate' => $returnRate,
             'returnedOrders' => $returnedOrders,
             'returnScope' => $returnScope,
+            'activeCustomersToday' => $activeCustomersToday,
         ]);
     }
 }
