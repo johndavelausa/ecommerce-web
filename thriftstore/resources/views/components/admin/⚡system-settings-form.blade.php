@@ -75,6 +75,12 @@ new class extends Component
     {
         SystemSetting::set('maintenance_mode', $this->maintenance_mode ? '1' : '0');
         SystemSetting::set('maintenance_message', $this->maintenance_message);
+        
+        $this->dispatch('toast', [
+            'type' => 'success',
+            'message' => 'Maintenance mode updated successfully.'
+        ]);
+        
         $this->dispatch('saved');
     }
 };
@@ -142,7 +148,10 @@ new class extends Component
                     <p class="set-hint" style="color:#2D9F4E;">New QR selected — click Save.</p>
                 @endif
                 <input type="file" wire:model="gcashQr" accept="image/*" class="block text-sm" style="color:#757575;">
-                <button type="button" wire:click="saveGcashQr" wire:loading.attr="disabled" class="set-btn mt-3">Save QR</button>
+                <button type="button" wire:click="saveGcashQr" wire:loading.attr="disabled" class="set-btn mt-3">
+                    <span wire:loading.remove wire:target="saveGcashQr">Save QR</span>
+                    <span wire:loading wire:target="saveGcashQr">Saving...</span>
+                </button>
             </div>
         </div>
     </div>
@@ -177,14 +186,17 @@ new class extends Component
         <p class="set-hint">When enabled, all non-admin users see the message below.</p>
         <div class="space-y-3">
             <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model="maintenance_mode" class="set-checkbox">
+                <input type="checkbox" wire:model.live="maintenance_mode" class="set-checkbox">
                 <span style="font-size:0.875rem;color:#424242;font-weight:600;">Maintenance mode enabled</span>
             </label>
             <div>
                 <label class="set-label">Message shown to users</label>
-                <textarea wire:model="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
+                <textarea wire:model.live="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
             </div>
-            <button type="button" wire:click="saveMaintenance" class="set-btn" style="background:linear-gradient(135deg,#A02622,#C0392B);">Save maintenance settings</button>
+            <button type="button" wire:click="saveMaintenance" wire:loading.attr="disabled" class="set-btn" style="background:linear-gradient(135deg,#A02622,#C0392B);">
+                <span wire:loading.remove wire:target="saveMaintenance">Save maintenance settings</span>
+                <span wire:loading wire:target="saveMaintenance">Saving settings...</span>
+            </button>
         </div>
     </div>
 
