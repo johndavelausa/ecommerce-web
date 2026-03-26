@@ -10,17 +10,48 @@ class DatabaseCleanupSeeder extends Seeder
 {
     public function run(): void
     {
+        // 1. Stop foreign key checks so we can wipe linked tables without errors
         Schema::disableForeignKeyConstraints();
 
-        // 1. Tables to WIPE COMPLETELY (Transactions, Logs, Messages)
+        $this->command->warn("Starting Total Reset (Admin Only mode)...");
+
+        // 2. Identify the Admins to keep
+        // This looks at the Spatie 'model_has_roles' table for 'admin' users
+        $adminUserIds = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('roles.name', 'admin')
+            ->pluck('model_id')
+            ->toArray();
+
+        if (empty($adminUserIds)) {
+            $this->command->error("No Admins found! Cleanup aborted to prevent locking you out.");
+            return;
+        }
+
+        // 3. Delete all Users who are NOT Admins
+        // This will also trigger Cascading Deletes for 'sellers' in most setups, 
+        // but we truncate the tables below to be 100% sure.
+        DB::table('users')->whereNotIn('id', $adminUserIds)->delete();
+        $this->command->info("Deleted all non-admin users.");
+
+        // 4. Wipe EVERYTHING else (Sellers, Products, Orders, etc.)
         $tablesToWipe = [
+            // --- The Core "Removal" ---
+            'products',
+            'sellers',
+            'product_histories',
+            'product_reports',
+            'seller_notes',
+            'seller_activity_logs',
+            'seller_payouts',
+            
+            // --- Transactions & Activity ---
+            'orders',
+            'order_items',
             'order_status_history',
             'order_status_histories',
             'order_tracking_events',
             'order_disputes',
-            'order_items',
-            'orders',
-            'seller_payouts',
             'checkout_snapshots',
             'payments',
             'wishlists',
@@ -28,10 +59,10 @@ class DatabaseCleanupSeeder extends Seeder
             'messages',
             'conversations',
             'notifications',
-            'product_reports',
-            'product_histories',
-            'seller_activity_logs',
             'admin_actions',
+            'addresses',
+
+            // --- System Data ---
             'failed_jobs',
             'job_batches',
             'jobs',
@@ -43,18 +74,15 @@ class DatabaseCleanupSeeder extends Seeder
         foreach ($tablesToWipe as $table) {
             if (Schema::hasTable($table)) {
                 DB::table($table)->truncate();
-                $this->command->info("Wiped: {$table}");
+                $this->command->info("Table Wiped: {$table}");
             }
         }
 
-        // 2. Reset Product STOCKS to 0 (Keeps the products, just zeros the inventory)
-        if (Schema::hasTable('products')) {
-            DB::table('products')->update(['stock' => 0]);
-            $this->command->info("All product stocks have been reset to 0.");
-        }
-
+        // 5. Turn constraints back on
         Schema::enableForeignKeyConstraints();
         
-        $this->command->info("Cleanup complete! Users, Sellers, and Products (empty stock) are ready.");
+        $this->command->info("--- CLEANUP COMPLETE ---");
+        $this->command->info("Remaining: " . DB::table('users')->count() . " Admins.");
+        $this->command->info("All Products, Sellers, and Customers have been removed.");
     }
 }
