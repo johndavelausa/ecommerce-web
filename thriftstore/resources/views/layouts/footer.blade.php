@@ -144,7 +144,7 @@
                 <h4 class="text-white font-bold mb-4 text-sm uppercase tracking-widest">Newsletter</h4>
                 <p class="text-indigo-100 text-sm mb-4">Get weekly deals in your inbox.</p>
                 <form class="space-y-2">
-                    <input type="email" placeholder="johndavelausa@email.com"
+                    <input type="email" placeholder="ukayhub@email.com"
                         class="w-full px-4 py-3 bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 text-sm">
                     <button type="submit"
                         class="w-full px-4 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl hover:scale-105 transform duration-200 text-sm">

@@ -297,7 +297,7 @@
                                     <x-input-label for="username" :value="__('Username')" />
                                     <div class="seller-username-wrap mt-1">
                                         <span class="seller-username-at">@</span>
-                                        <x-text-input id="username" x-model="form.username" @blur="normalizeUsername()" class="block w-full seller-username-input" type="text" name="username" :value="old('username')" x-bind:required="step === 1" autocomplete="username" placeholder="johndavelausa" />
+                                        <x-text-input id="username" x-model="form.username" @blur="normalizeUsername()" class="block w-full seller-username-input" type="text" name="username" :value="old('username')" x-bind:required="step === 1" autocomplete="username" placeholder="ukayhub" />
                                     </div>
                                     <x-input-error :messages="$errors->get('username')" class="mt-2" />
                                 </div>
