@@ -82,6 +82,19 @@ new class extends Component
         return $q->paginate(10);
     }
 
+    #[Computed]
+    public function statusCounts()
+    {
+        $seller = $this->seller;
+        if (! $seller) return collect();
+        
+        return Order::query()
+            ->where('seller_id', $seller->id)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+    }
+
     public function updatingStatus(): void { $this->resetPage(); }
     public function updatingSearch(): void { $this->resetPage(); }
 
@@ -637,6 +650,11 @@ new class extends Component
             $this->dispatch('$refresh');
         }
     }
+    public function filterByStatus(string $status): void
+    {
+        $this->status = $status;
+        $this->resetPage();
+    }
 };
 ?>
 
@@ -679,74 +697,51 @@ new class extends Component
         border-color: #2D9F4E;
         box-shadow: 0 0 0 3px rgba(45,159,78,0.1);
     }
-    .ord-dropdown-wrap {
-        position: relative;
-    }
-    .ord-dropdown-trigger {
+    /* Status Tabs */
+    .ord-tab {
         display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        min-width: 140px;
-        padding: 10px 14px;
-        border: 1.5px solid #D4E8DA;
-        border-radius: 10px;
-        font-size: 0.875rem;
+        gap: 6px;
+        padding: 8px 16px;
         background: #fff;
+        border: 1.5px solid #D4E8DA;
+        border-radius: 12px;
+        font-size: 0.8125rem;
+        font-weight: 600;
         color: #424242;
         cursor: pointer;
         transition: all 0.2s;
+        white-space: nowrap;
     }
-    .ord-dropdown-trigger:hover {
+    .ord-tab:hover {
         border-color: #2D9F4E;
+        background: #F5FBF7;
+        color: #1B7A37;
     }
-    .ord-dropdown-trigger.active {
-        border-color: #2D9F4E;
-        box-shadow: 0 0 0 3px rgba(45,159,78,0.12);
+    .ord-tab.active {
+        background: linear-gradient(135deg, #0F3D22 0%, #1B5E32 100%);
+        border-color: #0F3D22;
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(15,61,34,0.15);
     }
-    .ord-dropdown-panel {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        margin-top: 4px;
-        min-width: 180px;
-        background: linear-gradient(180deg, #0F3D22 0%, #143d28 100%);
-        border: 1px solid rgba(249,199,79,0.25);
-        border-radius: 10px;
-        box-shadow: 0 10px 36px rgba(15,61,34,0.35);
-        overflow: hidden;
-        z-index: 50;
-    }
-    .ord-dropdown-item {
-        display: flex;
+    .ord-tab-count {
+        display: inline-flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        font-size: 0.8125rem;
-        color: rgba(255,255,255,0.85);
-        cursor: pointer;
-        transition: all 0.15s;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        justify-content: center;
+        background: #F9C74F;
+        color: #1a1a1a;
+        font-size: 0.625rem;
+        font-weight: 800;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        padding: 0 4px;
+        line-height: 1;
     }
-    .ord-dropdown-item:last-child {
-        border-bottom: none;
-    }
-    .ord-dropdown-item:hover {
-        background: rgba(249,199,79,0.12);
-        color: #F9C74F;
-    }
-    .ord-dropdown-item.selected {
-        background: rgba(249,199,79,0.2);
-        color: #F9C74F;
-        font-weight: 600;
-    }
-    .ord-dropdown-item .check {
-        width: 16px;
-        height: 16px;
-        opacity: 0;
-    }
-    .ord-dropdown-item.selected .check {
-        opacity: 1;
+    .ord-tab.active .ord-tab-count {
+        background: #F9C74F;
+        color: #0F3D22;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .ord-select { display: none; }
     .ord-select:focus {
@@ -1328,26 +1323,39 @@ new class extends Component
                    placeholder="Search tracking # or customer…"
                    class="ord-search w-64">
 
-            {{-- Status Dropdown --}}
-            <div class="ord-dropdown-wrap" x-data="{ open: false }" @click.away="open = false">
-                <button type="button" @click="open = !open" class="ord-dropdown-trigger" :class="{ 'active': open }">
-                    <span>{{ $status === '' ? 'All statuses' : ucwords(str_replace('_', ' ', $status)) }}</span>
-                    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                <div x-show="open" x-cloak x-transition class="ord-dropdown-panel">
+        {{-- Status Tabs --}}
+        <div class="flex flex-wrap items-center gap-2 mt-2">
+            @php
+                $statuses = [
+                    '' => 'All',
+                    'awaiting_payment' => 'Awaiting Payment',
+                    'paid' => 'Paid',
+                    'to_pack' => 'To Pack',
+                    'ready_to_ship' => 'Ready to Ship',
+                    'processing' => 'Processing',
+                    'shipped' => 'Shipped',
+                    'out_for_delivery' => 'Out for Delivery',
+                    'delivered' => 'Delivered',
+                    'received' => 'Received',
+                    'completed' => 'Completed',
+                    'cancelled' => 'Cancelled'
+                ];
+            @endphp
+            @foreach($statuses as $val => $label)
+                <button type="button" 
+                        wire:key="status-tab-{{ $val }}"
+                        wire:click="filterByStatus('{{ $val }}')"
+                        class="ord-tab {{ $status === $val ? 'active' : '' }}">
+                    {{ $label }}
                     @php
-                        $statuses = ['' => 'All statuses', 'awaiting_payment' => 'Awaiting payment', 'paid' => 'Paid', 'to_pack' => 'To pack', 'ready_to_ship' => 'Ready to ship', 'processing' => 'Processing', 'shipped' => 'Shipped', 'out_for_delivery' => 'Out for delivery', 'delivered' => 'Delivered', 'received' => 'Received', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+                        $count = $this->statusCounts[$val] ?? 0;
                     @endphp
-                    @foreach($statuses as $val => $label)
-                        <div wire:click="$set('status', '{{ $val }}')" @click="open = false" class="ord-dropdown-item {{ $status === $val ? 'selected' : '' }}">
-                            <svg class="check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                            <span>{{ $label }}</span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
+                    @if($count > 0 && $val !== '')
+                        <span class="ord-tab-count">{{ $count }}</span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
         </div>
 
         <div class="text-xs" style="color: #757575;">
