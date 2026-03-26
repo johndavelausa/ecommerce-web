@@ -229,7 +229,33 @@
                     @endif
                 </div>
 
+                {{-- Sales by Seller --}}
+                <div class="rep-table-card" style="margin-bottom:20px;">
+                    <div class="rep-table-header">Sales by Seller<div class="rep-table-sub"><em>Revenue generated per store ({{ $salesPeriod ?? 'monthly' }})</em></div></div>
+                    <table class="rep-table">
+                        <thead>
+                            <tr>
+                                <th>Seller / Store</th>
+                                <th class="right">Orders</th>
+                                <th class="right">Total Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($salesBySeller ?? [] as $row)
+                                <tr>
+                                    <td>{{ $row->seller->store_name ?? '—' }}</td>
+                                    <td class="right">{{ $row->order_count }}</td>
+                                    <td class="right">{{ number_format($row->total_sales, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr class="empty-row"><td colspan="3">No sales in this period</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
                 {{-- Sign-ups --}}
+
                 <div class="rep-table-card" style="margin-bottom:20px;">
                     <div class="rep-table-header">New Sign-ups by Month</div>
                     <table class="rep-table">

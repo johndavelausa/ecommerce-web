@@ -159,6 +159,7 @@ class ReportsController extends Controller
             'refundPendingCount' => $refundPendingCount,
             'refundCompletedCount' => $refundCompletedCount,
             'refundNoRefundCount' => $refundNoRefundCount,
+            'salesBySeller' => $this->getSalesBySeller($period, $refundDisputeFilter),
         ]);
     }
 
@@ -250,6 +251,7 @@ class ReportsController extends Controller
             'profitByMonth' => $profitByMonth,
             'revenueByMonth' => $revenueByMonth,
             'newSignUps' => $newSignUps,
+            'salesBySeller' => $this->getSalesBySeller($period, $refundDisputeFilter),
             'exportedAt' => now(),
         ]);
  
@@ -297,5 +299,32 @@ class ReportsController extends Controller
                     ->orWhere('refund_status', Order::REFUND_STATUS_NOT_REQUIRED);
             })->whereDoesntHave('disputes');
         }
+    }
+
+    private function getSalesBySeller(string $period, string $filter): \Illuminate\Database\Eloquent\Collection
+    {
+        $q = Order::query()
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+            })
+            ->whereDoesntHave('disputes', function($q) {
+                $q->whereIn('status', [
+                    OrderDispute::STATUS_REFUND_COMPLETED,
+                    OrderDispute::STATUS_RETURN_RECEIVED,
+                    OrderDispute::STATUS_REFUND_PENDING
+                ]);
+            });
+
+        $this->applyPeriodFilter($q, $period);
+        $this->applyRefundDisputeFilter($q, $filter);
+
+        return $q->with('seller')
+            ->selectRaw('seller_id, SUM(total_amount) as total_sales, COUNT(*) as order_count')
+            ->groupBy('seller_id')
+            ->orderByDesc('total_sales')
+            ->limit(50)
+            ->get();
     }
 }

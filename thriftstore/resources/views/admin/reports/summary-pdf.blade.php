@@ -108,7 +108,30 @@
         <div class="clear"></div>
     </div>
 
+    <div class="section-title">Sales Distribution by Seller ({{ ucfirst($period) }})</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Seller / Store Name</th>
+                <th style="text-align: right;">Orders</th>
+                <th style="text-align: right;">Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($salesBySeller as $index => $row)
+                <tr class="{{ $index % 2 != 0 ? 'even' : '' }}">
+                    <td>{{ $row->seller->store_name ?? '—' }}</td>
+                    <td style="text-align: right;">{{ $row->order_count }}</td>
+                    <td class="amount" style="text-align: right;"><span class="currency">₱</span>{{ number_format($row->total_sales, 2) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="3" style="text-align: center; color: #999;">No store sales in this period</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+
     <div class="section-title">Metric Overview</div>
+
     <table style="margin-top: 0;">
         <tbody>
             <tr>
