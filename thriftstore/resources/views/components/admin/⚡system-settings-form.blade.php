@@ -181,7 +181,7 @@ new class extends Component
 
     {{-- A4 v1.4 — Maintenance mode --}}
     <div class="set-card" style="border-color:#FFCDD2;background:#FFFBFB;" x-data="{ saved: false }" x-on:saved.window="saved = true; setTimeout(() => saved = false, 2000)">
-        <div class="set-card-title" style="color:#C0392B;">Maintenance Mode</div>
+        <div class="set-card-title" style="color:#C0392B;">Maintenance Mod</div>
         <div x-show="saved" x-cloak class="mb-3 p-2 bg-green-100 text-green-700 text-xs font-bold rounded-lg border border-green-200">
             ✓ Maintenance settings saved.
         </div>
