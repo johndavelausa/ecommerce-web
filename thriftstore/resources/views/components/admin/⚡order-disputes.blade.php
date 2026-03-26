@@ -176,8 +176,7 @@ new class extends Component
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Seller</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase flex-shrink-0">Risk</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
@@ -214,21 +213,12 @@ new class extends Component
                             </div>
                             <div class="text-gray-500">Lifetime: {{ $risk['lifetime'] }}</div>
                         </td>
-                        <td class="px-4 py-3 text-xs space-y-1">
-                            @if($dispute->evidence_path)
-                                <a href="{{ $dispute->evidence_url }}" target="_blank"
-                                   class="inline-block text-indigo-600 hover:text-indigo-800 underline font-medium">
-                                    View Buyer Evidence
-                                </a>
-                            @else
-                                <span class="text-gray-400 italic">No evidence provided</span>
-                            @endif
-                        </td>
+
 
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">No disputes found.</td>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">No disputes found.</td>
                     </tr>
                 @endforelse
             </tbody>
