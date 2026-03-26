@@ -1063,7 +1063,6 @@ new class extends Component
                         </th>
                         <th>Image</th>
                         <th>Name</th>
-                        <th>Condition</th>
                         <th>Category</th>
                         <th>Price</th>
                         <th>Stock</th>
@@ -1089,11 +1088,6 @@ new class extends Component
                             @endif
                         </td>
                         <td class="font-medium text-[#212121]">{{ $product->name }}</td>
-                        <td>
-                            <span class="prod-badge condition">
-                                {{ \App\Models\Product::conditionOptions()[$product->condition] ?? $product->condition }}
-                            </span>
-                        </td>
                         <td class="text-xs text-[#9E9E9E]">{{ $product->category ?? '—' }}</td>
                         <td class="prod-price">₱{{ number_format($product->price, 2) }}</td>
                         <td>
@@ -1119,7 +1113,7 @@ new class extends Component
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="prod-empty-state">No products found.</td>
+                        <td colspan="10" class="prod-empty-state">No products found.</td>
                     </tr>
                     @endforelse
                 </tbody>

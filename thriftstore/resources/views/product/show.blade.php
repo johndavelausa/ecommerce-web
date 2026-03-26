@@ -145,13 +145,7 @@
 
                         {{-- Info rows --}}
                         <div class="space-y-3 mb-5 text-sm">
-                            {{-- Condition --}}
-                            <div class="flex items-center gap-4">
-                                <span class="w-28 text-gray-400 flex-shrink-0">Condition</span>
-                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#E8F5E9] text-[#1B7A37] uppercase tracking-wide">
-                                    {{ \App\Models\Product::conditionOptions()[$product->condition] ?? $product->condition }}
-                                </span>
-                            </div>
+
                             @if($product->category)
                                 <div class="flex items-center gap-4">
                                     <span class="w-28 text-gray-400 flex-shrink-0">Category</span>

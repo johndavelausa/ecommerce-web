@@ -157,4 +157,22 @@ class Product extends Model
 
         return asset('storage/' . $path);
     }
+
+    /** 
+     * D5 v1.4 — Calculate total quantity sold for successful orders.
+     * Excludes cancelled and completed refunds.
+     */
+    public function getOrdersCountAttribute(): int
+    {
+        return (int) $this->orderItems()
+            ->whereHas('order', function ($q) {
+                $q->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+                  ->where(function($sq) {
+                      $sq->whereNull('refund_status')
+                        ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                        ->orWhere('refund_status', '');
+                  });
+            })
+            ->sum('quantity');
+    }
 }
