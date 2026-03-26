@@ -73,6 +73,8 @@ new class extends Component
 
     public function saveMaintenance(): void
     {
+        \Illuminate\Support\Facades\Log::info('Saving maintenance settings: ' . ($this->maintenance_mode ? 'ON' : 'OFF'));
+        
         SystemSetting::set('maintenance_mode', $this->maintenance_mode ? '1' : '0');
         SystemSetting::set('maintenance_message', $this->maintenance_message);
         
@@ -184,7 +186,7 @@ new class extends Component
             ✓ Maintenance settings saved.
         </div>
         <p class="set-hint">When enabled, all non-admin users see the message below.</p>
-        <div class="space-y-3">
+        <form wire:submit.prevent="saveMaintenance" class="space-y-3">
             <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" wire:model.live="maintenance_mode" class="set-checkbox">
                 <span style="font-size:0.875rem;color:#424242;font-weight:600;">Maintenance mode enabled</span>
@@ -193,11 +195,11 @@ new class extends Component
                 <label class="set-label">Message shown to users</label>
                 <textarea wire:model.live="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
             </div>
-            <button type="button" wire:click="saveMaintenance" wire:loading.attr="disabled" class="set-btn" style="background:linear-gradient(135deg,#A02622,#C0392B);">
+            <button type="submit" wire:loading.attr="disabled" class="set-btn w-full" style="background:linear-gradient(135deg,#A02622,#C0392B);">
                 <span wire:loading.remove wire:target="saveMaintenance">Save maintenance settings</span>
                 <span wire:loading wire:target="saveMaintenance">Saving settings...</span>
             </button>
-        </div>
+        </form>
     </div>
 
 </div>
