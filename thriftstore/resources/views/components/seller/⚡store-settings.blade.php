@@ -550,22 +550,37 @@ new class extends Component
             <div class="sst-form-row">
                 <div class="sst-section-title">Delivery Settings</div>
                 <div class="sst-radio-group">
-                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'free'])>
-                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="free">
+                    <label wire:key="delivery-opt-free" 
+                           wire:click="$set('delivery_option', 'free')"
+                           @class(['sst-radio-label', 'is-selected' => $delivery_option === 'free'])>
+                        <input type="radio" 
+                               wire:model.live="delivery_option" 
+                               name="seller_delivery_option_group" 
+                               value="free">
                         <div>
                             <div style="font-weight:600;">Free delivery</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">No delivery charge for all orders</div>
                         </div>
                     </label>
-                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'flat_rate'])>
-                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="flat_rate">
+                    <label wire:key="delivery-opt-flat" 
+                           wire:click="$set('delivery_option', 'flat_rate')"
+                           @class(['sst-radio-label', 'is-selected' => $delivery_option === 'flat_rate'])>
+                        <input type="radio" 
+                               wire:model.live="delivery_option" 
+                               name="seller_delivery_option_group" 
+                               value="flat_rate">
                         <div>
                             <div style="font-weight:600;">Flat rate per order</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">One fixed fee for the entire order</div>
                         </div>
                     </label>
-                    <label @class(['sst-radio-label', 'is-selected' => $delivery_option === 'per_product'])>
-                        <input type="radio" wire:model.live="delivery_option" name="delivery_option" value="per_product">
+                    <label wire:key="delivery-opt-product" 
+                           wire:click="$set('delivery_option', 'per_product')"
+                           @class(['sst-radio-label', 'is-selected' => $delivery_option === 'per_product'])>
+                        <input type="radio" 
+                               wire:model.live="delivery_option" 
+                               name="seller_delivery_option_group" 
+                               value="per_product">
                         <div>
                             <div style="font-weight:600;">Per product</div>
                             <div style="font-size:0.75rem;color:#9E9E9E;">Set a delivery fee on each product individually</div>
