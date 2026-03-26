@@ -112,9 +112,9 @@ class AdminDashboardController extends Controller
             ->whereIn('subscription_status', ['lapsed', 'grace_period'])
             ->count();
 
-        // A1 - v1.4: Platform GMV (all orders except cancelled)
+        // A1 - v1.4: Platform GMV (excluding cancelled and unconfirmed/awaiting payment)
         $platformGmv = (float) Order::query()
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', ['cancelled', Order::STATUS_AWAITING_PAYMENT])
             ->sum('total_amount');
 
         // A1 - v1.4: Average Order Value (successful only)
