@@ -21,7 +21,7 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
             })
             ->whereDoesntHave('disputes', function($q) {
                 $q->whereIn('status', [
@@ -61,7 +61,7 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
             })
             ->whereDoesntHave('disputes', function($q) {
                 $q->whereIn('status', [
@@ -77,7 +77,7 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
             })
             ->whereDoesntHave('disputes', function($q) {
                 $q->whereIn('status', [
