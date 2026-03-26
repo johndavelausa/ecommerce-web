@@ -87,19 +87,6 @@ new class extends Component
         ];
     }
 
-    public function openResolutionModal(int $disputeId, string $action): void
-    {
-        if (! in_array($action, ['investigate', 'approve_refund', 'reject_claim', 'close_delivered'], true)) {
-            return;
-        }
-
-        $this->resolutionDisputeId = $disputeId;
-        $this->resolutionAction = $action;
-        $this->resolutionNote = '';
-        $this->showResolutionModal = true;
-        $this->resetErrorBag();
-    }
-
     public function closeResolutionModal(): void
     {
         $this->showResolutionModal = false;
@@ -109,92 +96,7 @@ new class extends Component
         $this->resetErrorBag();
     }
 
-    public function confirmResolution(): void
-    {
-        $this->validate([
-            'resolutionNote' => ['required', 'string', 'max:2000'],
-        ]);
 
-        $dispute = OrderDispute::query()->with(['order', 'customer', 'seller.user'])->find($this->resolutionDisputeId);
-        if (! $dispute) {
-            $this->closeResolutionModal();
-            return;
-        }
-
-        $order = $dispute->order;
-        if (! $order) {
-            $this->closeResolutionModal();
-            return;
-        }
-
-        $adminId = auth('admin')->id();
-        $note = trim($this->resolutionNote);
-
-        if ($this->resolutionAction === 'investigate') {
-            $dispute->status = OrderDispute::STATUS_UNDER_ADMIN_REVIEW;
-            $dispute->admin_resolution_note = $note;
-            $dispute->resolved_by_admin_id = $adminId;
-            $dispute->save();
-
-            $this->notifyDisputeParties($dispute, 'under_admin_review');
-            $this->logAdminAction($dispute, 'dispute_investigate', $note);
-        }
-
-        if ($this->resolutionAction === 'approve_refund') {
-            $fromStatus = (string) $order->status;
-
-            $order->status = Order::STATUS_CANCELLED;
-            $order->cancelled_at = $order->cancelled_at ?: now();
-            $order->cancelled_by_type = 'admin';
-            $order->cancellation_reason_code = 'failed_pickup';
-            $order->cancellation_reason_note = 'Approved dispute #' . $dispute->id;
-            $order->applyCancellationRefundDecision($fromStatus);
-            $order->applyDisputeRefundDecision(OrderDispute::STATUS_RESOLVED_APPROVED);
-            $order->save();
-
-            $dispute->status = OrderDispute::STATUS_RESOLVED_APPROVED;
-            $dispute->admin_resolution_note = $note;
-            $dispute->resolved_by_admin_id = $adminId;
-            $dispute->resolved_at = now();
-            $dispute->save();
-
-            $this->notifyDisputeParties($dispute, 'resolved');
-            $this->logAdminAction($dispute, 'dispute_approved_refund', $note);
-        }
-
-        if ($this->resolutionAction === 'reject_claim') {
-            $order->applyDisputeRefundDecision(OrderDispute::STATUS_RESOLVED_REJECTED);
-            $order->save();
-
-            $dispute->status = OrderDispute::STATUS_RESOLVED_REJECTED;
-            $dispute->admin_resolution_note = $note;
-            $dispute->resolved_by_admin_id = $adminId;
-            $dispute->resolved_at = now();
-            $dispute->save();
-
-            $this->notifyDisputeParties($dispute, 'resolved');
-            $this->logAdminAction($dispute, 'dispute_rejected', $note);
-        }
-
-        if ($this->resolutionAction === 'close_delivered') {
-            if ($order->status !== Order::STATUS_DELIVERED) {
-                $order->status = Order::STATUS_DELIVERED;
-                $order->delivered_at = $order->delivered_at ?: now();
-                $order->save();
-            }
-
-            $dispute->status = OrderDispute::STATUS_CLOSED;
-            $dispute->admin_resolution_note = $note;
-            $dispute->resolved_by_admin_id = $adminId;
-            $dispute->resolved_at = now();
-            $dispute->save();
-
-            $this->notifyDisputeParties($dispute, 'resolved');
-            $this->logAdminAction($dispute, 'dispute_closed_delivered', $note);
-        }
-
-        $this->closeResolutionModal();
-    }
 
     protected function notifyDisputeParties(OrderDispute $dispute, string $event): void
     {
@@ -313,31 +215,16 @@ new class extends Component
                             <div class="text-gray-500">Lifetime: {{ $risk['lifetime'] }}</div>
                         </td>
                         <td class="px-4 py-3 text-xs space-y-1">
-                            <div class="flex flex-wrap gap-1">
-                                <button type="button" wire:click="openResolutionModal({{ $dispute->id }}, 'investigate')"
-                                        class="px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                                    Investigate
-                                </button>
-                                <button type="button" wire:click="openResolutionModal({{ $dispute->id }}, 'approve_refund')"
-                                        class="px-2 py-1 rounded border border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                                    Approve refund
-                                </button>
-                                <button type="button" wire:click="openResolutionModal({{ $dispute->id }}, 'reject_claim')"
-                                        class="px-2 py-1 rounded border border-amber-300 text-amber-700 hover:bg-amber-50">
-                                    Reject claim
-                                </button>
-                                <button type="button" wire:click="openResolutionModal({{ $dispute->id }}, 'close_delivered')"
-                                        class="px-2 py-1 rounded border border-indigo-300 text-indigo-700 hover:bg-indigo-50">
-                                    Close as delivered
-                                </button>
-                            </div>
                             @if($dispute->evidence_path)
                                 <a href="{{ $dispute->evidence_url }}" target="_blank"
-                                   class="inline-block text-indigo-600 hover:text-indigo-800 underline">
-                                    Buyer evidence
+                                   class="inline-block text-indigo-600 hover:text-indigo-800 underline font-medium">
+                                    View Buyer Evidence
                                 </a>
+                            @else
+                                <span class="text-gray-400 italic">No evidence provided</span>
                             @endif
                         </td>
+
                     </tr>
                 @empty
                     <tr>
@@ -351,29 +238,5 @@ new class extends Component
         </div>
     </div>
 
-    @if($showResolutionModal)
-        <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-md">
-                <div class="px-6 py-4 border-b">
-                    <h3 class="text-lg font-semibold text-gray-900">Confirm action</h3>
-                    <p class="text-sm text-gray-500 mt-1">Action: {{ ucfirst(str_replace('_', ' ', $resolutionAction)) }}</p>
-                </div>
-                <div class="px-6 py-4 space-y-3">
-                    <label class="block text-sm font-medium text-gray-700">Resolution note</label>
-                    <textarea wire:model.defer="resolutionNote" rows="4"
-                              class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
-                              placeholder="Document investigation findings and decision rationale."></textarea>
-                    @error('resolutionNote') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
-                </div>
-                <div class="px-6 py-3 border-t flex justify-end gap-2">
-                    <button type="button" wire:click="closeResolutionModal"
-                            class="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                    <button type="button" wire:click="confirmResolution"
-                            class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">
-                        Save action
-                    </button>
-                </div>
-            </div>
-        </div>
-    @endif
+
 </div>
