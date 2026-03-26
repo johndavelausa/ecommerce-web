@@ -20,7 +20,6 @@ class ReportsController extends Controller
     public function __invoke(Request $request): View
     {
         $period = $request->input('sales_period', 'monthly'); // daily, weekly, monthly, yearly
-        $refundDisputeFilter = $request->input('refund_dispute_filter', 'all'); // all, pending, completed, no_refund
 
         $totalProfit = (float) Payment::query()->where('status', 'approved')->sum('amount');
         $totalRevenue = (float) Order::query()
@@ -76,23 +75,8 @@ class ReportsController extends Controller
 
         $this->applyPeriodFilter($salesQuery, $period);
         $this->applyPeriodFilter($cancelledQuery, $period);
-        $this->applyRefundDisputeFilter($salesQuery, $refundDisputeFilter);
-        $this->applyRefundDisputeFilter($cancelledQuery, $refundDisputeFilter);
 
-        $refundBase = Order::query();
-        $this->applyPeriodFilter($refundBase, $period);
 
-        $refundPendingCountQuery = clone $refundBase;
-        $this->applyRefundDisputeFilter($refundPendingCountQuery, 'pending');
-        $refundPendingCount = (int) $refundPendingCountQuery->count();
-
-        $refundCompletedCountQuery = clone $refundBase;
-        $this->applyRefundDisputeFilter($refundCompletedCountQuery, 'completed');
-        $refundCompletedCount = (int) $refundCompletedCountQuery->count();
-
-        $refundNoRefundCountQuery = clone $refundBase;
-        $this->applyRefundDisputeFilter($refundNoRefundCountQuery, 'no_refund');
-        $refundNoRefundCount = (int) $refundNoRefundCountQuery->count();
 
         $totalSalesFiltered = (float) $salesQuery->sum('total_amount');
 
@@ -105,15 +89,12 @@ class ReportsController extends Controller
         $cashTotal = $totalRevenue;
 
         $cancelledOrders = Order::query()->where('status', 'cancelled')->with('customer');
-        $this->applyRefundDisputeFilter($cancelledOrders, $refundDisputeFilter);
         $cancelledOrders = $cancelledOrders->orderByDesc('cancelled_at')->paginate(20);
 
         $peakDayQuery = Order::query();
         $peakHourQuery = Order::query();
         $this->applyPeriodFilter($peakDayQuery, $period);
         $this->applyPeriodFilter($peakHourQuery, $period);
-        $this->applyRefundDisputeFilter($peakDayQuery, $refundDisputeFilter);
-        $this->applyRefundDisputeFilter($peakHourQuery, $refundDisputeFilter);
 
         $peakDays = $peakDayQuery
             ->selectRaw("DAYOFWEEK(created_at) as dow, DATE_FORMAT(created_at, '%W') as day_name, COUNT(*) as total")
@@ -155,11 +136,7 @@ class ReportsController extends Controller
             'cancellationRate' => $cancellationRate,
             'peakDays' => $peakDays,
             'peakHours' => $peakHours,
-            'refundDisputeFilter' => $refundDisputeFilter,
-            'refundPendingCount' => $refundPendingCount,
-            'refundCompletedCount' => $refundCompletedCount,
-            'refundNoRefundCount' => $refundNoRefundCount,
-            'salesBySeller' => $this->getSalesBySeller($period, $refundDisputeFilter),
+            'salesBySeller' => $this->getSalesBySeller($period),
         ]);
     }
 
@@ -183,7 +160,6 @@ class ReportsController extends Controller
     public function exportAll(Request $request): Response
     {
         $period = $request->input('sales_period', 'monthly');
-        $refundDisputeFilter = $request->input('refund_dispute_filter', 'all');
         $fileName = 'reports-' . $period . '-' . now()->format('Y-m-d_H-i-s') . '.pdf';
  
         // Summary data
@@ -201,8 +177,6 @@ class ReportsController extends Controller
  
         $this->applyPeriodFilter($salesQuery, $period);
         $this->applyPeriodFilter($cancelledQuery, $period);
-        $this->applyRefundDisputeFilter($salesQuery, $refundDisputeFilter);
-        $this->applyRefundDisputeFilter($cancelledQuery, $refundDisputeFilter);
  
         $totalSalesFiltered = (float) $salesQuery->sum('total_amount');
         $completedCount = (int) $salesQuery->count();
@@ -239,7 +213,6 @@ class ReportsController extends Controller
  
         $pdf = Pdf::loadView('admin.reports.summary-pdf', [
             'period' => $period,
-            'refundDisputeFilter' => $refundDisputeFilter,
             'totalProfit' => $totalProfit,
             'totalRevenue' => $totalRevenue,
             'totalSalesFiltered' => $totalSalesFiltered,
@@ -251,7 +224,7 @@ class ReportsController extends Controller
             'profitByMonth' => $profitByMonth,
             'revenueByMonth' => $revenueByMonth,
             'newSignUps' => $newSignUps,
-            'salesBySeller' => $this->getSalesBySeller($period, $refundDisputeFilter),
+            'salesBySeller' => $this->getSalesBySeller($period),
             'exportedAt' => now(),
         ]);
  
@@ -269,39 +242,7 @@ class ReportsController extends Controller
         };
     }
 
-    private function applyRefundDisputeFilter(Builder $query, string $filter): void
-    {
-        if ($filter === 'pending') {
-            $query->where(function (Builder $inner) {
-                $inner->where('refund_status', Order::REFUND_STATUS_PENDING)
-                    ->orWhereHas('disputes', function (Builder $dq) {
-                        $dq->whereIn('status', OrderDispute::ACTIVE_STATUSES);
-                    });
-            });
-
-            return;
-        }
-
-        if ($filter === 'completed') {
-            $query->where(function (Builder $inner) {
-                $inner->where('refund_status', Order::REFUND_STATUS_COMPLETED)
-                    ->orWhereHas('disputes', function (Builder $dq) {
-                        $dq->whereIn('status', OrderDispute::TERMINAL_STATUSES);
-                    });
-            });
-
-            return;
-        }
-
-        if ($filter === 'no_refund') {
-            $query->where(function (Builder $inner) {
-                $inner->whereNull('refund_status')
-                    ->orWhere('refund_status', Order::REFUND_STATUS_NOT_REQUIRED);
-            })->whereDoesntHave('disputes');
-        }
-    }
-
-    private function getSalesBySeller(string $period, string $filter): \Illuminate\Database\Eloquent\Collection
+    private function getSalesBySeller(string $period): \Illuminate\Database\Eloquent\Collection
     {
         $q = Order::query()
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
@@ -318,7 +259,6 @@ class ReportsController extends Controller
             });
 
         $this->applyPeriodFilter($q, $period);
-        $this->applyRefundDisputeFilter($q, $filter);
 
         return $q->with('seller')
             ->selectRaw('seller_id, SUM(total_amount) as total_sales, COUNT(*) as order_count')

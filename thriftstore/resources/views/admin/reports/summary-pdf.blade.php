@@ -143,8 +143,8 @@
             <tr>
                 <td class="bold">Pending Fees</td>
                 <td class="amount" style="color: #616161;"><span class="currency"></span>{{ number_format($totalPendingFees, 2) }}</td>
-                <td class="bold">Refund Filter applied</td>
-                <td>{{ ucfirst($refundDisputeFilter) }}</td>
+                <td class="bold"></td>
+                <td></td>
             </tr>
             <tr>
                 <td class="bold">Cancelled Orders</td>

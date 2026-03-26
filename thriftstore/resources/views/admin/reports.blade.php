@@ -46,54 +46,19 @@
             <div style="width:100%;padding-bottom:32px;">
                 <p class="rep-title">Reports</p>
 
-                {{-- Period selector --}}
                 <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px;">
                     <span class="rep-label">Sales Period:</span>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'daily', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'daily' ? 'active' : '' }}">Daily</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'weekly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'weekly' ? 'active' : '' }}">Weekly</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'monthly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'monthly' ? 'active' : '' }}">Monthly</a>
-                    <a href="{{ route('admin.reports', ['sales_period' => 'yearly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'yearly' ? 'active' : '' }}">Yearly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'daily']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'daily' ? 'active' : '' }}">Daily</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'weekly']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'weekly' ? 'active' : '' }}">Weekly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'monthly']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'monthly' ? 'active' : '' }}">Monthly</a>
+                    <a href="{{ route('admin.reports', ['sales_period' => 'yearly']) }}" class="rep-period-btn {{ ($salesPeriod ?? '') === 'yearly' ? 'active' : '' }}">Yearly</a>
                     <div style="margin-left:auto;display:flex;gap:8px;">
-                        <a href="{{ route('admin.reports.export-all', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => $refundDisputeFilter ?? 'all']) }}" class="rep-export-btn">📄 Export Report (PDF)</a>
+                        <a href="{{ route('admin.reports.export-all', ['sales_period' => $salesPeriod ?? 'monthly']) }}" class="rep-export-btn">📄 Export Report (PDF)</a>
                         <a href="{{ route('admin.reports.payments.export') }}" class="rep-export-btn">📄 Export Payments (PDF)</a>
                     </div>
                 </div>
 
-                {{-- Refund/dispute filter --}}
-                <div class="rep-filter-card" style="margin-bottom:20px;">
-                    <div class="rep-label">Refund/Dispute Filter</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-                        <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'all']) }}" class="rep-filter-btn {{ ($refundDisputeFilter ?? 'all') === 'all' ? 'active' : '' }}">All</a>
-                        <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'pending']) }}" class="rep-filter-btn {{ ($refundDisputeFilter ?? 'all') === 'pending' ? 'active' : '' }}">Pending</a>
-                        <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'completed']) }}" class="rep-filter-btn {{ ($refundDisputeFilter ?? 'all') === 'completed' ? 'active' : '' }}">Completed</a>
-                        <a href="{{ route('admin.reports', ['sales_period' => $salesPeriod ?? 'monthly', 'refund_dispute_filter' => 'no_refund']) }}" class="rep-filter-btn {{ ($refundDisputeFilter ?? 'all') === 'no_refund' ? 'active' : '' }}">No refund/dispute</a>
-                    </div>
-                    <div style="font-size:0.75rem;color:#9E9E9E;margin-top:10px;font-style:italic;">
-                        @php($filterLabel = match($refundDisputeFilter ?? 'all') {
-                            'pending' => 'Pending',
-                            'completed' => 'Completed',
-                            'no_refund' => 'No refund/dispute',
-                            default => 'All',
-                        })
-                        <em>Current filter: <span style="color:#0F3D22;font-weight:700;">{{ $filterLabel }}</span></em>
-                    </div>
-                </div>
 
-                {{-- Refund metrics --}}
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
-                    <div class="rep-metric amber">
-                        <div class="rep-metric-label">Refund/Dispute Pending</div>
-                        <div class="rep-metric-value" style="color:#F57C00;">{{ $refundPendingCount ?? 0 }}</div>
-                    </div>
-                    <div class="rep-metric green">
-                        <div class="rep-metric-label">Refund/Dispute Completed</div>
-                        <div class="rep-metric-value" style="color:#1B7A37;">{{ $refundCompletedCount ?? 0 }}</div>
-                    </div>
-                    <div class="rep-metric slate">
-                        <div class="rep-metric-label">No Refund/Dispute</div>
-                        <div class="rep-metric-value">{{ $refundNoRefundCount ?? 0 }}</div>
-                    </div>
-                </div>
 
                 {{-- Financial metrics --}}
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
