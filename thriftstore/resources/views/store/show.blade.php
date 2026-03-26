@@ -138,41 +138,7 @@
             </div>
         </div>
 
-        {{-- G2 — Store Stats (below store header) --}}
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 mt-6">
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6">
-                    <div class="text-center sm:text-left">
-                        <div class="text-2xl font-bold text-gray-900">{{ number_format($activeProductsCount) }}</div>
-                        <div class="text-sm text-gray-500">Active products</div>
-                    </div>
-                    <div class="text-center sm:text-left">
-                        <div class="text-2xl font-bold text-gray-900">{{ number_format($completedOrdersCount) }}</div>
-                        <div class="text-sm text-gray-500">Orders completed</div>
-                    </div>
-                    <div class="text-center sm:text-left">
-                        <div class="text-2xl font-bold text-gray-900">
-                            @if($reviewCount > 0)
-                                {{ number_format($storeRating, 1) }} <span class="text-amber-500 text-lg">★</span> / 5
-                            @else
-                                —
-                            @endif
-                        </div>
-                        <div class="text-sm text-gray-500">Average rating</div>
-                    </div>
-                    <div class="text-center sm:text-left">
-                        <div class="text-2xl font-bold text-gray-900">
-                            @if($memberSince)
-                                {{ $memberSince->format('M Y') }}
-                            @else
-                                —
-                            @endif
-                        </div>
-                        <div class="text-sm text-gray-500">Member since</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         {{-- Business hours (below header card) --}}
         @if($seller->business_hours)
