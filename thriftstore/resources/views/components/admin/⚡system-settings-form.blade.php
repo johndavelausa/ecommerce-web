@@ -76,13 +76,11 @@ new class extends Component
         \Illuminate\Support\Facades\Log::info('Saving maintenance settings: ' . ($this->maintenance_mode ? 'ON' : 'OFF'));
         
         SystemSetting::set('maintenance_mode', $this->maintenance_mode ? '1' : '0');
-        SystemSetting::set('maintenance_message', $this->maintenance_message);
-        
         $this->dispatch('toast', [
             'type' => 'success',
             'message' => 'Maintenance mode updated successfully.'
         ]);
-        
+
         $this->dispatch('saved');
     }
 };
@@ -186,20 +184,20 @@ new class extends Component
             ✓ Maintenance settings saved.
         </div>
         <p class="set-hint">When enabled, all non-admin users see the message below.</p>
-        <form wire:submit.prevent="saveMaintenance" class="space-y-3">
+        <div class="space-y-3">
             <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" wire:model.live="maintenance_mode" class="set-checkbox">
+                <input type="checkbox" wire:model="maintenance_mode" class="set-checkbox">
                 <span style="font-size:0.875rem;color:#424242;font-weight:600;">Maintenance mode enabled</span>
             </label>
             <div>
                 <label class="set-label">Message shown to users</label>
-                <textarea wire:model.live="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
+                <textarea wire:model="maintenance_message" rows="3" class="set-input" style="border-color:#FFCDD2;" placeholder="We are currently under maintenance..."></textarea>
             </div>
-            <button type="submit" wire:loading.attr="disabled" class="set-btn w-full" style="background:linear-gradient(135deg,#A02622,#C0392B);">
+            <button type="button" wire:click="saveMaintenance" wire:loading.attr="disabled" class="set-btn w-full" style="background:linear-gradient(135deg,#A02622,#C0392B);">
                 <span wire:loading.remove wire:target="saveMaintenance">Save maintenance settings</span>
                 <span wire:loading wire:target="saveMaintenance">Saving settings...</span>
             </button>
-        </form>
+        </div>
     </div>
 
 </div>
