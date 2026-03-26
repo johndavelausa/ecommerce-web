@@ -1835,9 +1835,7 @@ new class extends Component
                                 </svg>
                                 Accept Order
                             </button>
-                            <button type="button" wire:click="updateStatus({{ $order->id }}, 'cancelled')" class="ord-action-btn danger">
-                                Cancel Order
-                            </button>
+
                         @elseif($order->status === 'to_pack')
                             <button type="button" wire:click="updateStatus({{ $order->id }}, 'ready_to_ship')" class="ord-action-btn secondary">
                                 <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1845,9 +1843,7 @@ new class extends Component
                                 </svg>
                                 Mark as Packed
                             </button>
-                            <button type="button" wire:click="updateStatus({{ $order->id }}, 'cancelled')" class="ord-action-btn danger">
-                                Cancel Order
-                            </button>
+
                         @elseif(in_array($order->status, ['ready_to_ship', 'processing'], true))
                             <button type="button" wire:click="openMarkShippedModal({{ $order->id }})" class="ord-action-btn primary">
                                 <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1856,9 +1852,7 @@ new class extends Component
                                 </svg>
                                 Mark as Shipped
                             </button>
-                            <button type="button" wire:click="updateStatus({{ $order->id }}, 'cancelled')" class="ord-action-btn danger">
-                                Cancel Order
-                            </button>
+
                         @elseif($order->status === 'shipped')
                             <div class="ord-transit-box">
                                 <div class="title">
