@@ -61,6 +61,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/reports/export', [ReportsController::class, 'exportAll'])->name('admin.reports.export-all');
     Route::get('/reports/payments/export', [ReportsController::class, 'exportPayments'])->name('admin.reports.payments.export');
     Route::view('/orders', 'admin.orders')->name('admin.orders');
+    Route::view('/disputes', 'admin.disputes')->name('admin.disputes');
     Route::view('/product-reports', 'admin.product-reports')->name('admin.product-reports');
     Route::view('/deletion-requests', 'admin.deletion-requests')->name('admin.deletion-requests');
     Route::view('/payments', 'admin.payments')->name('admin.payments');

@@ -37,6 +37,25 @@ new class extends Component
     {
         $this->resetPage();
     }
+
+    public function toggleProductStatus(int $productId): void
+    {
+        $product = \App\Models\Product::find($productId);
+        if ($product) {
+            $product->is_active = !$product->is_active;
+            $product->save();
+            $this->dispatch('swal', ['title' => 'Product status updated', 'icon' => 'success']);
+        }
+    }
+
+    public function deleteReport(int $reportId): void
+    {
+        $report = ProductReport::find($reportId);
+        if ($report) {
+            $report->delete();
+            $this->dispatch('swal', ['title' => 'Report deleted', 'icon' => 'success']);
+        }
+    }
 };
 ?>
 
@@ -70,6 +89,7 @@ new class extends Component
                     <th>Customer</th>
                     <th>Reason</th>
                     <th>Description</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,6 +108,21 @@ new class extends Component
                         </td>
                         <td><span class="rpt-reason-badge">{{ \App\Models\ProductReport::reasonOptions()[$report->reason] ?? $report->reason }}</span></td>
                         <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#757575;font-style:italic;font-size:0.8125rem;">{{ $report->description ?? '—' }}</td>
+                        <td class="flex gap-2">
+                            @if($report->product)
+                                <button wire:click="toggleProductStatus({{ $report->product_id }})" 
+                                        class="px-2 py-1 text-xs font-semibold rounded {{ $report->product->is_active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' }}"
+                                        title="{{ $report->product->is_active ? 'Suspend/Hide Product' : 'Activate/Show Product' }}">
+                                    {{ $report->product->is_active ? 'Suspend' : 'Activate' }}
+                                </button>
+                            @endif
+                            <button wire:click="deleteReport({{ $report->id }})" 
+                                    wire:confirm="Are you sure you want to dismiss and delete this report?"
+                                    class="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    title="Dismiss/Delete Report">
+                                Dismiss
+                            </button>
+                        </td>
                     </tr>
                 @empty
                     <tr>

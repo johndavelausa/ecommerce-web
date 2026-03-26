@@ -9,7 +9,7 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow sm:rounded-lg p-6">
                 <p class="text-sm text-gray-500 mb-4">
-                    Answers to common questions about using ThriftStore.
+                    Answers to common questions about using Ukay Hub.
                 </p>
 
                 <div class="space-y-4 text-sm text-gray-800">

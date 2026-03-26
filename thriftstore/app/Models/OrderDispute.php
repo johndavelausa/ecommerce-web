@@ -37,6 +37,7 @@ class OrderDispute extends Model
     public const STATUS_REFUND_COMPLETED = 'refund_completed';
     public const STATUS_RESOLVED_APPROVED = 'resolved_approved';
     public const STATUS_RESOLVED_REJECTED = 'resolved_rejected';
+    public const STATUS_UNDER_ADMIN_REVIEW = 'under_admin_review';
     public const STATUS_CLOSED = 'closed';
 
     public const STATUSES = [
@@ -49,6 +50,7 @@ class OrderDispute extends Model
         self::STATUS_REFUND_COMPLETED,
         self::STATUS_RESOLVED_APPROVED,
         self::STATUS_RESOLVED_REJECTED,
+        self::STATUS_UNDER_ADMIN_REVIEW,
         self::STATUS_CLOSED,
     ];
 

@@ -55,7 +55,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-2xl font-black text-white">ThriftStore</h3>
+                        <h3 class="text-2xl font-black text-white">Ukay Hub</h3>
                         <p class="text-indigo-200 text-xs">Sustainable Shopping</p>
                     </div>
                 </div>
