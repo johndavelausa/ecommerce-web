@@ -34,6 +34,11 @@ class OrderDisputeUpdated extends Notification implements ShouldQueue
             'reason_label' => OrderDispute::REASON_CODES[$this->dispute->reason_code] ?? $this->dispute->reason_code,
             'seller_id' => $this->dispute->seller_id,
             'customer_id' => $this->dispute->customer_id,
+            'action_url' => $notifiable instanceof \App\Models\User && $notifiable->hasRole('admin')
+                ? route('admin.orders')
+                : ($notifiable instanceof \App\Models\User && $notifiable->hasRole('seller')
+                    ? route('seller.orders')
+                    : route('customer.orders', ['issueOrderId' => $this->dispute->id])),
             'updated_at' => optional($this->dispute->updated_at)->toDateTimeString(),
         ];
     }

@@ -28,6 +28,8 @@ new class extends Component
 
     protected $queryString = [
         'status' => ['except' => ''],
+        'trackingOrderId' => ['except' => null],
+        'issueOrderId' => ['except' => null],
     ];
 
     public ?int $issueOrderId = null;

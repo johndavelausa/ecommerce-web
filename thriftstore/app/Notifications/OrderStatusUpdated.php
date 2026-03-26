@@ -28,6 +28,9 @@ class OrderStatusUpdated extends Notification implements ShouldQueue
             'status'    => $this->order->status,
             'seller_id' => $this->order->seller_id,
             'seller_name' => $this->order->seller?->store_name,
+            'action_url' => $notifiable instanceof \App\Models\User && $notifiable->hasRole('seller') 
+                ? route('seller.orders') 
+                : route('customer.orders', ['trackingOrderId' => $this->order->id]),
             'updated_at'=> optional($this->order->updated_at)->toDateTimeString(),
         ];
     }

@@ -803,20 +803,33 @@
                                         $data = $note->data;
                                         $type = $data['type'] ?? (isset($note->type) ? class_basename($note->type) : null);
                                         $isAnn = $type === 'broadcast_announcement' || $type === 'BroadcastAnnouncement';
-                                        $isOrder = in_array($type, ['new_order', 'order_status_updated']);
+                                        $isOrder = in_array($type, ['new_order', 'order_status_updated', 'refund_status_updated']);
                                         $isDispute = str_contains($type, 'dispute');
                                     @endphp
-                                    <div class="ts-notif-row">
+                                    <a href="{{ $data['action_url'] ?? '#' }}" class="ts-notif-row block no-underline group hover:bg-gray-50 flex gap-3">
+                                        <div class="ts-notif-icon-wrap {{ $isAnn ? 'announcement' : ($isDispute ? 'dispute' : ($isOrder ? 'order' : 'default')) }}">
+                                            @if($isAnn)
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                                            @elseif($isDispute)
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            @elseif($isOrder)
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                            @else
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                            @endif
+                                        </div>
                                         <div class="flex-1 min-w-0">
-                                            <div class="ts-notif-row-title">
+                                            <div class="ts-notif-row-title group-hover:text-[#2D9F4E]">
                                                 @if(isset($data['title']))
                                                     {{ $data['title'] }}
                                                 @elseif($type === 'new_order')
                                                     New order #{{ $data['order_id'] ?? '' }}
                                                 @elseif($type === 'order_status_updated')
-                                                    Order #{{ $data['order_id'] ?? '' }} status updated
+                                                    Order status updated
+                                                @elseif($type === 'refund_status_updated')
+                                                    Refund update #{{ $data['order_id'] ?? '' }}
                                                 @elseif($type === 'payment_rejected')
-                                                    {{ ucfirst($data['payment_type'] ?? 'payment') }} payment rejected
+                                                    Payment rejected
                                                 @elseif($isAnn)
                                                     {{ $data['title'] ?? 'Platform Announcement' }}
                                                 @elseif($type === 'wishlist_low_stock')
@@ -848,7 +861,7 @@
                                             </div>
                                             <div class="ts-notif-row-time">{{ $note->created_at?->diffForHumans() }}</div>
                                         </div>
-                                    </div>
+                                    </a>
                                 @empty
                                     <div class="ts-notif-empty">You're all caught up!</div>
                                 @endforelse

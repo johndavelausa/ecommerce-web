@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\RefundStatusUpdated;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -277,6 +278,9 @@ class Order extends Model
         static::updated(function (Order $order): void {
             if ($order->wasChanged('status')) {
                 $order->recordStatusHistory($order->getOriginal('status'), $order->status);
+            }
+            if ($order->wasChanged('refund_status')) {
+                $order->customer?->notify(new RefundStatusUpdated($order));
             }
         });
     }
