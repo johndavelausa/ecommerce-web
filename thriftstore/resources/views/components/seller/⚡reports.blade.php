@@ -178,8 +178,16 @@ new class extends Component
             return (object) ['this_month' => 0.0, 'last_month' => 0.0, 'change_percent' => 0.0];
         }
         $thisMonth = (float) Order::query()->where('seller_id', $seller->id)->whereIn('status', ['shipped', 'out_for_delivery', 'delivered', 'completed'])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->sum('total_amount');
         $lastMonth = (float) Order::query()->where('seller_id', $seller->id)->whereIn('status', ['shipped', 'out_for_delivery', 'delivered', 'completed'])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->whereMonth('created_at', now()->subMonth()->month)->whereYear('created_at', now()->subMonth()->year)->sum('total_amount');
         $change = $lastMonth > 0 ? round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1) : ($thisMonth > 0 ? 100.0 : 0.0);
         return (object) ['this_month' => $thisMonth, 'last_month' => $lastMonth, 'change_percent' => $change];

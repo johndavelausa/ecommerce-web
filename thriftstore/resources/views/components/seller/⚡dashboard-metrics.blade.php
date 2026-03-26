@@ -252,13 +252,20 @@ new class extends Component
         $earningsTotal = (float) Order::query()
             ->where('seller_id', $seller->id)
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->sum('total_amount');
 
         $earningsMonth = (float) Order::query()
             ->where('seller_id', $seller->id)
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->sum('total_amount');
 
         // Store rating: average rating across all product reviews for this seller (v1.2 - Seller #9)

@@ -20,7 +20,10 @@ class AdminDashboardController extends Controller
         // Total Sales: platform-wide sum of delivered orders (feature v1.2 - Admin Phase 1)
         $totalSales = (float) Order::query()
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->sum('total_amount');
 
         // Total Orders: count of all orders platform-wide (feature v1.2 - Admin #2)
@@ -46,13 +49,19 @@ class AdminDashboardController extends Controller
 
         $totalRevenue = (float) Order::query()
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->sum('total_amount');
 
         $monthlyRevenue = Order::query()
             ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, SUM(total_amount) as total")
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
-            ->where('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+            })
             ->whereNotNull('created_at')
             ->groupBy('ym')
             ->orderBy('ym', 'desc')
