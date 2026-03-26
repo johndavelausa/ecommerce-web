@@ -28,7 +28,6 @@ new class extends Component
     public string $category = '';
     public string $tags = '';
     public string $price = '';
-    public string $condition = 'good';   // new, like_new, good (A1 - v1.3)
     public string $delivery_fee = '';    // optional; used when seller delivery_option is per_product (A2 - v1.3)
     public string $low_stock_threshold = '10'; // B1 v1.4 — per-product low stock warning level
     public int    $stock = 0;
@@ -791,11 +790,6 @@ new class extends Component
         color: #E53935;
         border: 1px solid #EF5350;
     }
-    .prod-badge.condition {
-        background: #FFF9E6;
-        color: #F57C00;
-        border: 1px solid #F9C74F;
-    }
     .prod-btn-view {
         color: #2D9F4E;
         font-size: 0.75rem;
@@ -1334,7 +1328,6 @@ new class extends Component
                             @else
                                 <span class="prod-badge inactive">Inactive</span>
                             @endif
-                            <span class="prod-badge condition">{{ \App\Models\Product::conditionOptions()[$viewProduct->condition] ?? $viewProduct->condition }}</span>
                         </div>
                         <p class="mt-2 text-xs text-[#9E9E9E]">Views: {{ $viewProduct->views ?? 0 }}</p>
                     </div>
