@@ -20,7 +20,7 @@ class OrderReceiptController extends Controller
         if ((int) $order->customer_id !== (int) $user->id) {
             abort(404);
         }
-        if ($order->status !== 'delivered') {
+        if (! in_array($order->status, ['delivered', 'received', 'completed'], true)) {
             abort(404);
         }
 
