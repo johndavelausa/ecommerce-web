@@ -17,12 +17,12 @@ class AdminDashboardController extends Controller
 {
     public function __invoke(): View
     {
-        // Total Sales: platform-wide sum of delivered orders (feature v1.2 - Admin Phase 1)
         $totalSales = (float) Order::query()
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
             })
             ->sum('total_amount');
 
@@ -51,7 +51,8 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
             })
             ->sum('total_amount');
 
@@ -176,12 +177,22 @@ class AdminDashboardController extends Controller
 
         // A1 - v1.4: Revenue This Month vs Last Month (% change)
         $revenueThisMonth = (float) Order::query()
-            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->sum('total_amount');
         $revenueLastMonth = (float) Order::query()
-            ->whereIn('status', ['shipped', 'delivered'])
+            ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
+            ->where(function($q) {
+                $q->whereNull('refund_status')
+                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
+                  ->orWhere('refund_status', '');
+            })
             ->whereMonth('created_at', Carbon::now()->subMonth()->month)
             ->whereYear('created_at', Carbon::now()->subMonth()->year)
             ->sum('total_amount');
