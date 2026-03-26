@@ -4,8 +4,23 @@
     $initials = collect(explode(' ', $storeName))->take(2)->map(fn($w) => strtoupper($w[0] ?? ''))->implode('');
 @endphp
 
-<aside class="hidden md:flex w-64 flex-col min-h-screen"
+<aside x-data="{ sidebarOpen: false }"
+       x-on:toggle-sidebar.window="sidebarOpen = !sidebarOpen"
+       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+       class="fixed inset-y-0 left-0 z-50 w-64 flex-col min-h-screen transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:flex"
        style="background: linear-gradient(180deg, #0F3D22 0%, #1a5c35 60%, #0F3D22 100%); box-shadow: 4px 0 24px rgba(0,0,0,0.18);">
+    
+    {{-- Mobile Overlay --}}
+    <div x-show="sidebarOpen" 
+         @click="sidebarOpen = false"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black/50 md:hidden -z-10"></div>
+
 
     {{-- ── Brand Header ── --}}
     <div class="px-5 pt-7 pb-5" style="border-bottom: 1px solid rgba(255,255,255,0.08);">

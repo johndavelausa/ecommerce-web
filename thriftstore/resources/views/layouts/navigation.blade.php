@@ -971,7 +971,7 @@
 
             {{-- ── Hamburger ────────────────────────────────── --}}
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = !open" class="ts-hamburger">
+                <button @click="open = !open; $dispatch('toggle-sidebar')" class="ts-hamburger">
                     <svg class="h-5 w-5" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': !open}" class="inline-flex"
                               stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
