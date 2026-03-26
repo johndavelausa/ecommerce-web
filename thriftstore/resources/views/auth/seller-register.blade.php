@@ -550,7 +550,7 @@
                                         </div>
                                         <div>
                                             <p class="seller-review-label">Amount Paid</p>
-                                            <p class="seller-review-value">₱200.00</p>
+                                            <p class="seller-review-value">₱700.00</p>
                                         </div>
                                         <div>
                                             <p class="seller-review-label">Application Status</p>
