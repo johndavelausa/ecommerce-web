@@ -21,8 +21,14 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
-                  ->orWhere('refund_status', '');
+                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+            })
+            ->whereDoesntHave('disputes', function($q) {
+                $q->whereIn('status', [
+                    OrderDispute::STATUS_REFUND_COMPLETED,
+                    OrderDispute::STATUS_RETURN_RECEIVED,
+                    OrderDispute::STATUS_REFUND_PENDING
+                ]);
             })
             ->sum('total_amount');
 
@@ -55,8 +61,14 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED)
-                  ->orWhere('refund_status', '');
+                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+            })
+            ->whereDoesntHave('disputes', function($q) {
+                $q->whereIn('status', [
+                    OrderDispute::STATUS_REFUND_COMPLETED,
+                    OrderDispute::STATUS_RETURN_RECEIVED,
+                    OrderDispute::STATUS_REFUND_PENDING
+                ]);
             })
             ->sum('total_amount');
 
@@ -65,7 +77,14 @@ class AdminDashboardController extends Controller
             ->whereIn('status', [Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->where(function($q) {
                 $q->whereNull('refund_status')
-                  ->orWhere('refund_status', '!=', Order::REFUND_STATUS_COMPLETED);
+                  ->orWhereNotIn('refund_status', [Order::REFUND_STATUS_COMPLETED, Order::REFUND_STATUS_REFUNDED]);
+            })
+            ->whereDoesntHave('disputes', function($q) {
+                $q->whereIn('status', [
+                    OrderDispute::STATUS_REFUND_COMPLETED,
+                    OrderDispute::STATUS_RETURN_RECEIVED,
+                    OrderDispute::STATUS_REFUND_PENDING
+                ]);
             })
             ->whereNotNull('created_at')
             ->groupBy('ym')
