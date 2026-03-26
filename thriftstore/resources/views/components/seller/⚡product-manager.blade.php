@@ -49,11 +49,7 @@ new class extends Component
     public ?int $historyProductId = null;
     public int $historyPage = 1;
 
-    // bulk stock update
-    public array $selected = [];
-    public bool $showBulkStockModal = false;
-    public int $bulkStockDelta = 0;
-    public string $bulkStockNote = '';
+
 
     protected $queryString = [
         'search'          => ['except' => ''],
@@ -370,78 +366,7 @@ new class extends Component
         $this->closeStockModal();
     }
 
-    public function openBulkStockModal(): void
-    {
-        if (count($this->selected) === 0) {
-            return;
-        }
-        $this->bulkStockDelta = 0;
-        $this->bulkStockNote = '';
-        $this->showBulkStockModal = true;
-        $this->resetErrorBag();
-    }
 
-    public function closeBulkStockModal(): void
-    {
-        $this->showBulkStockModal = false;
-        $this->bulkStockDelta = 0;
-        $this->bulkStockNote = '';
-        $this->resetErrorBag();
-    }
-
-    public function selectPage(): void
-    {
-        $this->selected = $this->products->pluck('id')->map(fn ($id) => (int) $id)->all();
-    }
-
-    public function applyBulkStock(): void
-    {
-        if (count($this->selected) === 0) {
-            return;
-        }
-
-        $this->validate([
-            'bulkStockDelta' => ['required', 'integer', 'not_in:0'],
-            'bulkStockNote'  => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $seller = $this->seller;
-        if (! $seller) {
-            abort(403);
-        }
-
-        $note = $this->bulkStockNote;
-        $delta = $this->bulkStockDelta;
-
-        Product::query()
-            ->where('seller_id', $seller->id)
-            ->whereIn('id', $this->selected)
-            ->chunkById(100, function ($products) use ($delta, $note) {
-                foreach ($products as $product) {
-                    $oldStock = $product->stock;
-                    $newStock = max(0, $oldStock + $delta);
-                    if ($newStock === $oldStock) {
-                        continue;
-                    }
-
-                    $product->update(['stock' => $newStock]);
-
-                    ProductHistory::create([
-                        'product_id' => $product->id,
-                        'action'     => 'stock_change',
-                        'old_value'  => (string) $oldStock,
-                        'new_value'  => (string) $newStock,
-                        'note'       => $note !== '' ? $note : ($delta > 0 ? 'Bulk stock added' : 'Bulk stock removed'),
-                        'created_at' => now(),
-                    ]);
-
-                    $product->notifyWishlistLowStockIfNeeded($oldStock, $newStock);
-                }
-            });
-
-        $this->closeBulkStockModal();
-        $this->selected = [];
-    }
 
     public function markSoldOut(int $id): void
     {
@@ -1031,11 +956,7 @@ new class extends Component
 
             </div>
             <div class="flex gap-2">
-                <button type="button" wire:click="openBulkStockModal"
-                        @disabled(count($selected) === 0)
-                        class="prod-btn-ghost" style="{{ count($selected ?? []) ? '' : 'opacity:0.5;cursor:not-allowed;' }}">
-                    Bulk stock update
-                </button>
+
                 <button type="button" wire:click="showCreate" class="prod-btn-primary">
                     <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -1050,11 +971,7 @@ new class extends Component
             <table class="prod-table">
                 <thead>
                     <tr>
-                        <th>
-                            <button type="button" wire:click="selectPage" class="text-[11px] text-[#F9C74F] hover:text-[#E6B340] hover:underline">
-                                Select page
-                            </button>
-                        </th>
+                        <th>#</th>
                         <th>Image</th>
                         <th>Name</th>
                         <th>Category</th>
@@ -1068,10 +985,7 @@ new class extends Component
                 <tbody>
                     @forelse($this->products as $product)
                     <tr>
-                        <td>
-                            <input type="checkbox" wire:model="selected" value="{{ $product->id }}"
-                                   class="rounded border-[#E0E0E0] text-[#2D9F4E] focus:ring-[#2D9F4E]">
-                        </td>
+                        <td class="text-xs text-[#9E9E9E]">#{{ $product->id }}</td>
                         <td>
                             @if($product->image_path)
                                 <img src="{{ $product->image_url }}"
@@ -1172,34 +1086,7 @@ new class extends Component
     </div>
     @endif
 
-    {{-- Bulk stock update modal --}}
-    @if($showBulkStockModal)
-    <div class="prod-modal-overlay">
-        <div class="prod-modal">
-            <div class="prod-modal-header">
-                <h3>Bulk Stock Update</h3>
-                <p>Apply to {{ count($selected ?? []) }} selected product(s)</p>
-                <button type="button" wire:click="closeBulkStockModal" class="prod-modal-close">&times;</button>
-            </div>
-            <div class="prod-modal-body">
-                <div class="prod-form-group">
-                    <label class="prod-label">Change amount <span class="text-[#9E9E9E]">(use − for removal)</span></label>
-                    <input type="number" wire:model.defer="bulkStockDelta" class="prod-input">
-                    @error('bulkStockDelta') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
-                </div>
-                <div class="prod-form-group">
-                    <label class="prod-label">Note <span class="text-[#9E9E9E]">(optional)</span></label>
-                    <input type="text" wire:model.defer="bulkStockNote" class="prod-input" placeholder="e.g., Seasonal restock">
-                    @error('bulkStockNote') <div class="mt-1 text-xs text-[#E53935]">{{ $message }}</div> @enderror
-                </div>
-            </div>
-            <div class="prod-modal-footer">
-                <button type="button" wire:click="closeBulkStockModal" class="prod-btn-cancel">Cancel</button>
-                <button type="button" wire:click="applyBulkStock" class="prod-btn-primary">Apply Changes</button>
-            </div>
-        </div>
-    </div>
-    @endif
+
 
     {{-- Inventory history modal --}}
     @if($showHistoryModal)
