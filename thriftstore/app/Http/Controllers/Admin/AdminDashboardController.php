@@ -140,6 +140,7 @@ class AdminDashboardController extends Controller
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
                 Order::STATUS_CANCELLED,
             ])
@@ -147,9 +148,13 @@ class AdminDashboardController extends Controller
 
         $acceptedOrders = (int) Order::query()
             ->whereIn('status', [
+                Order::STATUS_TO_PACK,
+                Order::STATUS_READY_TO_SHIP,
+                Order::STATUS_PROCESSING,
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->count();
@@ -159,6 +164,7 @@ class AdminDashboardController extends Controller
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->count();
@@ -168,6 +174,7 @@ class AdminDashboardController extends Controller
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,
+                Order::STATUS_RECEIVED,
                 Order::STATUS_COMPLETED,
             ])
             ->whereNotNull('shipped_at')
@@ -179,7 +186,7 @@ class AdminDashboardController extends Controller
             ->count();
 
         $returnScope = (int) Order::query()
-            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_RECEIVED, Order::STATUS_COMPLETED])
             ->count();
 
         // Dispute-based returns/refunds
