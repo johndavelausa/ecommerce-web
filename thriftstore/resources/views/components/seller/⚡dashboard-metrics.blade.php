@@ -1458,7 +1458,7 @@ new class extends Component
                         </div>
                         <h3 class="dash-card-title">Subscription History</h3>
                     </div>
-                    <a href="{{ route('seller.payments') }}" class="dash-link" style="margin:0;">View all &rarr;</a>
+                   
                 </div>
                 <div class="dash-card-body" style="padding:0;">
                     @if($this->subscriptionPayments->isNotEmpty())
