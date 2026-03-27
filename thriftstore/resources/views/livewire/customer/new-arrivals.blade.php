@@ -15,7 +15,7 @@ new class extends Component
         return Product::query()
             ->with('seller')
             ->where('is_active', true)
-            ->where('condition', 'new')
+
             ->whereHas('seller', fn ($q) => $q->where('status', 'approved'))
             ->where('stock', '>', 0)
             ->latest()
@@ -164,7 +164,7 @@ new class extends Component
                     <h2 class="text-2xl font-bold text-gray-900">New Arrivals</h2>
                     <p class="text-sm text-gray-500 mt-1">Freshly picked treasures from our community sellers.</p>
                 </div>
-                <a href="{{ route('catalog') }}?condition=new"
+                <a href="{{ route('catalog') }}"
                    class="flex items-center gap-1 text-sm font-semibold text-[#2d6c50] hover:underline">
                     View All <span class="text-base">›</span>
                 </a>
@@ -299,7 +299,7 @@ new class extends Component
 
                             {{-- Condition + sale badges --}}
                             <div class="absolute left-3 top-3 z-20 flex flex-col gap-1.5">
-                                <span class="rounded-full bg-[#2d6c50] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">New</span>
+
                                 @if($product->sale_price)
                                     <span class="rounded bg-amber-400 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-gray-900">Sale</span>
                                 @endif

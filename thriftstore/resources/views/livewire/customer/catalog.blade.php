@@ -19,7 +19,6 @@ new class extends Component
     public string $availability = 'all';
     public string $category = '';
     public string $seller = '';
-    public string $condition = '';
     public string $size_variant = '';
     public ?float $min_price = null;
     public ?float $max_price = null;
@@ -32,7 +31,7 @@ new class extends Component
         'availability' => ['except' => 'all'],
         'category' => ['except' => ''],
         'seller' => ['except' => ''],
-        'condition' => ['except' => ''],
+
         'size_variant' => ['except' => ''],
     ];
 
@@ -41,7 +40,7 @@ new class extends Component
     public function updatingAvailability(): void { $this->resetPage(); }
     public function updatingCategory(): void { $this->resetPage(); }
     public function updatingSeller(): void { $this->resetPage(); }
-    public function updatingCondition(): void { $this->resetPage(); }
+
     public function updatingSizeVariant(): void { $this->resetPage(); }
     public function updatingMinPrice(): void { $this->resetPage(); }
     public function updatingMaxPrice(): void { $this->resetPage(); }
@@ -53,11 +52,7 @@ new class extends Component
         $this->resetPage();
     }
 
-    public function toggleCondition(string $cond): void
-    {
-        $this->condition = ($this->condition === $cond) ? '' : $cond;
-        $this->resetPage();
-    }
+
 
     public function toggleSize(string $size): void
     {
@@ -76,7 +71,7 @@ new class extends Component
         $this->availability = 'all';
         $this->category = '';
         $this->seller = '';
-        $this->condition = '';
+
         $this->size_variant = '';
         $this->min_price = null;
         $this->max_price = null;
@@ -95,7 +90,7 @@ new class extends Component
             'availability' => $this->availability,
             'category' => $this->category,
             'seller' => $this->seller,
-            'condition' => $this->condition,
+
             'size_variant' => $this->size_variant,
             'min_price' => $this->min_price,
             'max_price' => $this->max_price,
@@ -131,9 +126,7 @@ new class extends Component
             $q->where('seller_id', (int) $this->seller);
         }
 
-        if ($this->condition !== '') {
-            $q->where('condition', $this->condition);
-        }
+
 
         if ($this->size_variant !== '') {
             $q->where('size_variant', $this->size_variant);
@@ -424,24 +417,7 @@ new class extends Component
                     </div>
                     @endif
 
-                    {{-- CONDITION --}}
-                    <div>
-                        <h4 class="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Condition</h4>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach(\App\Models\Product::conditionOptions() as $value => $label)
-                                <button
-                                    type="button"
-                                    wire:click="toggleCondition('{{ $value }}')"
-                                    class="rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all
-                                        {{ $condition === $value
-                                            ? 'border-[#2d6c50] bg-[#2d6c50] text-white shadow-sm'
-                                            : 'border-gray-300 bg-white text-gray-600 hover:border-[#2d6c50] hover:text-[#2d6c50]' }}"
-                                >
-                                    {{ $label }}
-                                </button>
-                            @endforeach
-                        </div>
-                    </div>
+
 
                     {{-- PRICE RANGE --}}
                     <div
@@ -577,8 +553,6 @@ new class extends Component
                             $discountPct   = ($product->sale_price && $product->price > 0)
                                              ? (int) round((1 - $product->sale_price / $product->price) * 100)
                                              : 0;
-                            $conditionLabel = \App\Models\Product::conditionOptions()[$product->condition]
-                                             ?? ucfirst(str_replace('_', ' ', $product->condition ?? ''));
                             $isWishlisted  = isset($wishlist[$product->id]);
                         @endphp
 
@@ -613,11 +587,7 @@ new class extends Component
 
                                 {{-- Top-left badges --}}
                                 <div class="absolute left-2.5 top-2.5 z-10 flex flex-col gap-1.5">
-                                    @if($conditionLabel)
-                                        <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-[#2d6c50] text-white shadow-sm">
-                                            {{ $conditionLabel }}
-                                        </span>
-                                    @endif
+
                                     @if($product->sale_price && $discountPct > 0)
                                         <span class="rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-amber-400 text-gray-900 shadow-sm">
                                             {{ $discountPct }}% OFF
@@ -673,11 +643,7 @@ new class extends Component
                                     {{ $product->name }}
                                 </a>
 
-                                @if($product->condition)
-                                    <p class="mt-1 text-[11px] text-gray-400">
-                                        {{ \App\Models\Product::conditionOptions()[$product->condition] ?? ucfirst($product->condition) }}
-                                    </p>
-                                @endif
+
 
                                 <div class="mt-auto flex items-end justify-between pt-3">
                                     <div>
@@ -728,8 +694,6 @@ new class extends Component
                             $discountPct   = ($product->sale_price && $product->price > 0)
                                              ? (int) round((1 - $product->sale_price / $product->price) * 100)
                                              : 0;
-                            $conditionLabel = \App\Models\Product::conditionOptions()[$product->condition]
-                                             ?? ucfirst(str_replace('_', ' ', $product->condition ?? ''));
                             $isWishlisted  = isset($wishlist[$product->id]);
                         @endphp
 
@@ -744,9 +708,7 @@ new class extends Component
                                         <div class="flex h-full w-full items-center justify-center text-xs text-gray-400">No image</div>
                                     @endif
                                 </a>
-                                @if($conditionLabel)
-                                    <span class="absolute left-1 top-1 rounded px-1.5 py-0.5 text-[8px] font-bold uppercase bg-[#2d6c50] text-white">{{ $conditionLabel }}</span>
-                                @endif
+
                             </div>
 
                             {{-- Info --}}
