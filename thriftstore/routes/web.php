@@ -63,7 +63,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::view('/orders', 'admin.orders')->name('admin.orders');
     Route::view('/disputes', 'admin.disputes')->name('admin.disputes');
     Route::view('/product-reports', 'admin.product-reports')->name('admin.product-reports');
-    Route::view('/deletion-requests', 'admin.deletion-requests')->name('admin.deletion-requests');
+
     Route::view('/payments', 'admin.payments')->name('admin.payments');
     Route::view('/settings', 'admin.settings')->name('admin.settings');
     Route::post('/notifications/read-all', function () {
@@ -157,12 +157,12 @@ Route::middleware(['auth:web', 'role:customer'])->group(function () {
 Route::middleware('auth:web,seller')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/deletion-request', [ProfileController::class, 'requestDeletion'])->name('profile.deletion-request');
+
     Route::post('/profile/addresses', [AddressController::class, 'store'])->name('profile.addresses.store');
     Route::patch('/profile/addresses/{address}', [AddressController::class, 'update'])->name('profile.addresses.update');
     Route::delete('/profile/addresses/{address}', [AddressController::class, 'destroy'])->name('profile.addresses.destroy');
     Route::post('/profile/addresses/{address}/default', [AddressController::class, 'setDefault'])->name('profile.addresses.set-default');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
 });
 
 

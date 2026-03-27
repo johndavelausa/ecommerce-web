@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
-use App\Models\AccountDeletionRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\RedirectResponse;
@@ -52,37 +51,15 @@ class ProfileController extends Controller
             ];
         }
 
-        $deletionRequestPending = $user ? AccountDeletionRequest::hasPending($user->id) : false;
 
         return view('profile.edit', [
             'user' => $user,
             'purchaseStats' => $purchaseStats,
-            'deletionRequestPending' => $deletionRequestPending,
+            'deletionRequestPending' => false,
         ]);
     }
 
-    /**
-     * Submit an account deletion request (C3 v1.4). Admin processes manually.
-     */
-    public function requestDeletion(Request $request): RedirectResponse
-    {
-        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
-        
-        if (! $user) {
-            abort(403);
-        }
 
-        if (AccountDeletionRequest::hasPending($user->id)) {
-            return Redirect::route('profile.edit')->with('status', 'deletion-request-pending');
-        }
-
-        AccountDeletionRequest::create([
-            'user_id' => $user->id,
-            'status' => 'pending',
-        ]);
-
-        return Redirect::route('profile.edit')->with('status', 'deletion-request-submitted');
-    }
 
     /**
      * Update the user's profile information.
@@ -103,33 +80,5 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
 
-        $user = Auth::guard('web')->user() ?? Auth::guard('seller')->user();
-        
-        if (!$user) {
-            abort(403);
-        }
-
-        // Logout from the appropriate guard
-        if (Auth::guard('web')->check()) {
-            Auth::guard('web')->logout();
-        } elseif (Auth::guard('seller')->check()) {
-            Auth::guard('seller')->logout();
-        }
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
-    }
 }
