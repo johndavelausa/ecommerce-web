@@ -361,7 +361,7 @@ new class extends Component
                    placeholder="Search by ID, tracking #, customer, or seller…"
                    class="ord-search w-64">
 
-            <select wire:model.live="status" class="ord-select">
+            <!-- <select wire:model.live="status" class="ord-select">
                 <option value="">All statuses</option>
                 <option value="awaiting_payment">Awaiting payment</option>
                 <option value="paid">Paid</option>
@@ -373,7 +373,7 @@ new class extends Component
                 <option value="delivered">Delivered</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
-            </select>
+            </select> -->
 
             <span class="ord-label">Date range:</span>
             <input type="date" wire:model.live="dateFrom" class="ord-select">
