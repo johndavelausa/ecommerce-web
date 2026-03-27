@@ -23,7 +23,7 @@
         {{-- CTA Section --}}
         <div class="mb-16 text-center">
             <h2 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight uppercase" style="color: #2d6a4f;">
-                Ready to Start<br class="sm:hidden"> Thrifting?
+                Ready to Start<br class="sm:hidden"> Thrifting test?
             </h2>
             <p class="text-lg mb-8 max-w-2xl mx-auto" style="color: #2d6a4f;">
                 Join thousands of smart shoppers finding unique treasures every day.
