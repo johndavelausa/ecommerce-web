@@ -27,7 +27,7 @@ new class extends Component
     public bool $is_open = true;
 
     /** A2 v1.3 — Delivery settings */
-    public string $delivery_option = 'free'; // free | flat_rate | per_product
+    public string $delivery_option = 'flat_rate'; // flat_rate | per_product
     public string $delivery_fee_amount = ''; // used when flat_rate
 
     public bool $saved = false;
@@ -52,7 +52,10 @@ new class extends Component
         $this->gcash_number = (string) ($seller?->gcash_number ?? '');
         $this->business_hours = (string) ($seller?->business_hours ?? '');
         $this->is_open = (bool) ($seller?->is_open ?? true);
-        $this->delivery_option = (string) ($seller?->delivery_option ?? 'free');
+        $this->delivery_option = (string) ($seller?->delivery_option ?? 'flat_rate');
+        if ($this->delivery_option === 'free') {
+            $this->delivery_option = 'flat_rate';
+        }
         $this->delivery_fee_amount = $seller?->delivery_fee !== null ? (string) $seller->delivery_fee : '';
 
         $this->avatar = null;
@@ -72,7 +75,7 @@ new class extends Component
 
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'delivery_option' => ['required', 'in:free,flat_rate,per_product'],
+            'delivery_option' => ['required', 'in:flat_rate,per_product'],
             'delivery_fee_amount' => $this->delivery_option === 'flat_rate'
                 ? ['required', 'numeric', 'min:0']
                 : ['nullable', 'numeric', 'min:0'],
@@ -550,18 +553,6 @@ new class extends Component
             <div class="sst-form-row">
                 <div class="sst-section-title">Delivery Settings</div>
                 <div class="sst-radio-group">
-                    <label wire:key="delivery-opt-free" 
-                           wire:click="$set('delivery_option', 'free')"
-                           @class(['sst-radio-label', 'is-selected' => $delivery_option === 'free'])>
-                        <input type="radio" 
-                               wire:model.live="delivery_option" 
-                               name="seller_delivery_option_group" 
-                               value="free">
-                        <div>
-                            <div style="font-weight:600;">Free delivery</div>
-                            <div style="font-size:0.75rem;color:#9E9E9E;">No delivery charge for all orders</div>
-                        </div>
-                    </label>
                     <label wire:key="delivery-opt-flat" 
                            wire:click="$set('delivery_option', 'flat_rate')"
                            @class(['sst-radio-label', 'is-selected' => $delivery_option === 'flat_rate'])>
