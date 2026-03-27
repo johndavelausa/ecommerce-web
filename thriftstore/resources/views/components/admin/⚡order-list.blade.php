@@ -361,7 +361,7 @@ new class extends Component
                    placeholder="Search by ID, tracking #, customer, or seller…"
                    class="ord-search w-64">
 
-            <!-- <select wire:model.live="status" class="ord-select">
+            <!-- <select wire:model.live="status" class="ord-select"> comment
                 <option value="">All statuses</option>
                 <option value="awaiting_payment">Awaiting payment</option>
                 <option value="paid">Paid</option>
