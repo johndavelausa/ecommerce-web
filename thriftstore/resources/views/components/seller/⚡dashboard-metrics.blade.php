@@ -72,6 +72,9 @@ new class extends Component
 
         $acceptedOrders = (clone $orderBase)
             ->whereIn('status', [
+                Order::STATUS_TO_PACK,
+                Order::STATUS_READY_TO_SHIP,
+                Order::STATUS_PROCESSING,
                 Order::STATUS_SHIPPED,
                 Order::STATUS_OUT_FOR_DELIVERY,
                 Order::STATUS_DELIVERED,

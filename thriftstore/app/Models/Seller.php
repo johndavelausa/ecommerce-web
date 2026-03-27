@@ -64,7 +64,6 @@ class Seller extends Model
     public static function deliveryOptionLabels(): array
     {
         return [
-            'free'        => 'Free delivery (all products)',
             'flat_rate'   => 'Flat rate per order (one fee for entire order)',
             'per_product' => 'Per product (set delivery fee on each product)',
         ];
