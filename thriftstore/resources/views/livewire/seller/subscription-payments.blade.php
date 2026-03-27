@@ -373,7 +373,9 @@ new class extends Component
                     {{-- Info Row --}}
                     <div class="flex items-start gap-4 p-4 rounded-xl bg-[#F5FBF7] border border-[#D4E8DA]">
                         <div class="shrink-0">
-                            @php($gcashQr = \App\Models\SystemSetting::get_url('gcash_qr_path', asset('defaults/gcash-qr.png')))
+                            @php
+                                $gcashQr = \App\Models\SystemSetting::get_url('gcash_qr_path', asset('defaults/gcash-qr.png'));
+                            @endphp
                             <img src="{{ $gcashQr }}" 
                                  class="w-32 h-32 object-contain rounded-lg border-2 border-white shadow-sm" alt="GCash QR">
                         </div>
